@@ -35,7 +35,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-/* --- The owner's control on Spenders ------------------------------------------------------- */
+/* --- The owner's control on Team ----------------------------------------------------------- */
 
 export function InviteControl({team, teamName}: {team: string; teamName: string | null}) {
   const origin = useOrigin();
@@ -219,7 +219,7 @@ function Accept({team, label}: {team: string; label: string}) {
       <Card title={`You own ${called}`}>
         <p className={styles.lead}>This is your team&apos;s invite link. Send it to the person you want to add; they send their wallet address back to you.</p>
         <div className={styles.actions}>
-          <ButtonLink href={`/app/${team}/spenders`} variant="primary">Open Spenders</ButtonLink>
+          <ButtonLink href={`/app/${team}/spenders`} variant="primary">Open Team</ButtonLink>
         </div>
       </Card>
     );

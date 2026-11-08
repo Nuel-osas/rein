@@ -30,7 +30,7 @@ export function Pay() {
   if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={2} />;
   const header = <PageHeader kind="pay" title="New payment" description="Pick a registered service and an amount. Inside your policy it settles in the same transaction; outside it, it waits on chain for the owner." />;
   if (!t.wallet) return <div className={styles.section}>{header}<SignInPrompt action="pay" note="People pay from their own Solana wallet under their policy; agents pay from their own key." /></div>;
-  if (!t.me || !t.team) return <div className={styles.section}>{header}<EmptyState title="You are not a spender on this team" body={`The owner can add your wallet, ${t.wallet.slice(0, 4)}…${t.wallet.slice(-4)}, under Spenders.`} /></div>;
+  if (!t.me || !t.team) return <div className={styles.section}>{header}<EmptyState title="You are not a spender on this team" body={`The owner can add your wallet, ${t.wallet.slice(0, 4)}…${t.wallet.slice(-4)}, under Team.`} /></div>;
   const me = t.me;
   const team = t.team;
 

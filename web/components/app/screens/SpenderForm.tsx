@@ -74,7 +74,7 @@ export function SpenderForm({mode, kind = "agent", spenderId, prefill}: {mode: "
   const checked = useMemo(() => (draft ? toPolicy(draft, Math.floor(Date.now() / 1000)) : {problems: [], policy: null}), [draft]);
 
   if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={2} />;
-  if (!t.wallet) return <div className={styles.section}><PageHeader kind="spenders" title={mode === "edit" ? "Edit policy" : kind === "agent" ? "Add an agent" : "Add a person"} description="Only the team owner can grant or change a policy." /><SignInPrompt action={mode === "edit" ? "edit this policy" : "add a spender"} /></div>;
+  if (!t.wallet) return <div className={styles.section}><PageHeader kind="spenders" title={mode === "edit" ? "Edit policy" : kind === "agent" ? "Add agent" : "Add person"} description="Only the team owner can grant or change a policy." /><SignInPrompt action={mode === "edit" ? "edit this policy" : "add a spender"} /></div>;
   if (!t.isOwner) return <EmptyState as="h1" title="Only the owner can do this" body="Your signed-in wallet does not own this team, so the program would refuse the change." />;
   if (mode === "edit" && !editing) return <EmptyState as="h1" title="No such spender" body="The link does not match a Spender account of this team." />;
   if (!draft) return null;
@@ -134,7 +134,7 @@ export function SpenderForm({mode, kind = "agent", spenderId, prefill}: {mode: "
     }
   }
 
-  const title = mode === "edit" ? `Edit ${editing!.label}` : agent ? "Add an agent" : "Add a person";
+  const title = mode === "edit" ? `Edit ${editing!.label}` : agent ? "Add agent" : "Add person";
   return (
     <div className={styles.section}>
       <PageHeader
