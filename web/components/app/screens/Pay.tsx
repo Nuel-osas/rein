@@ -1,5 +1,6 @@
 "use client";
 
+import {useSearchParams} from "next/navigation";
 import {useState} from "react";
 import {PublicKey} from "@solana/web3.js";
 import {connection, period, usdc} from "@/lib/chain";
@@ -19,6 +20,8 @@ export function Pay() {
   const t = useTeamPage();
   const {publicKey, payer, send} = useWallet();
   const [service, setService] = useState("");
+  // ?service=<id> from a service page preselects it; the spender still sees and can change it.
+  const preset = useSearchParams()?.get("service") ?? null;
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [status, setStatus] = useState<Status>(null);
@@ -33,7 +36,7 @@ export function Pay() {
 
   const units = parseUsdc(amount);
   const active = (t.services ?? []).filter((s) => s.active);
-  const chosen = active.find((s) => s.address === service) ?? active.find((s) => me.services.includes(s.address)) ?? active[0] ?? null;
+  const chosen = active.find((s) => s.address === service) ?? active.find((s) => s.id === preset) ?? active.find((s) => me.services.includes(s.address)) ?? active[0] ?? null;
   const bits = units !== null && units > 0n && chosen ? overLimits(me, chosen.address, units, t.now) : 0;
   const memoOk = new TextEncoder().encode(memo).length <= MEMO_MAX;
   const r = rolled(me, t.now);

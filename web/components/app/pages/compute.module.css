@@ -1,0 +1,63 @@
+/* AI compute: Nuntio's compute layout (a lead with fact chips, a grid of traced cards, a foot
+   note) in Rein's tokens. Cards show registry services, never a run. */
+
+.page { container: compute / inline-size; display: flex; flex-direction: column; gap: var(--app-gap-group, 2.5rem); }
+.lead { display: flex; flex-direction: column; gap: var(--app-gap, 1rem); }
+
+.facts { display: flex; flex-wrap: wrap; gap: var(--app-gap-tight, .5rem); margin: 0; padding: 0; list-style: none; }
+.fact {
+  padding: .4375rem .625rem;
+  background: var(--color-surface);
+  box-shadow: var(--app-ring);
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--app-gap, 1rem); margin: 0; padding: 0; list-style: none; }
+@container compute (min-width: 40rem) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-gap-tight, .5rem);
+  min-block-size: 12.5rem;
+  block-size: 100%;
+  padding: 1.25rem var(--app-card-pad, 1.5rem);
+  background: var(--color-surface);
+  box-shadow: var(--app-ring);
+}
+/* The traced corners: a datum cross at two corners. */
+.card::before, .card::after {
+  content: "";
+  position: absolute;
+  inline-size: 9px;
+  block-size: 9px;
+  background:
+    linear-gradient(var(--app-line-strong), var(--app-line-strong)) center / 1px 100% no-repeat,
+    linear-gradient(var(--app-line-strong), var(--app-line-strong)) center / 100% 1px no-repeat;
+  pointer-events: none;
+}
+.card::before { inset-block-start: -5px; inset-inline-start: -5px; }
+.card::after { inset-block-end: -5px; inset-inline-end: -5px; }
+
+.cardTop { display: flex; align-items: baseline; justify-content: space-between; gap: var(--app-gap, 1rem); font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.kind { color: var(--color-accent-text); }
+.kind::before { content: "[ "; content: "[ " / ""; }
+.kind::after { content: " ]"; content: " ]" / ""; }
+.tee { color: var(--color-text-secondary); white-space: nowrap; }
+.model { margin: var(--app-gap-tight, .5rem) 0 0; font-size: var(--text-display, 24px); font-weight: 400; line-height: 1.2; letter-spacing: -.03em; overflow-wrap: anywhere; color: var(--color-text-primary); }
+.spec { margin: 0; color: var(--color-text-secondary); font-size: var(--text-small); line-height: 1.5; text-wrap: pretty; }
+.cardFoot { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--app-gap-tight, .5rem) var(--app-gap, 1rem); margin-block-start: auto; padding-block-start: var(--app-gap, 1rem); }
+.price { display: flex; align-items: baseline; gap: .375rem; margin: 0; font-size: var(--text-display, 24px); line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--color-text-primary); }
+.price small { color: var(--color-text-secondary); font-size: var(--text-small); letter-spacing: 0; }
+.bought { margin: 0; color: var(--color-text-secondary); font-size: var(--text-small); }
+.bought b { color: var(--color-text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.foot { margin: 0; max-inline-size: 75ch; color: var(--color-text-secondary); font-size: var(--text-small); line-height: 1.6; text-wrap: pretty; }
+.purchases { --cols: minmax(12rem, 1.4fr) minmax(9rem, .8fr) minmax(7rem, .6fr); }

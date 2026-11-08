@@ -55,13 +55,18 @@ function toPolicy(d: Draft, now: number): {problems: string[]; policy: Policy | 
   return more.length ? {problems: more, policy: null} : {problems: [], policy};
 }
 
-export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "edit"; kind?: Kind; spenderId?: string}) {
+/** An invite reply's address and name, each used only if it passes the same checks as typing it. */
+export type SpenderPrefill = {authority?: string; label?: string};
+
+export function SpenderForm({mode, kind = "agent", spenderId, prefill}: {mode: "add" | "edit"; kind?: Kind; spenderId?: string; prefill?: SpenderPrefill}) {
   const t = useTeamPage();
   const router = useRouter();
   const {publicKey, payer, send} = useWallet();
   const editing = mode === "edit" ? t.spenders?.find((s) => s.address === spenderId) ?? null : null;
-  const [d, setD] = useState<Draft | null>(mode === "add" ? {label: "", allowance: "20", periodSecs: 86400, cap: "5", maxPayments: "10", days: "30", services: []} : null);
-  const [authority, setAuthority] = useState("");
+  const pre = mode === "add" ? {authority: parseAddress(prefill?.authority?.trim()) ?? "", label: prefill?.label && !checkLabel(prefill.label.trim()) ? prefill.label.trim() : ""} : null;
+  const [d, setD] = useState<Draft | null>(mode === "add" ? {label: pre?.label ?? "", allowance: "20", periodSecs: 86400, cap: "5", maxPayments: "10", days: "30", services: []} : null);
+  const [authority, setAuthority] = useState(pre?.authority ?? "");
+  const fromInvite = !!pre?.authority;
   const [secret, setSecret] = useState<{publicKey: string; bytes: number[]} | null>(null);
   const [status, setStatus] = useState<Status>(null);
   const [busy, setBusy] = useState(false);
@@ -155,6 +160,12 @@ export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "e
             </Button>
           </div>
         </div>
+      ) : null}
+      {fromInvite ? (
+        <p className={styles.notice}>
+          <b>Filled in from an invite reply.</b> Check this address with the person before you grant a policy: whoever holds this wallet can spend what the policy
+          allows. Nothing is sent until you press Grant policy.
+        </p>
       ) : null}
       <div className={styles.form}>
         {mode === "add" ? (
