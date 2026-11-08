@@ -29,7 +29,7 @@ None of them takes a wallet address. A prompt-injected agent can be told to "sen
 
 ## Add an agent to your team
 
-1. Open your team and go to **Agents**, then add one.
+1. Open your team, go to **Team** and choose **Add agent**.
 2. Let Rein generate a keypair, or paste the public key of one you made.
 3. Set its policy and the services it may pay.
 4. Confirm. If Rein generated the key, download it now: it is shown once and Rein does not store it.
