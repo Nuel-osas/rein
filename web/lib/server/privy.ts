@@ -38,3 +38,20 @@ export async function privySession(req: Request): Promise<PrivySession> {
     return { kind: 'invalid' };
   }
 }
+
+/**
+ * The Solana wallet addresses linked to a Privy user (embedded or external), read from Privy's API.
+ * Null when the server has no Privy secret or the read failed: callers then refuse, never assume.
+ */
+export async function privySolanaWallets(userId: string): Promise<string[] | null> {
+  const p = privy();
+  if (!p) return null;
+  try {
+    const user = await p.users()._get(userId);
+    return user.linked_accounts
+      .filter((a): a is typeof a & { address: string } => a.type === 'wallet' && (a as { chain_type?: string }).chain_type === 'solana' && typeof (a as { address?: unknown }).address === 'string')
+      .map((a) => a.address);
+  } catch {
+    return null;
+  }
+}
