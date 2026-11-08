@@ -74,3 +74,14 @@ someone runs it with `--refill`.
 
 Prices are not fixed: each quote asks 0G for the worst case of one run (live provider prices × 0G's USD rate) × 1.5, at least 0.01 test USDC. The list price above is only what the registry shows.
 <!-- compute:end -->
+
+## 0G compute (mainnet, chain 16661), 2026-11-08
+
+| What | Value | Verified by |
+|---|---|---|
+| Gateway 0G wallet | `0x717341dcEc0232FC3F6f791d87d0E97322E4C52b` | Derived with ethers from the key in `~/.config/rein/zg-wallet.key` (mode 600) and Vercel `ZG_PRIVATE_KEY` (sensitive); never in the repo. Not the retired `0xbf351dc1…` address. Funded with 67.48 0G (`eth_getBalance` on https://evmrpc.0g.ai) |
+| 0G Compute ledger | opened with 5 0G | `addLedger(5)` through `zg-compute`'s SDK port, tx `0xc812a3c5d8a470a8973b0289d210b66004f5644ec3ab881980ca199fdd125bb5`; `getLedger()` then read total 5.000000 0G |
+| First chat provider used | `0xf4FB8d2bD856e672b5f9848b0eD235A20079B250` | `ai-chat` runs on 2026-11-08 (local, then production) returned `verified: true` with this provider for `0GM-1.0-35B-A3B` |
+| First production compute run | payment settled `2q3PVGSdFgZjanxjjdYokwonesQZdzi8j3EnyYA8TfTRRrxm9P3Bdj565VT9o62A5qC4jR75J3fKuQNEe9kBmMs2` (devnet) | `POST /api/compute/run` on https://rein-navy.vercel.app returned `done`, `fake: false`, `verified: true` in 17.4 s |
+
+The gateway also supports 0G Private Computer (`ZG_ROUTER_API_KEY`, https://router-api.0g.ai/v1) when a Router key is set; production currently uses the wallet above.
