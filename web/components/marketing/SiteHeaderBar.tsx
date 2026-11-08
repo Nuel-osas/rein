@@ -22,7 +22,6 @@ const LINKS = [
   {href: "/demo", label: "Live demo"},
   {href: "/#faq", label: "FAQ"},
   {href: "/docs", label: "Docs"},
-  {href: "/build", label: "Build"},
   {href: "/onboarding", label: "Sign in"},
 ] as const;
 

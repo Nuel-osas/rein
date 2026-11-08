@@ -101,11 +101,6 @@ export function Compute() {
                     )}
                   </p>
                 </div>
-                {service ? (
-                  <Link href={`${t.base}/recipients/${id}`} className={rein.sectionLink}>
-                    Service details →
-                  </Link>
-                ) : null}
               </li>
             );
           })}
@@ -158,7 +153,7 @@ export function Compute() {
 
       <p className={styles.foot}>
         Rein records the payment, not the run. The service delivers the work off chain, so this page shows what was bought, by whom and what the program decided, and
-        never an output it did not see. Other services the agent buys, such as web-search or market-data, are under Activity and Metrics.
+        never an output it did not see. Other services the agent buys, such as web-search or market-data, are under Activity.
       </p>
     </div>
   );
