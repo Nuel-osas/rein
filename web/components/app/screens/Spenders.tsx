@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {period, short, usdc} from "@/lib/chain";
-import {remainingOf, rolled, type Kind, type Spender} from "@/lib/rein";
+import {remainingOf, rolled, type Spender} from "@/lib/rein";
 import {ButtonLink} from "../Button";
 import {SPENDER_STATUS_COPY} from "../copy";
 import {PageHeader} from "../PageHeader";
@@ -13,36 +13,34 @@ import {initials} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
 import {InviteControl} from "./Invite";
 
-/** Spenders and agents share one list; agents link by their key, people by their Spender account. */
-export function SpenderList({kind}: {kind?: Kind}) {
+/**
+ * Team: people and AI agents in one list, each marked Person or Agent. Agents link by their key,
+ * people by their Spender account. The owner adds either from here, or invites someone by link.
+ */
+export function SpenderList() {
   const t = useTeamPage();
-  if (t.at === 0) return <ContentLoading label="Reading spenders from chain…" rows={2} />;
-  const rows = (t.spenders ?? []).filter((s) => !kind || s.kind === kind);
-  const agents = kind === "agent";
+  if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={2} />;
+  const rows = t.spenders ?? [];
   const href = (s: Spender) => (s.kind === "agent" ? `${t.base}/agents/${s.authority}` : `${t.base}/spenders/${s.address}`);
 
   return (
     <div className={styles.page}>
       <PageHeader
         kind="spenders"
-        title={agents ? "Agents" : "Spenders"}
-        description={
-          agents
-            ? "AI agents that can pay from this vault. Each is a keypair that holds no money, checked against its own Spender account on every payment."
-            : "People and agents who can pay from this vault, and the limits the program checks on each payment."
-        }
+        title="Team"
+        description="The people and AI agents who can pay from this vault in test USDC, and the limits the program checks on each payment. An agent is a keypair that holds no money."
         action={
           t.isOwner ? (
             <div className={styles.actions}>
-              {agents ? null : <ButtonLink href={`${t.base}/spenders/new`}>Add a person</ButtonLink>}
+              <ButtonLink href={`${t.base}/spenders/new`}>Add person</ButtonLink>
               <ButtonLink href={`${t.base}/agents/new`} variant="primary">
-                Add an agent
+                Add agent
               </ButtonLink>
             </div>
           ) : undefined
         }
       />
-      {t.isOwner && !agents ? <InviteControl team={t.address} teamName={t.team?.name ?? null} /> : null}
+      {t.isOwner ? <InviteControl team={t.address} teamName={t.team?.name ?? null} /> : null}
       <div className={`${list.card} ${styles.table}`}>
         <div className={list.head} aria-hidden="true">
           <span>Name</span>
@@ -52,15 +50,15 @@ export function SpenderList({kind}: {kind?: Kind}) {
         </div>
         {t.spenders === null ? (
           <div className={list.empty}>
-            <p>Could not read spenders from chain. This is a network problem, not a team with nobody in it.</p>
+            <p>Could not read the team from chain. This is a network problem, not a team with nobody in it.</p>
           </div>
         ) : rows.length === 0 ? (
           <div className={list.empty}>
-            <p>{agents ? "No agents yet. Give an agent key an allowance and the services it may pay, and it appears here." : "No one can pay from this vault yet."}</p>
-            {t.isOwner ? <ButtonLink href={`${t.base}/agents/new`}>Add an agent</ButtonLink> : null}
+            <p>No one can pay from this vault yet. Add a person by their wallet address, or give an agent key an allowance and the services it may pay.</p>
+            {t.isOwner ? <ButtonLink href={`${t.base}/agents/new`}>Add agent</ButtonLink> : null}
           </div>
         ) : (
-          <ul className={list.rows} aria-label={agents ? "Agents" : "Spenders"}>
+          <ul className={list.rows} aria-label="People and agents">
             {rows.map((s) => {
               const r = rolled(s, t.now);
               const left = s.policy.allowance > r.spent ? s.policy.allowance - r.spent : 0n;

@@ -8,6 +8,18 @@ const config: NextConfig = {
   transpilePackages: ["@rein/agent", "@rein/zg-compute"],
   // The 0G SDK and ethers load at runtime from node_modules (the SDK through its CommonJS build).
   serverExternalPackages: ["@0gfoundation/0g-compute-ts-sdk", "ethers"],
+  // Pages folded into others. Redirects here answer before any page renders, so the status is a
+  // real 307 rather than a client-side hop after the own-team gate has streamed.
+  async redirects() {
+    return [
+      // The agents list is part of Team, which shows people and agents together.
+      {source: "/agents", destination: "/spenders", permanent: false},
+      {source: "/app/:team/agents", destination: "/app/:team/spenders", permanent: false},
+      // The assistant is part of Compute, under the agent's run panel.
+      {source: "/assistant", destination: "/compute", permanent: false},
+      {source: "/app/:team/assistant", destination: "/app/:team/compute", permanent: false},
+    ];
+  },
   async headers() {
     return [
       {

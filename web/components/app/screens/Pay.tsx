@@ -28,9 +28,9 @@ export function Pay() {
   const [busy, setBusy] = useState(false);
 
   if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={2} />;
-  const header = <PageHeader kind="pay" title="New payment" description="Pick a registered service and an amount. Inside your policy it settles in the same transaction; outside it, it waits on chain for the owner." />;
+  const header = <PageHeader kind="pay" title="New payment" description="Pay a registered service in devnet test USDC from the team vault. Inside your policy it settles in the same transaction; outside it, it waits on chain for the owner." />;
   if (!t.wallet) return <div className={styles.section}>{header}<SignInPrompt action="pay" note="People pay from their own Solana wallet under their policy; agents pay from their own key." /></div>;
-  if (!t.me || !t.team) return <div className={styles.section}>{header}<EmptyState title="You are not a spender on this team" body={`The owner can add your wallet, ${t.wallet.slice(0, 4)}…${t.wallet.slice(-4)}, under Spenders.`} /></div>;
+  if (!t.me || !t.team) return <div className={styles.section}>{header}<EmptyState title="You are not a spender on this team" body={`The owner can add your wallet, ${t.wallet.slice(0, 4)}…${t.wallet.slice(-4)}, under Team.`} /></div>;
   const me = t.me;
   const team = t.team;
 
@@ -95,7 +95,7 @@ export function Pay() {
           <span className={styles.fieldHint}>pay takes a registered service. The registry names the payee; you never type an address.</span>
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Amount (USDC)</span>
+          <span className={styles.fieldLabel}>Amount (devnet test USDC)</span>
           <input className={styles.input} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={chosen ? usdc(chosen.price).slice(1) : "1.00"} />
         </label>
         <label className={styles.field}>

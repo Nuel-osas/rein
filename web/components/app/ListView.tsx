@@ -5,7 +5,7 @@ import {formatCount} from "./format";
 import styles from "./ListView.module.css";
 
 /* ===========================================================================
-   The grammar every list page shares (Agents, Spenders, Activity, Approvals).
+   The grammar every list page shares (Team, Activity, Approvals).
 
    The page header, then one bar: filter tabs on the left, the page's tools on
    the right. Then one white card holding the rows, a hairline under the column

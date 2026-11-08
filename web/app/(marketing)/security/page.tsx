@@ -25,7 +25,7 @@ import {SecurityEvidence, SecurityLayers, SecurityLimits} from "@/components/mar
  * in the middle, which is the placement that decides whether the page is a
  * disclosure or a hedge.
  *
- * On the light marketing ground like /build, /stats and the legal pages, so the
+ * On the light marketing ground like /demo and the legal pages, so the
  * header, the PageIntro and the footer's fade read the same on every page.
  */
 

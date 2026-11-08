@@ -7,11 +7,10 @@
 // written anywhere and no money moves.
 
 import Link from "next/link";
-import {useRouter} from "next/navigation";
 import {useEffect, useId, useState, type FormEvent, type ReactNode} from "react";
 import {Brand} from "@/components/Brand";
 import {short} from "@/lib/chain";
-import {decodeInvite, encodeInvite, inviteLink, readPasted, replyLink} from "@/lib/invite";
+import {decodeInvite, encodeInvite, inviteLink, replyLink} from "@/lib/invite";
 import {LABEL_MAX, checkLabel} from "@/lib/rein";
 import {forgetReturnTo, rememberReturnTo} from "@/lib/return-to";
 import {useTeam} from "@/lib/team";
@@ -36,7 +35,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-/* --- The owner's control on Spenders ------------------------------------------------------- */
+/* --- The owner's control on Team ----------------------------------------------------------- */
 
 export function InviteControl({team, teamName}: {team: string; teamName: string | null}) {
   const origin = useOrigin();
@@ -144,9 +143,6 @@ function BadInvite() {
   return (
     <Card title="This invite link does not work">
       <p className={styles.lead}>It is cut short or was changed, so it does not name a Rein team and a person. Ask the owner to send it again.</p>
-      <div className={styles.actions}>
-        <ButtonLink href="/app/teams/join">Paste another link</ButtonLink>
-      </div>
     </Card>
   );
 }
@@ -223,7 +219,7 @@ function Accept({team, label}: {team: string; label: string}) {
       <Card title={`You own ${called}`}>
         <p className={styles.lead}>This is your team&apos;s invite link. Send it to the person you want to add; they send their wallet address back to you.</p>
         <div className={styles.actions}>
-          <ButtonLink href={`/app/${team}/spenders`} variant="primary">Open Spenders</ButtonLink>
+          <ButtonLink href={`/app/${team}/spenders`} variant="primary">Open Team</ButtonLink>
         </div>
       </Card>
     );
@@ -285,80 +281,5 @@ function Accept({team, label}: {team: string; label: string}) {
       ) : null}
       <p className={styles.note}>The owner should check this address with you before granting it a policy: whoever holds a wallet can spend what its policy allows.</p>
     </form>
-  );
-}
-
-/* --- Join a team ------------------------------------------------------------------------------ */
-
-/** `back`: the way out under the form. Your teams on /app/teams/join; Home on /teams/join, like Nuntio's. */
-export function JoinByLink({back = {href: "/app", label: "Back to your teams"}}: {back?: {href: string; label: string}} = {}) {
-  const router = useRouter();
-  const [value, setValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const id = useId();
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    const read = readPasted(value);
-    if (!read) {
-      setError("That is not a Rein invite link. It looks like …/invite/ followed by letters and numbers.");
-      return;
-    }
-    setError(null);
-    router.push(read.kind === "invite" ? `/invite/${read.token}` : read.path);
-  }
-
-  return (
-    <div className={styles.inline}>
-      <form className={styles.card} aria-labelledby="join-title" onSubmit={submit} noValidate>
-        <p className={styles.eyebrow}>Join a team</p>
-        <h1 className={styles.title} id="join-title">
-          Join a team by its invite link
-        </h1>
-        <p className={styles.lead}>
-          A Rein team has one owner, who adds each person by their wallet address. There is no request to send from here: the invite link is how the owner learns
-          your address.
-        </p>
-        <ol className={styles.steps}>
-          <li>
-            <span>
-              <b>The owner sends you an invite link</b> from Spenders, Invite someone.
-            </span>
-          </li>
-          <li>
-            <span>
-              <b>You open it and sign in with Google.</b> Rein shows your wallet address and copies a reply for the owner.
-            </span>
-          </li>
-          <li>
-            <span>
-              <b>The owner opens your reply</b>, checks the address with you and grants a policy on chain. The team then appears under Your teams.
-            </span>
-          </li>
-        </ol>
-        <div className={styles.field}>
-          <label htmlFor={`${id}-link`}>Invite link</label>
-          <input
-            id={`${id}-link`}
-            className={styles.input}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="https://…/invite/…"
-            spellCheck={false}
-            autoComplete="off"
-            aria-invalid={error ? true : undefined}
-          />
-          {error ? <p className={styles.fieldError}>{error}</p> : <p className={styles.fieldHint}>An owner can paste a reply link here too; it opens Add a person, filled in.</p>}
-        </div>
-        <div className={styles.actions}>
-          <Button type="submit" variant="primary">
-            Open the invite
-          </Button>
-          <Link href={back.href} className={styles.link}>
-            {back.label}
-          </Link>
-        </div>
-      </form>
-    </div>
   );
 }

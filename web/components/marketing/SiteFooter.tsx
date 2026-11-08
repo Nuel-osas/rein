@@ -33,8 +33,6 @@ const PAGES = [
   {href: "/docs", label: "Read the docs"},
   {href: "/demo", label: "Try the live demo"},
   {href: "/security", label: "What stops a payment"},
-  {href: "/build", label: "What we built"},
-  {href: "/stats", label: "Rein in numbers"},
 ] as const;
 
 /**

@@ -11,7 +11,6 @@ import {
   UserGroupIcon,
   CancelCircleIcon,
   Copy01Icon,
-  AiMagicIcon,
   Logout01Icon,
   Mail01Icon,
   TaskDone01Icon,
@@ -19,15 +18,11 @@ import {
   TransactionHistoryIcon,
   UnfoldMoreIcon,
   PlusSignIcon,
-  UserAdd01Icon,
   CpuIcon,
   BankIcon,
-  ContactBookIcon,
-  Globe02Icon,
   CreditCardIcon,
   SentIcon,
   MoreHorizontalIcon,
-  AiChat02Icon,
   Cancel01Icon,
   Analytics01Icon,
 } from "@hugeicons/core-free-icons";
@@ -56,7 +51,6 @@ export function IconArrowLeft(props: IconProps) { return <Glyph {...props} icon=
 export function IconSpenders(props: IconProps) { return <Glyph {...props} icon={UserGroupIcon} />; }
 export function IconRevoke(props: IconProps) { return <Glyph {...props} icon={CancelCircleIcon} />; }
 export function IconCopy(props: IconProps) { return <Glyph {...props} icon={Copy01Icon} />; }
-export function IconAgent(props: IconProps) { return <Glyph {...props} icon={AiMagicIcon} />; }
 export function IconSignOut(props: IconProps) { return <Glyph {...props} icon={Logout01Icon} />; }
 export function IconMail(props: IconProps) { return <Glyph {...props} icon={Mail01Icon} />; }
 /** Navigation symbols stay distinct from inline policy/status/action symbols. */
@@ -65,17 +59,12 @@ export function IconPayments(props: IconProps) { return <Glyph {...props} icon={
 export function IconHistory(props: IconProps) { return <Glyph {...props} icon={TransactionHistoryIcon} />; }
 export function IconSwitch(props: IconProps) { return <Glyph {...props} icon={UnfoldMoreIcon} />; }
 export function IconAdd(props: IconProps) { return <Glyph {...props} icon={PlusSignIcon} />; }
-export function IconUserAdd(props: IconProps) { return <Glyph {...props} icon={UserAdd01Icon} />; }
 export function IconCompute(props: IconProps) { return <Glyph {...props} icon={CpuIcon} />; }
 export function IconBank(props: IconProps) { return <Glyph {...props} icon={BankIcon} />; }
-export function IconRecipients(props: IconProps) { return <Glyph {...props} icon={ContactBookIcon} />; }
-/** The global account (Nuvion): a balance held outside the chain, so a globe, not a bank. */
-export function IconGlobal(props: IconProps) { return <Glyph {...props} icon={Globe02Icon} />; }
 export function IconCard(props: IconProps) { return <Glyph {...props} icon={CreditCardIcon} />; }
-/** Payments abroad. Not `IconPayments`, which is New payment from the account. */
+/** Send abroad, a "Coming soon" row. Not `IconPayments`, which is Pay. */
 export function IconSendAbroad(props: IconProps) { return <Glyph {...props} icon={SentIcon} />; }
 export function IconMore(props: IconProps) { return <Glyph {...props} icon={MoreHorizontalIcon} />; }
-export function IconNini(props: IconProps) { return <Glyph {...props} icon={AiChat02Icon} />; }
 export function IconClose(props: IconProps) { return <Glyph {...props} icon={Cancel01Icon} />; }
-/** Metrics: the team's payments as counts and sums. */
+/** Metrics, a "Coming soon" row. */
 export function IconMetrics(props: IconProps) { return <Glyph {...props} icon={Analytics01Icon} />; }

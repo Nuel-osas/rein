@@ -1,7 +1,7 @@
 // Invite links with no server behind them. A Rein team has one owner, and the owner adds a spender
 // by wallet address, so an invite only has to carry which team and the name the owner chose:
 //
-//   owner  → /app/invite/<base64url {"team","label"}>    (nothing secret: anyone holding it learns
+//   owner  → /invite/<base64url {"team","label"}>        (nothing secret: anyone holding it learns
 //                                                         the team address and a name, both public)
 //   invitee signs in with Google, gets an embedded wallet, and sends back
 //          → /app/<team>/spenders/new?authority=<wallet>&label=<name>
@@ -68,36 +68,4 @@ export function inviteLink(origin: string, token: string): string {
 export function replyLink(origin: string, team: string, authority: string, label: string): string {
   const q = new URLSearchParams({authority, label: label.trim()});
   return `${origin}/app/${team}/spenders/new?${q.toString()}`;
-}
-
-/**
- * What someone pasted on Join a team: an invite (link or bare token) or a reply link meant for the
- * owner. Anything else is null.
- */
-export function readPasted(input: string): {kind: 'invite'; token: string; invite: Invite} | {kind: 'reply'; path: string} | null {
-  const s = input.trim();
-  if (!s) return null;
-  let path = s;
-  let search = '';
-  try {
-    const u = new URL(s);
-    path = u.pathname;
-    search = u.search;
-  } catch {
-    // not a URL: a bare token, or a path
-  }
-  // Nuntio's /invite/<token>, and the /app/invite/<token> links shared before it.
-  const inv = path.match(/(?:^|\/)(?:app\/)?invite\/([A-Za-z0-9_-]+)\/?$/);
-  const token = inv ? inv[1] : /^[A-Za-z0-9_-]+$/.test(path) ? path : null;
-  if (token) {
-    const invite = decodeInvite(token);
-    if (invite) return {kind: 'invite', token, invite};
-  }
-  const reply = path.match(/(?:^|\/)app\/([1-9A-HJ-NP-Za-km-z]{32,44})\/spenders\/new\/?$/);
-  if (reply && parseAddress(reply[1])) {
-    const q = new URLSearchParams(search);
-    const authority = parseAddress(q.get('authority'));
-    if (authority) return {kind: 'reply', path: `/app/${reply[1]}/spenders/new?${new URLSearchParams({authority, label: (q.get('label') ?? '').trim()}).toString()}`};
-  }
-  return null;
 }

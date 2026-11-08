@@ -51,7 +51,7 @@ export function SpenderDetail({by, id}: {by: "address" | "authority"; id: string
   const [busy, setBusy] = useState<string | null>(null);
 
   if (t.at === 0) return <ContentLoading label="Reading this spender from chain…" rows={3} />;
-  const back = by === "authority" ? `${t.base}/agents` : `${t.base}/spenders`;
+  const back = `${t.base}/spenders`;
   if (!s) {
     return (
       <EmptyState
@@ -86,7 +86,7 @@ export function SpenderDetail({by, id}: {by: "address" | "authority"; id: string
   return (
     <div className={page.page}>
       <Link href={back} className={page.back}>
-        <span aria-hidden="true">←</span> {by === "authority" ? "Agents" : "Spenders"}
+        <span aria-hidden="true">←</span> Team
       </Link>
 
       <header className={page.head}>

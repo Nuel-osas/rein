@@ -122,7 +122,7 @@ export function AgentPanel({teamAddress, onActivity}: AgentPanelProps) {
           <h2 className={styles.panelTitle}>AI agent</h2>
         </div>
         <p className={styles.panelNote}>
-          Add an agent under Agents with its own key and policy, then run it with the Rein agent package. To watch one work right now, open the{" "}
+          Add an agent under Team with its own key and policy, then run it with the Rein agent package. To watch one work right now, open the{" "}
           <a className={styles.sectionLink} href="/demo">live demo</a>.
         </p>
       </div>

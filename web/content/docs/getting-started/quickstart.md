@@ -26,7 +26,7 @@ More: [Create a team](create-a-team.md).
 {% step %}
 ### Add test USDC
 
-Open **Money**. Under **Add test USDC**, enter an amount up to 100 and confirm. The devnet faucet mints test USDC straight into your team's vault.
+Open **Home** and press **Claim your $0.30 of AI compute** on the claim card. Once per Google account, Rein moves 0.30 test USDC into your team's vault.
 
 More: [Add test USDC](add-test-usdc.md).
 {% endstep %}
@@ -34,7 +34,7 @@ More: [Add test USDC](add-test-usdc.md).
 {% step %}
 ### Add a spender
 
-Open **Spenders** or **Agents** and add one. A person is added by their Solana wallet address. For an agent, Rein can generate a keypair for you and shows its key once. Set the allowance, the period, the cap per payment, the number of payments, the expiry and the services it may pay.
+Open **Team** and choose **Add person** or **Add agent**. A person is added by their Solana wallet address. For an agent, Rein can generate a keypair for you and shows its key once. Set the allowance, the period, the cap per payment, the number of payments, the expiry and the services it may pay.
 
 More: [Spenders and policies](../using-rein/spenders-and-policies.md).
 {% endstep %}
