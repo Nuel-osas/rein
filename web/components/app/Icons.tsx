@@ -29,6 +29,7 @@ import {
   MoreHorizontalIcon,
   AiChat02Icon,
   Cancel01Icon,
+  Analytics01Icon,
 } from "@hugeicons/core-free-icons";
 
 /** One family across marketing, onboarding and the workspace. Status also has a text label. */
@@ -76,3 +77,5 @@ export function IconSendAbroad(props: IconProps) { return <Glyph {...props} icon
 export function IconMore(props: IconProps) { return <Glyph {...props} icon={MoreHorizontalIcon} />; }
 export function IconNini(props: IconProps) { return <Glyph {...props} icon={AiChat02Icon} />; }
 export function IconClose(props: IconProps) { return <Glyph {...props} icon={Cancel01Icon} />; }
+/** Metrics: the team's payments as counts and sums. */
+export function IconMetrics(props: IconProps) { return <Glyph {...props} icon={Analytics01Icon} />; }
