@@ -86,9 +86,9 @@
   --sl-ink-2: #4a4553;
   /* The pale icy purple the light sections start from, and the near-white they
      fade to. */
-  --sl-ice: #e9e5f5;
-  --sl-ice-2: #f3f0fa;
-  --sl-paper: #f6f7f6;
+  --sl-ice: #ffffff;
+  --sl-ice-2: #ffffff;
+  --sl-paper: #ffffff;
   /* The dark sections. */
   --sl-black: #050506;
   --sl-panel: #131118;
