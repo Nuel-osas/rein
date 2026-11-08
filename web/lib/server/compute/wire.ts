@@ -12,6 +12,7 @@ import { store, type Store } from '@/lib/server/store';
 import { recordRun } from './record';
 import { readComputeEnv, REFUND_TTL_SEC, type ComputeService, type Deps, type Quote, type RefundOutcome } from './core';
 import { fakeBackend, zgBackend } from './backend';
+import { routerBackend } from './router';
 
 let mintCache: { mint: string; at: number } | null = null;
 async function mint(): Promise<string | null> {
@@ -125,8 +126,12 @@ export function computeDeps(): Deps | null {
     backend: async () => {
       // Dev only (env.fake is forced off in production). COMPUTE_FAKE_FAIL=1 exercises the refund path.
       if (env.fake) return fakeBackend({ fail: process.env.COMPUTE_FAKE_FAIL === '1' });
+      // 0G Private Computer (the Router, one sk- key funded at pc.0g.ai) when configured; otherwise
+      // the 0G Compute SDK with a funded wallet.
+      const routerKey = process.env.ZG_ROUTER_API_KEY?.trim();
+      if (routerKey) return routerBackend(routerKey);
       const key = process.env.ZG_PRIVATE_KEY?.trim();
-      if (!key) return { error: 'no 0G wallet key on this server' };
+      if (!key) return { error: 'no 0G Router key or 0G wallet key on this server' };
       const maxLedger = Number(process.env.ZG_MAX_LEDGER_ZG ?? '10');
       return zgBackend(key, Number.isFinite(maxLedger) && maxLedger > 0 ? maxLedger : 10);
     },
