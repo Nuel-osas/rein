@@ -11,6 +11,7 @@ import list from "../ListView.module.css";
 import styles from "../pages/spenders.module.css";
 import {initials} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
+import {InviteControl} from "./Invite";
 
 /** Spenders and agents share one list; agents link by their key, people by their Spender account. */
 export function SpenderList({kind}: {kind?: Kind}) {
@@ -41,6 +42,7 @@ export function SpenderList({kind}: {kind?: Kind}) {
           ) : undefined
         }
       />
+      {t.isOwner && !agents ? <InviteControl team={t.address} teamName={t.team?.name ?? null} /> : null}
       <div className={`${list.card} ${styles.table}`}>
         <div className={list.head} aria-hidden="true">
           <span>Name</span>
