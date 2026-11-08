@@ -68,3 +68,5 @@
 .result[data-refunded] { box-shadow: inset 3px 0 0 var(--color-blocked-text), var(--app-ring); }
 .resultHead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; font-size: var(--text-meta); color: var(--color-text-secondary); }
 .resultText { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-small); line-height: 1.6; color: var(--color-text-primary); max-block-size: 24rem; overflow: auto; }
+/* Side-by-side cards share a row height; each packs its own content to the top. */
+.cards > * { align-content: start; }

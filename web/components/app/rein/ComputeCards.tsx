@@ -218,7 +218,8 @@ export function ComputeSteps({steps}: {steps: Steps}) {
 export function stepsFor(payment: Payment | null | undefined, outcome: Outcome | null, now: number): Steps {
   const s: Steps = {...idleSteps};
   if (payment) s.price = ["done", usdc(payment.amount)];
-  else if (outcome) s.price = ["done", "Quoted"];
+  // Only an answer that implies a quote exists marks it; "unknown" or an error says nothing about one.
+  else if (outcome && ["done", "refunded", "running", "waiting", "unpaid", "not_run"].includes(outcome.kind)) s.price = ["done", "Quoted"];
   if (payment) {
     if (payment.status === "paid" || payment.status === "settled") s.pay = ["done", payment.status === "settled" ? "Approved by you" : "Inside its policy"];
     else if (payment.status === "pending" && now < payment.deadline) s.pay = ["wait", "Waiting for your approval"];
