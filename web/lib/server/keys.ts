@@ -12,6 +12,8 @@ const SOURCES = {
   demoOwner: { env: 'REIN_DEMO_OWNER_SECRET', file: 'demo-owner.json' },
   mintAuthority: { env: 'REIN_MINT_AUTHORITY_SECRET', file: 'mint-authority.json' },
   demoAgent: { env: 'REIN_DEMO_AGENT_SECRET', file: 'demo-agent.json' },
+  /** The claim pool's token-account owner (scripts/pool-setup.ts). */
+  pool: { env: 'REIN_POOL_SECRET', file: 'pool.json' },
   /** Owns the compute gateway's test-USDC account (the claude-run / codex-run payee) and signs refunds. */
   gateway: { env: 'REIN_GATEWAY_SECRET', file: 'gateway.json' },
 } as const;

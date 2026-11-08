@@ -16,6 +16,7 @@ import {PaymentPill, spenderName} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
 import rein from "../rein/rein.module.css";
 import styles from "../pages/compute.module.css";
+import {ComputePanel, useComputeSetup} from "../rein/ComputeCards";
 
 /** The registry ids this page counts as compute. Anything else the agent buys is under Activity. */
 export const COMPUTE_IDS = ["llm-inference", "gpu-hour"] as const;
@@ -29,10 +30,16 @@ const FACTS = ["Paid from the team vault", "Checked by the Rein program", "Over 
 
 export function Compute() {
   const t = useTeamPage();
+  const {agentKey, catalog} = useComputeSetup(t.address);
   if (t.at === 0) return <ContentLoading label="Reading compute purchases from chain…" rows={3} />;
 
   const services = t.services ? COMPUTE_IDS.map((id) => ({id, service: t.services!.find((s) => s.id === id) ?? null})) : null;
-  const addresses = new Set((services ?? []).flatMap((x) => (x.service ? [x.service.address] : [])));
+  // Purchases count the registry's legacy compute ids and every service the gateway's catalog sells.
+  const catalogIds = new Set(catalog?.ok ? catalog.services.map((c) => c.id) : []);
+  const addresses = new Set([
+    ...(services ?? []).flatMap((x) => (x.service ? [x.service.address] : [])),
+    ...(t.services ?? []).filter((s) => catalogIds.has(s.id)).map((s) => s.address),
+  ]);
   const purchases = t.payments && services ? t.payments.filter((p) => addresses.has(p.service)) : null;
   const totals = purchases ? new Map(groupBy(purchases, (p) => p.service, t.now).map((g) => [g.key, g])) : null;
   const agents = t.spenders?.filter((s) => s.kind === "agent" && s.status !== "revoked") ?? null;
@@ -43,8 +50,8 @@ export function Compute() {
         <PageHeader
           kind="compute"
           title="AI compute"
-          description="What this team's AI agents buy to do their work: model inference and GPU time from the service registry, each payment under the agent's own policy."
-          action={<ButtonLink href={`${t.base}/assistant`} variant="primary">Open the assistant</ButtonLink>}
+          description="Claim your $0.30 of test USDC, set your Rein agent's budget, and let it buy model runs on the 0G Compute Network. Every run is a payment under the agent's own policy."
+          action={<ButtonLink href={`${t.base}/assistant`} variant="secondary">Open the assistant</ButtonLink>}
         />
         <ul className={styles.facts} aria-label="About these purchases">
           {FACTS.map((f) => (
@@ -54,6 +61,8 @@ export function Compute() {
           ))}
         </ul>
       </div>
+
+      <ComputePanel teamAddress={t.address} />
 
       {services === null ? (
         <EmptyState title="Could not read the service registry" body="This is a problem reaching the network, not a registry without compute. Nothing was charged." />

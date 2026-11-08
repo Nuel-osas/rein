@@ -12,6 +12,7 @@ import list from "../ListView.module.css";
 import page from "../pages/dashboard.module.css";
 import {Explorer, PaymentPill, initials, serviceName, spenderName} from "../rein/bits";
 import {ApprovalsList} from "../rein/ApprovalsList";
+import {ClaimCard} from "../rein/ClaimCard";
 import {useTeamPage} from "../rein/context";
 import styles from "../rein/rein.module.css";
 
@@ -87,6 +88,8 @@ export function Dashboard() {
           </span>
         </div>
       </div>
+
+      {t.isOwner ? <ClaimCard teamAddress={t.address} onClaimed={refresh} /> : null}
 
       <section className={styles.section} aria-labelledby="needs-you">
         <div className={styles.sectionHead}>

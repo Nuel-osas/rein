@@ -21,7 +21,15 @@ export function TeamScope({team, base, children}: {team: string; base?: string; 
 export function useTeamPage() {
   const scope = useContext(Ctx);
   if (!scope) throw new Error("useTeamPage outside TeamScope");
-  const {team, base} = scope;
+  return useTeamView(scope.team, scope.base);
+}
+
+/**
+ * The same view of any team by address, with no TeamScope needed, for components a route outside
+ * /app/<team> renders (the signed-in user's own /compute, for one). Shares the one poller per team.
+ * `base` prefixes the links a screen builds: /app/<team> by default, "" for one's own team.
+ */
+export function useTeamView(team: string, base: string = `/app/${team}`) {
   const t = useTeam(team, 1500);
   const {address} = useWallet();
   const now = useNow();

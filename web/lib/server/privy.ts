@@ -6,6 +6,11 @@ import { PrivyClient } from '@privy-io/node';
 
 let client: PrivyClient | null | undefined;
 
+/** True when this server can verify Privy tokens (both the app id and the secret are set). */
+export function privyConfigured(): boolean {
+  return privy() !== null;
+}
+
 function privy(): PrivyClient | null {
   if (client !== undefined) return client;
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim();
@@ -40,17 +45,29 @@ export async function privySession(req: Request): Promise<PrivySession> {
 }
 
 /**
- * The Solana wallet addresses linked to a Privy user (embedded or external), read from Privy's API.
- * Null when the server has no Privy secret or the read failed: callers then refuse, never assume.
+ * The user's Privy embedded Solana wallets, read from Privy's API (never from the client), or null
+ * when the read fails or this server cannot ask (unknown, which callers refuse on).
  */
+const walletCache = new Map<string, { wallets: string[]; at: number }>();
+
 export async function privySolanaWallets(userId: string): Promise<string[] | null> {
   const p = privy();
   if (!p) return null;
+  const hit = walletCache.get(userId);
+  if (hit && Date.now() - hit.at < 60_000) return hit.wallets;
   try {
     const user = await p.users()._get(userId);
-    return user.linked_accounts
-      .filter((a): a is typeof a & { address: string } => a.type === 'wallet' && (a as { chain_type?: string }).chain_type === 'solana' && typeof (a as { address?: unknown }).address === 'string')
-      .map((a) => a.address);
+    const wallets = user.linked_accounts.flatMap((a) =>
+      a.type === 'wallet' && 'chain_type' in a && a.chain_type === 'solana' && 'connector_type' in a && a.connector_type === 'embedded' && typeof a.address === 'string'
+        ? [a.address]
+        : [],
+    );
+    // A read with no wallet yet is not cached: Privy may still be creating it.
+    if (wallets.length) {
+      if (walletCache.size > 5_000) walletCache.clear();
+      walletCache.set(userId, { wallets, at: Date.now() });
+    }
+    return wallets;
   } catch {
     return null;
   }

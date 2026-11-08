@@ -9,10 +9,21 @@ import {Button} from "../Button";
 import {PageHeader} from "../PageHeader";
 import {StatusLine, sentStatus, type Status} from "../rein/bits";
 import {SignInPrompt} from "../WalletButton";
+import {TeamSetup} from "../rein/TeamSetup";
 import styles from "../rein/rein.module.css";
 
-/** `openHref`: where the new team opens once confirmed. /app/<team> by default; /dashboard on /teams/new. */
+/**
+ * /teams/new and /app/teams/new. A signed-in person with no team gets "Setting up your team" (one
+ * transaction, the team and its Rein agent); if that cannot run, the manual form below is still there.
+ * `openHref`: where the new team opens once confirmed. /dashboard by default.
+ */
 export function CreateTeam({openHref}: {openHref?: string} = {}) {
+  const {publicKey} = useWallet();
+  if (!publicKey) return <ManualCreateTeam openHref={openHref} />;
+  return <TeamSetup next={openHref ?? "/dashboard"} fallback={<ManualCreateTeam openHref={openHref} />} />;
+}
+
+function ManualCreateTeam({openHref}: {openHref?: string} = {}) {
   const {publicKey, payer, send, sponsor} = useWallet();
   const router = useRouter();
   const [name, setName] = useState("");

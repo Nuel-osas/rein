@@ -42,6 +42,21 @@ Registered by `pnpm seed` with `register_service`. Each payee is a fresh keypair
 | Ada, operations | authority `EoGi1axnbXHvVYEX68cLHZPxxxY8W8zogywC2RtCjVhd`, spender `4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK` | Cap 25, 100 per week, all services |
 | Sponsor (fee payer) | `hEczh4E1DGuGPTikSLGZKZUAxSAF7Cw1vaSNrxatfjF` | Pays every fee and payment-record rent. Topped up to 0.78 SOL on 2026-11-08 ([`61A8Fcz…`](https://explorer.solana.com/tx/61A8FczD5J4cvrgaEDzzogsimF1PeSEwttfxkjXAttjMV3UKe6jwx9QSDuoKew3x6hYZUxQB4s4KKEapKhuTsftz?cluster=devnet)). Each payment record costs about 0.003 SOL of rent |
 
+## Claim pool (devnet, 2026-11-08)
+
+`POST /api/claim` gives each Google account 0.30 test USDC, once ever, into the vault of the team its
+embedded wallet owns: its $0.30 of AI compute. Two caps: the route's `CLAIM_TOTAL_CAP` (default 16
+claims, about $5 of the 0G budget) and the pool's balance of 6 USDC (20 claims), which nothing tops
+up: `pnpm pool:setup` mints only into a never-funded pool, and a drained pool stays drained unless
+someone runs it with `--refill`.
+
+| What | Value | Verified by |
+|---|---|---|
+| Pool authority | `5VMePooDsQpnkyRtekaGdnR2UHUcZ2eWboza5tt9mqaN` | Public key of `~/.config/rein/pool.json`, created by `scripts/pool-setup.ts` (mode 600, never in the repo). Holds no SOL; the sponsor pays each claim's fee. Production reads it from `REIN_POOL_SECRET` |
+| Pool token account | `GTjreGPro3Dpg5rdn5EpqHA749yA6CK5uYPeTySxfwoZ` | ATA of (test USDC mint, pool authority). `spl-token display GTjre… -u devnet`: mint `Cwc241qD…`, owner `5VMePoo…`, initialized, no delegate, no close authority. Created in [`5fuDqPzW…`](https://explorer.solana.com/tx/5fuDqPzWL5iw8bHqNdPRTerW7XeNKN6DB8ANDKXyECKD51X1Ut491UvAMiuLNBh2aNmV3nJjzTnX595KN2dR25aG?cluster=devnet), rent paid by the CLI wallet |
+| Funding | 6 test USDC | First funded with 50 by `mint_to` in [`4XPFwcWP…`](https://explorer.solana.com/tx/4XPFwcWP3giASuHHZy941zuPjtrqtRv6SMGeWoWG1ngGQgArXKrBQ6jZAgHawM32HE2RupN2AgTVVmNt3y4wijGR?cluster=devnet) under the earlier 0.10-a-day plan; one 0.10 test claim went to the demo vault ([`5jwjn5gW…`](https://explorer.solana.com/tx/5jwjn5gWnMRHAbRo4MzMvA9CysfnEg4r7KNKKnRadGpxCHCmcBY8Uc2ViF999be3X7sn15GdhAjx7rPr4BqJLnWU?cluster=devnet)); then 43.9 were burned by the pool key in [`5e9FjPZC…`](https://explorer.solana.com/tx/5e9FjPZCVZY8wbMiaN1Xsft4omqRsM3q3y5YnHdKYyKFae3umqJxgbnHENzMCF5EeNJfq665EjFGinBrMGXoPtY3?cluster=devnet), leaving 6. `spl-token balance --address GTjre… -u devnet` printed 6, and a re-run of the script printed "already funded, 20 claims left" and minted nothing |
+| Claim amount | 300000 base units (0.30 test USDC), once per Privy user and once per wallet | `CLAIM_UNITS` in `web/lib/server/claim.ts` |
+
 ## Model
 
 | What | Value | Verified by |
