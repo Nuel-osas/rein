@@ -173,8 +173,8 @@ export interface Deps {
   now: () => number;
   /** The Service account for an id: its PDA, payee token, whether it is active; null if absent; 'error' if unread. */
   readService: (id: ComputeService) => Promise<{ address: string; payeeToken: string; active: boolean } | null | 'error'>;
-  /** The gateway's own token account: the only payee a compute quote accepts. */
-  gatewayToken: () => Promise<string | null>;
+  /** The gateway's own token account: the only payee a compute quote accepts. null: no gateway key; 'error': unread. */
+  gatewayToken: () => Promise<string | null | 'error'>;
   spenderPda: (team: string, authority: string) => string;
   paymentPda: (spender: string, intent: string) => string;
   /** The Payment account and its owner; null when absent; 'error' when the read failed. */
@@ -213,7 +213,8 @@ async function backendOf(d: Deps): Promise<ComputeBackendLike | { error: string 
 /** A live price for one service: its registry entry, 0G's worst case now, and the ledger floor. */
 async function livePrice(d: Deps, service: ComputeService) {
   const [svc, gatewayToken] = await Promise.all([d.readService(service), d.gatewayToken()]);
-  if (svc === 'error' || gatewayToken === null) return { ok: false as const, status: 503, error: 'Could not read the service registry. Try again.' };
+  if (gatewayToken === null) return { ok: false as const, status: 503, error: 'Compute is not configured on this server (no gateway key).' };
+  if (svc === 'error' || gatewayToken === 'error') return { ok: false as const, status: 503, error: 'Could not read the service registry. Try again.' };
   if (!svc) return { ok: false as const, status: 503, error: `${service} is not registered on chain.` };
   if (!svc.active) return { ok: false as const, status: 503, error: `${service} is suspended in the registry.` };
   if (svc.payeeToken !== gatewayToken) return { ok: false as const, status: 503, error: `${service} pays an account this gateway does not hold; refusing to quote.` };

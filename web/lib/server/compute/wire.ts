@@ -8,7 +8,8 @@ import { PROGRAM_ID, USDC_DECIMALS } from '@/lib/chain';
 import { pda, readConfig, readTeam, toPayment, toService } from '@/lib/rein';
 import { serverKey } from '@/lib/server/keys';
 import { broadcast, serverConnection } from '@/lib/server/send';
-import { ensureComputeRuns, store, type Store } from '@/lib/server/store';
+import { store, type Store } from '@/lib/server/store';
+import { recordRun } from './record';
 import { readComputeEnv, REFUND_TTL_SEC, type ComputeService, type Deps, type Quote, type RefundOutcome } from './core';
 import { fakeBackend, zgBackend } from './backend';
 
@@ -21,10 +22,11 @@ async function mint(): Promise<string | null> {
   return c.mint;
 }
 
-async function gatewayToken(): Promise<string | null> {
+async function gatewayToken(): Promise<string | null | 'error'> {
   const gw = serverKey('gateway');
+  if (!gw) return null;
   const m = await mint();
-  if (!gw || !m) return null;
+  if (!m) return 'error';
   return getAssociatedTokenAddressSync(new PublicKey(m), gw.publicKey).toBase58();
 }
 
@@ -102,18 +104,7 @@ function makeRefund(kv: Store) {
 
 function makeRecord(kv: Store): Deps['record'] {
   const sql = kv.sql;
-  if (!sql) return undefined;
-  return async (r) => {
-    await ensureComputeRuns(sql);
-    await sql`
-      INSERT INTO compute_runs (intent, team, spender, service, amount, status, result_hash, refund_sig)
-      VALUES (${r.intent}, ${r.team}, ${r.spender}, ${r.service}, ${r.amount.toString()}, ${r.status}, ${r.resultHash ?? null}, ${r.refundSig ?? null})
-      ON CONFLICT (intent) DO UPDATE SET
-        status = EXCLUDED.status,
-        result_hash = COALESCE(EXCLUDED.result_hash, compute_runs.result_hash),
-        refund_sig = COALESCE(EXCLUDED.refund_sig, compute_runs.refund_sig),
-        updated_at = now()`;
-  };
+  return sql ? (r) => recordRun(sql, r) : undefined;
 }
 
 /** The gateway's dependencies, or null when the store is not configured (answer 503). */
@@ -132,7 +123,8 @@ export function computeDeps(): Deps | null {
     paymentPda: (spender, intent) => pda.payment(new PublicKey(spender), intent).toBase58(),
     readPayment,
     backend: async () => {
-      if (env.fake) return fakeBackend();
+      // Dev only (env.fake is forced off in production). COMPUTE_FAKE_FAIL=1 exercises the refund path.
+      if (env.fake) return fakeBackend({ fail: process.env.COMPUTE_FAKE_FAIL === '1' });
       const key = process.env.ZG_PRIVATE_KEY?.trim();
       if (!key) return { error: 'no 0G wallet key on this server' };
       const maxLedger = Number(process.env.ZG_MAX_LEDGER_ZG ?? '10');

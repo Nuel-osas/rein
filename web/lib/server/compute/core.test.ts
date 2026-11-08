@@ -307,3 +307,15 @@ describe('memory store', () => {
     await assert.rejects(kv.incrBy('s', 1n));
   });
 });
+
+describe('gateway key', () => {
+  it('says compute is not configured when the gateway key is missing', async () => {
+    const h = harness();
+    h.d.gatewayToken = async () => null;
+    const r = await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' });
+    assert.equal(r.status, 503);
+    assert.match(String(r.body.error), /no gateway key/);
+    h.d.gatewayToken = async () => 'error';
+    assert.match(String((await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).body.error), /Could not read/);
+  });
+});
