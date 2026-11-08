@@ -108,7 +108,7 @@ export function SignInPrompt({action, note}: {action: string; note?: string}) {
       <p>{configured ? `Sign in to ${action}.` : `Sign-in is not configured here, so you cannot ${action}.`}{note ? ` ${note}` : ""}</p>
       {configured ? (
         <div className={styles.promptButton}>
-          <WalletButton compact label={`Sign in to ${action}`} />
+          <WalletButton compact label="Sign in" />
         </div>
       ) : null}
     </div>
