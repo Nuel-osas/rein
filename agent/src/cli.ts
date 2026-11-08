@@ -1,12 +1,14 @@
 /**
  * pnpm agent <research|overspend|injection|"free text task">
  *
- * Env: GROQ_API_KEY, REIN_RPC_URL, REIN_TEAM, optional REIN_PROGRAM_ID, REIN_AGENT_MODEL,
+ * Env: GROQ_API_KEY, REIN_RPC_URL, REIN_TEAM, optional REIN_PROGRAM_ID, REIN_AGENT_MODEL, REIN_GATEWAY_URL
+ * (the compute gateway, e.g. https://rein-navy.vercel.app: turns on the compute tools),
  * REIN_AGENT_SECRET and REIN_SPONSOR_SECRET (JSON byte arrays; otherwise ~/.config/rein/
  * demo-agent.json and sponsor.json).
  */
 import { PublicKey } from '@solana/web3.js';
 import { runAgent } from './agent.ts';
+import { httpGateway } from './compute.ts';
 import { formatUsdc } from './amount.ts';
 import type { AgentEvent } from './events.ts';
 import { DEFAULT_MODEL } from './groq.ts';
@@ -74,7 +76,9 @@ async function main(): Promise<number> {
   console.log(dim(`model ${model} · agent ${agent.publicKey.toBase58()} · team ${team.toBase58()} · ${rpc}\n`));
 
   let failed = false;
-  for await (const e of runAgent({ task, rpcUrl: rpc, programId: process.env.REIN_PROGRAM_ID, team, agent, sponsor, model, probe: scenario?.probe })) {
+  const gatewayUrl = process.env.REIN_GATEWAY_URL?.trim();
+  const compute = gatewayUrl ? httpGateway(gatewayUrl) : undefined;
+  for await (const e of runAgent({ task, rpcUrl: rpc, programId: process.env.REIN_PROGRAM_ID, team, agent, sponsor, model, probe: scenario?.probe, compute })) {
     print(e, rpc);
     if (e.type === 'final' && e.error) failed = true;
   }

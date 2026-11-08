@@ -9,6 +9,7 @@ export { remainingOf, rollPeriod, allowanceLeft, type SpenderView, type Policy }
 export { errorFromCode, errorFromLogs, decodeTxError, describeError, type DecodedError } from './errors.ts';
 export { ReinChain, SERVICE_ID_RE } from './chain.ts';
 export { payService, buildPayIx, clampMemo, type PayOutcome, type PayParams } from './pay.ts';
-export { TOOL_SPECS } from './tools.ts';
+export { TOOL_SPECS, COMPUTE_TOOL_SPECS, buyCompute, quoteCompute, computeResult, type ToolContext } from './tools.ts';
+export { httpGateway, trimOutput, COMPUTE_INTENT_RE, OUTPUT_MAX_CHARS, type ComputeGateway, type GatewayReply } from './compute.ts';
 export { DEFAULT_MODEL } from './groq.ts';
 export { loadKeypair, keypairFromJson } from './keys.ts';
