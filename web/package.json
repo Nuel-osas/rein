@@ -14,6 +14,7 @@
     "@coral-xyz/anchor": "0.31.1",
     "@hugeicons/core-free-icons": "4.3.2",
     "@hugeicons/react": "1.1.10",
+    "@rein/agent": "workspace:*",
     "@solana/spl-token": "0.4.14",
     "@solana/wallet-adapter-base": "0.9.27",
     "@solana/wallet-adapter-react": "0.15.39",

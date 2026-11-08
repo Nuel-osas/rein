@@ -11,6 +11,7 @@ const SOURCES = {
   sponsor: { env: 'REIN_SPONSOR_SECRET', file: 'sponsor.json' },
   demoOwner: { env: 'REIN_DEMO_OWNER_SECRET', file: 'demo-owner.json' },
   mintAuthority: { env: 'REIN_MINT_AUTHORITY_SECRET', file: 'mint-authority.json' },
+  demoAgent: { env: 'REIN_DEMO_AGENT_SECRET', file: 'demo-agent.json' },
 } as const;
 
 export type KeyName = keyof typeof SOURCES;
