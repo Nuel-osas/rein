@@ -50,5 +50,20 @@
       "price": "12"
     }
   },
-  "seededAt": "2026-11-08T03:39:43.255Z"
+  "seededAt": "2026-11-08T03:39:43.255Z",
+  "compute": {
+    "gateway": "HquphcsMCW2XWac5NhdfnqJJi1rv6gxwKew7gqvAJBDV",
+    "gatewayToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+    "services": {
+      "ai-chat": {
+        "address": "ANBMUJg453YEQM6dGWuZtkvFHRa9ina2dDT5wegBw9s8",
+        "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+        "label": "0G Chat (0GM-1.0-35B-A3B)",
+        "model": "0GM-1.0-35B-A3B",
+        "price": "0.01",
+        "registerTx": "46LZLaFksDTryRmjqwheDM62hd2h3cuzhABXmz5m5MEd6pBUzHQNhzho52Au3Ce1CrUo37TGrmABLnNkcEiXSbYS"
+      }
+    },
+    "setupAt": "2026-11-08T14:13:27.101Z"
+  }
 }
