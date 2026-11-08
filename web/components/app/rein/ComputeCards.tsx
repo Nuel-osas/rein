@@ -16,23 +16,67 @@ import {Button, ButtonLink} from "../Button";
 import {StatusPill} from "../ui";
 import {SignInPrompt} from "../WalletButton";
 import {Explorer, StatusLine, sentStatus, type Status} from "./bits";
-import type {TeamPage} from "./context";
+import {ClaimCard} from "./ClaimCard";
+import {useTeamView} from "./context";
 import styles from "./rein.module.css";
 import card from "../pages/compute-run.module.css";
 
-/** The agent key and the catalog, read once per page. */
+// One request per team for the agent key and one for the catalog, shared by every card on a page for
+// a minute. A failed answer is not kept, so the next mount asks again.
+const keyCache = new Map<string, {at: number; p: Promise<AgentKey>}>();
+let catalogCache: {at: number; p: Promise<Catalog>} | null = null;
+
+function cachedKey(team: string): Promise<AgentKey> {
+  const hit = keyCache.get(team);
+  if (hit && Date.now() - hit.at < 60_000) return hit.p;
+  const p = fetchAgentKey(team).then((k) => {
+    if (!k.ok) keyCache.delete(team);
+    return k;
+  });
+  keyCache.set(team, {at: Date.now(), p});
+  return p;
+}
+
+function cachedCatalog(): Promise<Catalog> {
+  if (catalogCache && Date.now() - catalogCache.at < 60_000) return catalogCache.p;
+  const p = fetchCatalog().then((c) => {
+    if (!c.ok) catalogCache = null;
+    return c;
+  });
+  catalogCache = {at: Date.now(), p};
+  return p;
+}
+
+/** The team's agent key and the gateway's catalog. undefined while loading. */
 export function useComputeSetup(team: string) {
   const [agentKey, setAgentKey] = useState<AgentKey | undefined>(undefined);
   const [catalog, setCatalog] = useState<Catalog | undefined>(undefined);
   useEffect(() => {
     let stop = false;
-    fetchAgentKey(team).then((k) => !stop && setAgentKey(k));
-    fetchCatalog().then((c) => !stop && setCatalog(c));
+    cachedKey(team).then((k) => !stop && setAgentKey(k));
+    cachedCatalog().then((c) => !stop && setCatalog(c));
     return () => {
       stop = true;
     };
   }, [team]);
   return {agentKey, catalog};
+}
+
+/**
+ * The whole compute block for one team: the claim card and the agent's budget side by side, then the
+ * run panel. Takes only the team's address, so /app/<team>/compute and a route for the signed-in
+ * user's own team can both render it.
+ */
+export function ComputePanel({teamAddress}: {teamAddress: string}) {
+  return (
+    <>
+      <div className={card.cards}>
+        <ClaimCard teamAddress={teamAddress} />
+        <AgentBudgetCard teamAddress={teamAddress} />
+      </div>
+      <ComputeRunPanel teamAddress={teamAddress} />
+    </>
+  );
 }
 
 function date(unix: number) {
@@ -41,7 +85,9 @@ function date(unix: number) {
 
 // ------------------------------------------------------------------------------ the budget ---
 
-export function AgentBudgetCard({t, agentKey, catalog}: {t: TeamPage; agentKey: AgentKey | undefined; catalog: Catalog | undefined}) {
+export function AgentBudgetCard({teamAddress}: {teamAddress: string}) {
+  const t = useTeamView(teamAddress);
+  const {agentKey, catalog} = useComputeSetup(teamAddress);
   const {publicKey, payer, send} = useWallet();
   const [status, setStatus] = useState<Status>(null);
   const [busy, setBusy] = useState(false);
@@ -282,7 +328,9 @@ function describe(e: Wire): [string, string] {
 
 const PROMPT_MAX = 400;
 
-export function ComputeRunPanel({t, agentKey, catalog}: {t: TeamPage; agentKey: AgentKey | undefined; catalog: Catalog | undefined}) {
+export function ComputeRunPanel({teamAddress}: {teamAddress: string}) {
+  const t = useTeamView(teamAddress);
+  const {agentKey, catalog} = useComputeSetup(teamAddress);
   const {authHeaders, authenticated} = useWallet();
   const [prompt, setPrompt] = useState("");
   const [service, setService] = useState<string>("");
@@ -493,7 +541,8 @@ export function ComputeRunPanel({t, agentKey, catalog}: {t: TeamPage; agentKey: 
 
 // --------------------------------------------------------------------------- one result ---
 
-export function ComputeResultView({t, intent}: {t: TeamPage; intent: string}) {
+export function ComputeResultView({teamAddress, intent}: {teamAddress: string; intent: string}) {
+  const t = useTeamView(teamAddress);
   const {authHeaders} = useWallet();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [busy, setBusy] = useState(false);

@@ -16,7 +16,7 @@ export function ComputeRun({intent}: {intent: string}) {
   return (
     <div className={styles.page}>
       <PageHeader kind="compute" title="Compute run" description="Price, payment, run and delivery for one purchase. The payment is read from chain; the answer comes from the compute gateway." />
-      <ComputeResultView t={t} intent={intent} />
+      <ComputeResultView teamAddress={t.address} intent={intent} />
       <Link href={`${t.base}/compute`} className={rein.sectionLink}>
         ← AI compute
       </Link>

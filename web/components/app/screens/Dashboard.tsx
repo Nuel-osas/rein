@@ -89,7 +89,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {t.isOwner ? <ClaimCard team={t.address} isOwner={t.isOwner} onClaimed={refresh} /> : null}
+      {t.isOwner ? <ClaimCard teamAddress={t.address} onClaimed={refresh} /> : null}
 
       <section className={styles.section} aria-labelledby="needs-you">
         <div className={styles.sectionHead}>

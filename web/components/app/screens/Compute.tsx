@@ -16,9 +16,7 @@ import {PaymentPill, spenderName} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
 import rein from "../rein/rein.module.css";
 import styles from "../pages/compute.module.css";
-import run from "../pages/compute-run.module.css";
-import {ClaimCard} from "../rein/ClaimCard";
-import {AgentBudgetCard, ComputeRunPanel, useComputeSetup} from "../rein/ComputeCards";
+import {ComputePanel, useComputeSetup} from "../rein/ComputeCards";
 
 /** The registry ids this page counts as compute. Anything else the agent buys is under Activity. */
 export const COMPUTE_IDS = ["llm-inference", "gpu-hour"] as const;
@@ -64,11 +62,7 @@ export function Compute() {
         </ul>
       </div>
 
-      <div className={run.cards}>
-        <ClaimCard team={t.address} isOwner={t.isOwner} onClaimed={() => void t.refresh()} />
-        <AgentBudgetCard t={t} agentKey={agentKey} catalog={catalog} />
-      </div>
-      <ComputeRunPanel t={t} agentKey={agentKey} catalog={catalog} />
+      <ComputePanel teamAddress={t.address} />
 
       {services === null ? (
         <EmptyState title="Could not read the service registry" body="This is a problem reaching the network, not a registry without compute. Nothing was charged." />

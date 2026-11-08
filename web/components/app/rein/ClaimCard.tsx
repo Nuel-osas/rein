@@ -12,6 +12,7 @@ import {Button} from "../Button";
 import {StatusPill} from "../ui";
 import {SignInPrompt} from "../WalletButton";
 import {Explorer, StatusLine, type Status} from "./bits";
+import {useTeamView} from "./context";
 import styles from "./rein.module.css";
 import card from "../pages/compute-run.module.css";
 
@@ -29,7 +30,11 @@ type ClaimInfo = {
 
 const units = (s: string | null | undefined): bigint | null => (s && /^\d+$/.test(s) ? BigInt(s) : null);
 
-export function ClaimCard({team, isOwner, onClaimed}: {team: string; isOwner: boolean; onClaimed?: () => void}) {
+/** Renders anywhere: /app/<team>, the team home, or a route for the signed-in user's own team. */
+export function ClaimCard({teamAddress, onClaimed}: {teamAddress: string; onClaimed?: () => void}) {
+  const team = teamAddress;
+  const view = useTeamView(teamAddress);
+  const isOwner = view.isOwner;
   const {authenticated, authHeaders} = useWallet();
   const [info, setInfo] = useState<ClaimInfo | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -70,6 +75,7 @@ export function ClaimCard({team, isOwner, onClaimed}: {team: string; isOwner: bo
     } finally {
       setBusy(false);
       void load();
+      void view.refresh();
       onClaimed?.();
     }
   }
@@ -122,7 +128,7 @@ export function ClaimCard({team, isOwner, onClaimed}: {team: string; isOwner: bo
       ) : !authenticated ? (
         <SignInPrompt action="claim your $0.30 of AI compute" />
       ) : !isOwner ? (
-        <p className={styles.panelNote}>Only this team&apos;s owner can claim into its vault.</p>
+        <p className={styles.panelNote}>{view.team ? "Only this team’s owner can claim into its vault." : view.missing ? "This address is not a Rein team." : "Checking who owns this team…"}</p>
       ) : (
         <div className={styles.actions}>
           <Button

@@ -17,6 +17,14 @@ export function TeamScope({team, children}: {team: string; children: ReactNode})
 export function useTeamPage() {
   const team = useContext(Ctx);
   if (!team) throw new Error("useTeamPage outside TeamScope");
+  return useTeamView(team);
+}
+
+/**
+ * The same view of any team by address, with no TeamScope needed, for components a route outside
+ * /app/<team> renders (the signed-in user's own /compute, for one). Shares the one poller per team.
+ */
+export function useTeamView(team: string) {
   const t = useTeam(team, 1500);
   const {address} = useWallet();
   const now = useNow();
