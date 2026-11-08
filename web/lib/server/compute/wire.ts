@@ -21,10 +21,11 @@ async function mint(): Promise<string | null> {
   return c.mint;
 }
 
-async function gatewayToken(): Promise<string | null> {
+async function gatewayToken(): Promise<string | null | 'error'> {
   const gw = serverKey('gateway');
+  if (!gw) return null;
   const m = await mint();
-  if (!gw || !m) return null;
+  if (!m) return 'error';
   return getAssociatedTokenAddressSync(new PublicKey(m), gw.publicKey).toBase58();
 }
 
