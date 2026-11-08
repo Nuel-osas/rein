@@ -1,0 +1,114 @@
+.page {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+  padding: 2rem 1rem;
+  background: var(--app-canvas, #faf9fb);
+  color: var(--color-text-primary, #0a0a0b);
+}
+
+/* One traced frame: a hairline box with a datum cross at each corner. */
+.frame {
+  --line: var(--app-line, #e4e0ea);
+  --line-strong: var(--app-line-strong, #d2ccdb);
+
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  inline-size: min(100%, 34rem);
+  padding: clamp(1.75rem, 5vw, 2.75rem);
+  background: var(--color-surface, #fff);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.frame::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) 5px 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 0 5px / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 5px top 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 0 top 5px / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left 5px bottom 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left 0 bottom 5px / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 5px bottom 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 0 bottom 5px / 11px 1px no-repeat;
+}
+
+.mark {
+  inline-size: 28px;
+  block-size: 28px;
+  margin-block-end: 0.5rem;
+  color: var(--color-logo-mark, #282828);
+}
+
+.label {
+  margin: 0;
+  color: var(--color-accent-text, #5b21b6);
+  font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.body {
+  margin: 0;
+  max-inline-size: 40ch;
+  color: var(--color-text-secondary, #5e5869);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+  margin-block-start: 0.75rem;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.primary {
+  padding-inline: 1.25rem;
+  background: var(--color-accent-solid, #5b21b6);
+  color: var(--color-text-on-accent, #fff);
+}
+
+.secondary {
+  color: var(--color-accent-text, #5b21b6);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid var(--color-border-focus, #5b21b6);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .primary:hover {
+    background: var(--color-accent-hover, #5b21b6);
+  }
+}

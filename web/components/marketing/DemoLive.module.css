@@ -1,0 +1,65 @@
+/* The live band on /demo: the app's dark surface inside the marketing page. */
+
+.band {
+  --app-card-pad: 1.25rem;
+  --app-gap: 1rem;
+  background: var(--color-canvas, #0a0a0b);
+  color: var(--color-text-primary, #ffffff);
+  padding-block: clamp(2rem, 5vw, 4rem);
+}
+
+.inner {
+  inline-size: min(100% - 2 * clamp(16px, 1.95vw, 40px), 82rem);
+  margin-inline: auto;
+}
+
+.grid {
+  display: grid;
+  gap: 2rem;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 .5rem;
+  font-size: var(--text-meta, 12px);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-accent-text, #a78bfa);
+}
+
+.title {
+  margin: 0 0 .5rem;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 500;
+  letter-spacing: -.03em;
+}
+
+.vault {
+  display: grid;
+  gap: .375rem;
+  justify-items: start;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-surface, #131118);
+  box-shadow: 0 0 0 1px var(--app-line, #2a2533);
+}
+
+.two {
+  align-items: start;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 64rem) {
+  .two {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

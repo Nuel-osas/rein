@@ -1,0 +1,1728 @@
+/* ===========================================================================
+   The landing page.
+
+   Tokens are on the marketing scope (`(marketing)/page.module.css`, "THE
+   DRAWING"): the margin and gutter of a three-column grid, the display face,
+   ink, the icy light and the dark, the dotted line colours and the purple.
+
+   THE GRID. Content sits between two margins in three equal columns. The
+   light sections draw the columns' inner edges as dotted guides behind their
+   content (`.guides`), and every section opens with a dotted rule that starts
+   with a small purple square (`.rule`), then a label in capitals, then a large
+   left-aligned heading.
+
+   SURFACES. Light sections run from a pale icy purple to near white; dark ones
+   run through the brand purples into near black. Where a section turns from one
+   to the other, its halves carry their own `data-tone`, which the site header
+   reads to switch its tiles between light and dark.
+
+   MOTION. All of it inside `prefers-reduced-motion: no-preference`, and all of
+   it transform, opacity and stroke-dashoffset. The server HTML is the whole
+   page, fully visible and still; anything that waits for a scroll is set up by
+   LandingPage.tsx after hydration, and no loop runs without it:
+   - the hero plays once on load, staggered; its org chart (HeroOrg) draws on
+     and then tells one payment story on a 12 second loop;
+   - the drawings draw in when scrolled into view, then idle (Drawings.module.css);
+   - the chart draws from the left under a scan line while its figure counts up;
+   - blocks marked `data-reveal` rise in once as they scroll into view;
+   - the capability row in the middle of the viewport is at full contrast and
+     the others recede (`data-live`, `data-active`);
+   - the policy statement's words come up to full contrast with the scroll
+     (`data-live`, `--p`);
+   - small, interruptible transitions on controls.
+   Every loop pauses off screen (`data-visible="false"`), in a hidden tab
+   (`data-tab`), and with the hero's keyboard control (`data-paused`).
+   =========================================================================== */
+
+.landing {
+  /* The site header's height (SiteHeader.module.css `.bar`): the hero sits under it. */
+  --site-header-block: 4.5rem;
+  --title: clamp(40px, 4.9vw, 84px);
+  --row-title: clamp(24px, 2.15vw, 34px);
+  /* Dotted lines: 1px dots every 4px, across and down, on light and on dark. */
+  --h-dots: repeating-linear-gradient(90deg, var(--sl-dot) 0 1px, transparent 1px 4px);
+  --v-dots: repeating-linear-gradient(180deg, var(--sl-dot) 0 1px, transparent 1px 4px);
+  --h-dots-dark: repeating-linear-gradient(90deg, var(--sl-dot-dark) 0 1px, transparent 1px 4px);
+  --v-dots-dark: repeating-linear-gradient(180deg, var(--sl-dot-dark) 0 1px, transparent 1px 4px);
+  font-family: var(--sl-display);
+  color: var(--sl-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing [id] {
+  scroll-margin-block-start: var(--site-header-block);
+}
+
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- The drawing ------------------------------------------------------------ */
+
+.inner {
+  position: relative;
+  padding-inline: var(--sl-margin);
+}
+
+/* The light sections: a pale icy purple at the top, a soft light at the upper
+   left, near white at the foot. */
+.light {
+  position: relative;
+  background:
+    radial-gradient(60% 40% at 14% 12%, rgb(255 255 255 / 50%), transparent 70%),
+    linear-gradient(180deg, var(--sl-ice) 0%, var(--sl-ice-2) 48%, var(--sl-paper) 100%);
+}
+
+/* The column guides: the inner edges of the three columns, dotted, down the
+   whole section, behind its content. */
+.guides {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: var(--sl-margin);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--sl-gutter);
+  pointer-events: none;
+}
+
+.guides > span:nth-child(1) {
+  background: var(--v-dots) right top / 1px 100% no-repeat;
+}
+
+.guides > span:nth-child(2) {
+  background:
+    var(--v-dots) left top / 1px 100% no-repeat,
+    var(--v-dots) right top / 1px 100% no-repeat;
+}
+
+.guides > span:nth-child(3) {
+  background: var(--v-dots) left top / 1px 100% no-repeat;
+}
+
+/* The rule that opens a section, and its small purple square. */
+.rule {
+  position: relative;
+  block-size: 1px;
+  background: var(--h-dots);
+}
+
+.rule[data-tone="dark"] {
+  background: var(--h-dots-dark);
+}
+
+.rule::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: -3px;
+  inline-size: 6px;
+  block-size: 6px;
+  background: var(--sl-accent);
+}
+
+/* A section's label: small capitals, tracked out. */
+.tag {
+  margin: 0;
+  font-family: var(--sl-display);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.landing h2:not(.tag) {
+  margin: 0;
+  font-size: var(--title);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.landing h3 {
+  margin: 0;
+  font-weight: 400;
+}
+
+/* A numbered label: a small square and two figures, like a part number. */
+.num {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  padding: 3px 6px;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.num::before {
+  content: "";
+  inline-size: 4px;
+  block-size: 4px;
+  background: currentColor;
+}
+
+/* --- Actions: a label block and a square arrow tile ---------------------------- */
+
+.action {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  min-block-size: 40px;
+  font-family: var(--sl-display);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.actionLabel {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.125rem;
+  background: var(--action-bg);
+  color: var(--action-ink);
+  white-space: nowrap;
+}
+
+.actionTile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 40px;
+  background: var(--action-tile);
+  color: var(--action-tile-ink);
+}
+
+.action[data-wide] {
+  display: flex;
+  inline-size: 100%;
+}
+
+.action[data-tone="primary"] {
+  --action-bg: #f5f3f8;
+  --action-bg-hover: #ffffff;
+  --action-ink: var(--sl-ink);
+  --action-tile: var(--sl-accent);
+  --action-tile-hover: var(--color-accent-hover, #4c1d95);
+  --action-tile-ink: var(--color-text-on-accent);
+}
+
+.action[data-tone="dark"] {
+  --action-bg: rgb(255 255 255 / 12%);
+  --action-bg-hover: rgb(255 255 255 / 20%);
+  --action-ink: var(--color-text-on-brand);
+  --action-tile: rgb(255 255 255 / 12%);
+  --action-tile-hover: rgb(255 255 255 / 20%);
+  --action-tile-ink: var(--color-text-on-brand);
+}
+
+.action[data-tone="dark"] > span {
+  backdrop-filter: blur(10px);
+}
+
+.action[data-tone="light"] {
+  --action-bg: rgb(10 10 11 / 7%);
+  --action-bg-hover: rgb(10 10 11 / 12%);
+  --action-ink: var(--sl-ink);
+  --action-tile: rgb(10 10 11 / 7%);
+  --action-tile-hover: rgb(10 10 11 / 12%);
+  --action-tile-ink: var(--sl-ink);
+}
+
+.action:focus-visible,
+.news:focus-visible,
+.faqItem summary:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--sl-accent));
+  outline-offset: 3px;
+}
+
+/* --- 1. Hero ------------------------------------------------------------------- */
+
+.hero {
+  --focus-ring: var(--color-text-on-brand);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3rem;
+  min-block-size: max(100svh, 40rem);
+  /* Up under the transparent header, so the glass starts at the top of the page. */
+  margin-block-start: calc(-1 * var(--site-header-block));
+  padding: calc(var(--site-header-block) + clamp(2.5rem, 6vw, 5.5rem)) var(--sl-margin) var(--sl-margin);
+  background:
+    radial-gradient(ellipse at 70% 60%, var(--color-brand-backdrop-glow), transparent 65%),
+    linear-gradient(180deg, var(--color-brand-black) 0%, #1e0b3d 55%, var(--color-brand-mid) 100%);
+  color: var(--color-text-on-brand);
+}
+
+/* The moving glass (GlassField). The gradient above is its fallback and what shows before its
+   first frame is drawn. */
+.heroGlass {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.heroGlass[data-ready="true"] {
+  opacity: 1;
+}
+
+/* A shade under the type: to the left behind the headline, and up from the foot. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgb(10 10 11 / 62%) 0%, rgb(10 10 11 / 20%) 45%, transparent 70%),
+    linear-gradient(0deg, rgb(10 10 11 / 55%) 0%, transparent 32%);
+}
+
+/* Out of sight until a keyboard reaches it: the hero carries no visible control of its own. */
+.glassControl {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: calc(var(--site-header-block) + 1rem);
+  inset-inline-end: var(--sl-margin);
+  min-block-size: 2.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--sl-tile-dark);
+  color: var(--color-text-on-brand);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.glassControl:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid var(--color-text-on-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glassControl {
+    display: none;
+  }
+}
+
+.heroMain {
+  position: relative;
+}
+
+.hero h1 {
+  margin: 0;
+  /* Kept clear of the org chart on the right: three lines, the longest "their AI agents." */
+  font-size: clamp(40px, 5vw, 88px);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+/* The sub: the thesis in full white, then the account in the quieter step. */
+.heroSub {
+  max-inline-size: 34ch;
+  margin: 1.5rem 0 0;
+  color: rgb(255 255 255 / 72%);
+  font-size: clamp(16px, 1.3vw, 19px);
+  line-height: 1.36;
+  text-wrap: pretty;
+}
+
+.heroSub > span {
+  color: var(--color-text-on-brand);
+}
+
+.heroActions {
+  display: grid;
+  gap: 2px;
+  inline-size: max-content;
+  max-inline-size: 100%;
+  margin-block-start: 2rem;
+}
+
+.heroFoot {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--sl-gutter);
+  align-items: end;
+}
+
+.builtOn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem 0.75rem;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The Solana wordmark, in white, at the cap height of the name. */
+.chainMark {
+  display: block;
+  flex: none;
+  block-size: 20px;
+  inline-size: auto;
+  color: var(--color-text-on-brand);
+  align-self: center;
+}
+
+.builtOn small {
+  flex-basis: 100%;
+  color: rgb(255 255 255 / 66%);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* The latest news, as a square translucent card marked at its corner. */
+.news {
+  position: relative;
+  grid-column: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px 16px;
+  padding: 20px;
+  background: rgb(19 17 24 / 62%);
+  backdrop-filter: blur(16px);
+  color: var(--color-text-on-brand);
+  text-decoration: none;
+}
+
+/* White rather than the purple: this card sits on the purple glass, where a purple square disappears. */
+.news::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 6px;
+  block-size: 6px;
+  background: #ffffff;
+}
+
+.newsMeta {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  gap: 1rem;
+  color: rgb(255 255 255 / 78%);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.newsTitle {
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.newsTile {
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  background: rgb(255 255 255 / 10%);
+}
+
+/* --- 2. How it works ------------------------------------------------------------- */
+
+.how {
+  padding-block: clamp(4rem, 8vw, 7rem) clamp(4rem, 9vw, 8rem);
+}
+
+.howGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(12.5rem, auto));
+  gap: var(--sl-gutter);
+  margin-block-start: var(--sl-gutter);
+}
+
+.howGrid > :not(.rowLines) {
+  position: relative;
+}
+
+/* Each row's edges, dotted, across the whole grid: the rule above is the first row's top, so the
+   lines are the gutters between rows. */
+.rowLines {
+  grid-column: 1 / -1;
+  pointer-events: none;
+  background:
+    var(--h-dots) left top / 100% 1px no-repeat,
+    var(--h-dots) left bottom / 100% 1px no-repeat;
+}
+
+.rowLines:first-child {
+  background: var(--h-dots) left bottom / 100% 1px no-repeat;
+}
+
+.rowLines:nth-child(3) {
+  background: var(--h-dots) left top / 100% 1px no-repeat;
+}
+
+.howLead {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* Under the label. `.landing` lifts this above the shared heading rule, which zeroes margins. */
+.landing .howLead h2 {
+  margin-block-start: 1.75rem;
+}
+
+.howCopy {
+  grid-column: 1;
+  grid-row: 3;
+  align-self: start;
+  max-inline-size: 30ch;
+  margin: 1.5rem 0 0;
+  font-size: 17px;
+  line-height: 1.38;
+  text-wrap: pretty;
+}
+
+/* The tall card: one period's spending against its allowance. */
+.chartCard {
+  --focus-ring: var(--color-text-on-brand);
+  display: flex;
+  flex-direction: column;
+  grid-column: 2;
+  grid-row: 1 / 4;
+  padding: 28px;
+  background: linear-gradient(180deg, #0a0a0b 0%, #1e0b3d 36%, #5b21b6 72%, #c4b5fd 100%);
+  color: var(--color-text-on-brand);
+}
+
+.chartHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.chartHead > span {
+  color: rgb(255 255 255 / 70%);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chartHead > strong {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart {
+  position: relative;
+  flex: 1 1 auto;
+  min-block-size: 12rem;
+  margin-block: 1.75rem 1rem;
+}
+
+.chart svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+
+.chartGrid {
+  stroke: rgb(255 255 255 / 24%);
+  stroke-width: 1;
+  stroke-dasharray: 1 3;
+}
+
+.chartLimit {
+  stroke: rgb(255 255 255 / 60%);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chartLine {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.chartLimitLabel {
+  position: absolute;
+  inset-block-start: -2px;
+  inset-inline-end: 0;
+  translate: 0 -100%;
+  color: rgb(255 255 255 / 75%);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chartDot {
+  position: absolute;
+  inset-inline-end: 0;
+  inline-size: 7px;
+  block-size: 7px;
+  translate: 50% -50%;
+  background: #ffffff;
+}
+
+/* A ring that leaves the end of the line, once the chart is live. Unseen at rest. */
+.chartDot::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid rgb(255 255 255 / 80%);
+  opacity: 0;
+}
+
+/* The chart's reveal: a white sheet in the line's mask, scaled from the left edge, and a scan line
+   at its head. Both are moved by LandingPage's `useDrawings`. */
+.chartWipe,
+.chartScan {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+.chartScan {
+  stroke: rgb(255 255 255 / 70%);
+  stroke-width: 1;
+  opacity: 0;
+}
+
+.chartNote {
+  margin: 0 0 1.5rem;
+  color: rgb(255 255 255 / 82%);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.chartCard .action {
+  margin-block-start: auto;
+}
+
+.steps {
+  display: grid;
+  grid-column: 3;
+  grid-row: 1 / 4;
+  grid-template-rows: subgrid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 20px;
+  background: var(--sl-card-light);
+}
+
+.step .num {
+  background: var(--sl-ink);
+  color: var(--color-text-on-brand);
+}
+
+.step h3 {
+  max-inline-size: 15ch;
+  margin-block-start: 0.25rem;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.step p {
+  max-inline-size: 25ch;
+  margin: 0;
+  color: var(--sl-ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.stepDrawing {
+  --drawing-dot: var(--sl-accent);
+  --drawing-flash: rgb(10 10 11 / 70%);
+  position: absolute;
+  inset-block-end: 12px;
+  inset-inline-end: 14px;
+  inline-size: 38%;
+  max-block-size: 76%;
+  color: rgb(10 10 11 / 50%);
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+/* --- 3. Walk in, walk out ------------------------------------------------------ */
+
+/* Picks up the near white How it works ends on, runs through the icy light, and ends on the near
+   white the capabilities begin with: no seam at either edge. */
+.walk {
+  --station: clamp(7.5rem, 11vw, 10rem);
+  --card-pad: 20px;
+  padding-block: clamp(4rem, 8vw, 7rem);
+  background:
+    radial-gradient(55% 35% at 86% 16%, rgb(255 255 255 / 55%), transparent 70%),
+    linear-gradient(180deg, var(--sl-paper) 0%, var(--sl-ice-2) 22%, var(--sl-ice) 56%, var(--sl-ice-2) 84%, var(--sl-paper) 100%);
+}
+
+.walkHead {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--sl-gutter);
+  row-gap: 1.75rem;
+  margin-block-start: var(--sl-gutter);
+}
+
+.walkLead {
+  grid-column: 1;
+}
+
+/* Under the label, as in How it works. */
+.landing .walkLead h2 {
+  margin-block-start: 1.75rem;
+}
+
+/* The sentence and the two actions, set to the foot of the heading in the right two columns. */
+.walkIntro {
+  display: grid;
+  grid-column: 2 / -1;
+  align-self: end;
+  justify-items: start;
+  gap: 1.5rem;
+}
+
+.walkIntro > p {
+  max-inline-size: 46ch;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.38;
+  text-wrap: pretty;
+}
+
+.walkActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+
+.flows {
+  display: grid;
+  gap: clamp(2.5rem, 5vw, 4rem);
+  margin-block-start: clamp(3rem, 6vw, 5rem);
+}
+
+.flow {
+  display: grid;
+  gap: 1.25rem;
+}
+
+/* A flow's name and which way the money goes, under a dotted rule across the grid. */
+.flowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding-block-start: 1.25rem;
+  background: var(--h-dots) left top / 100% 1px no-repeat;
+}
+
+.flowHead h3 {
+  font-size: var(--row-title);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.flowMeta {
+  margin: 0;
+  color: var(--sl-ink-2);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.flowMeta::before {
+  content: "[ ";
+}
+
+.flowMeta::after {
+  content: " ]";
+}
+
+/* Three steps in the three columns, each a card with its station drawn at the top. */
+.flowSteps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sl-gutter);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flowStep {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: var(--card-pad);
+  background: var(--sl-card-light);
+}
+
+.flowStep .num {
+  background: var(--sl-ink);
+  color: var(--color-text-on-brand);
+}
+
+.flowStep h4 {
+  margin: 0.25rem 0 0;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.flowStep p {
+  max-inline-size: 34ch;
+  margin: 0;
+  color: var(--sl-ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+/* The drawing fills the station's box and keeps its proportions inside it (the SVG's own
+   `meet`), so a wide drawing and a tall one stand at the same height. */
+.station {
+  --drawing-dot: var(--sl-accent);
+  --drawing-flash: rgb(10 10 11 / 70%);
+  box-sizing: border-box;
+  block-size: var(--station);
+  margin-block-end: 0.25rem;
+  padding-block: 0.25rem 1rem;
+  background: var(--h-dots) left bottom / 100% 1px no-repeat;
+  color: rgb(10 10 11 / 55%);
+}
+
+.stationDrawing {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+}
+
+/* The exchange is wide and sparse: held narrower, so it weighs about what the bank and the
+   account do beside it. */
+.stationDrawing[data-name="exchange"] {
+  max-inline-size: 13rem;
+  margin-inline: auto;
+}
+
+/* The way on to the next step: a dark square in the gutter, level with the stations' middle. */
+.flowLink {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: calc(var(--card-pad) + (var(--station) - 1rem) / 2);
+  inset-inline-start: calc(100% + var(--sl-gutter) / 2);
+  display: grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  translate: -50% -50%;
+  background: var(--sl-ink);
+  color: var(--color-text-on-brand);
+  pointer-events: none;
+}
+
+.walkFacts {
+  margin: 2.5rem 0 0;
+  color: var(--sl-ink-2);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* --- 4. Capabilities ------------------------------------------------------------ */
+
+.propsHead {
+  position: relative;
+  padding-block: clamp(4rem, 8vw, 7rem) clamp(8rem, 14vw, 13rem);
+  background: linear-gradient(180deg, var(--sl-paper) 0%, var(--sl-ice) 42%, #a78bfa 74%, #6d28d9 100%);
+}
+
+.landing .propsHead h2 {
+  margin-block-start: 1.75rem;
+}
+
+.propsHead .tag {
+  margin-block-start: 1.75rem;
+}
+
+.propsBody {
+  --focus-ring: var(--color-text-on-brand);
+  position: relative;
+  padding-block-end: clamp(3.5rem, 7vw, 6rem);
+  background: linear-gradient(180deg, #6d28d9 0%, #4c1d95 28%, #2a1059 58%, #0d0a14 84%, var(--sl-black) 100%);
+  color: var(--color-text-on-brand);
+}
+
+.propsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--sl-gutter);
+  padding-inline: var(--sl-margin);
+}
+
+.propRows {
+  grid-column: 1 / 3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A row: its label and title in the first column, the paragraph in the second, under a dotted
+   rule. */
+.prop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--sl-gutter);
+  row-gap: 1.75rem;
+  padding-block: 2.25rem 4rem;
+  background: var(--h-dots-dark) left top / 100% 1px no-repeat;
+}
+
+.propTag {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: rgb(255 255 255 / 72%);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prop h3 {
+  font-size: var(--row-title);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.propBody {
+  max-inline-size: 36ch;
+  margin: 0;
+  color: rgb(255 255 255 / 86%);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/* Live: the row in view is at full contrast, the others recede. */
+.propRows[data-live] .prop:not([data-active]) > * {
+  opacity: 0.62;
+}
+
+.propVisual {
+  grid-column: 3;
+  grid-row: 1;
+  position: relative;
+}
+
+/* The facts beside the rows, held in view while the rows pass. */
+.factStack {
+  position: sticky;
+  inset-block-start: calc(var(--site-header-block) + 8vh);
+  display: grid;
+  gap: 10px;
+  padding-block: 2.25rem;
+}
+
+.factDrawing {
+  --drawing-dot: rgb(255 255 255 / 85%);
+  position: absolute;
+  inset-block-start: -2rem;
+  inset-inline-end: 0;
+  inline-size: 78%;
+  color: rgb(255 255 255 / 20%);
+  pointer-events: none;
+}
+
+.fact {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 16px;
+  padding: 14px 16px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  background: rgb(255 255 255 / 6%);
+  backdrop-filter: blur(12px);
+  opacity: 0.42;
+}
+
+.fact[data-on] {
+  border-color: rgb(255 255 255 / 48%);
+  background: rgb(255 255 255 / 13%);
+  opacity: 1;
+}
+
+.fact small {
+  color: rgb(255 255 255 / 72%);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fact strong {
+  grid-row: span 2;
+  align-self: center;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fact span {
+  color: rgb(255 255 255 / 80%);
+  font-size: 13px;
+}
+
+.factNote {
+  margin-block-start: 0.5rem;
+  color: rgb(255 255 255 / 55%);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* --- 5. Dark framed call to action --------------------------------------------- */
+
+.cta {
+  --focus-ring: var(--color-text-on-brand);
+  padding-block: clamp(1.5rem, 3vw, 2.5rem) clamp(2rem, 5vw, 4rem);
+  background: var(--sl-black);
+  color: var(--color-text-on-brand);
+}
+
+/* An outer frame at the margins, dotted, a purple square at each corner; the panel sits a gutter
+   inside it. */
+.ctaFrame {
+  position: relative;
+  margin-inline: var(--sl-margin);
+  padding: var(--sl-gutter);
+  background:
+    var(--h-dots-dark) left top / 100% 1px no-repeat,
+    var(--h-dots-dark) left bottom / 100% 1px no-repeat,
+    var(--v-dots-dark) left top / 1px 100% no-repeat,
+    var(--v-dots-dark) right top / 1px 100% no-repeat;
+}
+
+.ctaFrame::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--sl-accent), var(--sl-accent)) left top / 6px 6px no-repeat,
+    linear-gradient(var(--sl-accent), var(--sl-accent)) right top / 6px 6px no-repeat,
+    linear-gradient(var(--sl-accent), var(--sl-accent)) left bottom / 6px 6px no-repeat,
+    linear-gradient(var(--sl-accent), var(--sl-accent)) right bottom / 6px 6px no-repeat;
+}
+
+.ctaPanel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto auto;
+  grid-template-areas:
+    "mark drawing"
+    ". drawing"
+    "title drawing"
+    "actions drawing";
+  min-block-size: clamp(26rem, 40vw, 36rem);
+  padding: clamp(1.5rem, 3.5vw, 3.5rem);
+  background:
+    var(--v-dots-dark) left top / 1px 100% no-repeat,
+    var(--v-dots-dark) right top / 1px 100% no-repeat,
+    var(--sl-panel);
+}
+
+.ctaMark {
+  grid-area: mark;
+  inline-size: auto;
+  block-size: 64px;
+}
+
+.ctaMark path {
+  fill: none;
+  stroke: var(--sl-accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.ctaDrawing {
+  grid-area: drawing;
+  align-self: center;
+  justify-self: end;
+  inline-size: min(100%, 30rem);
+  color: rgb(255 255 255 / 34%);
+}
+
+.landing .ctaPanel h2 {
+  grid-area: title;
+  font-size: clamp(30px, 3.1vw, 52px);
+  line-height: 1.1;
+}
+
+.ctaPanel h2 > span {
+  color: rgb(255 255 255 / 52%);
+}
+
+.ctaActions {
+  display: flex;
+  flex-wrap: wrap;
+  grid-area: actions;
+  gap: 2px 4px;
+  margin-block-start: 2.5rem;
+}
+
+/* --- 6. The policy layer -------------------------------------------------------- */
+
+.statementTop {
+  --focus-ring: var(--color-text-on-brand);
+  padding-block: clamp(5rem, 11vw, 10rem) clamp(4rem, 8vw, 7rem);
+  background: linear-gradient(180deg, var(--sl-black) 0%, #130a24 28%, #3b1478 68%, #5b21b6 100%);
+  color: var(--color-text-on-brand);
+}
+
+.statementHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-block-start: 1.75rem;
+}
+
+.statementText {
+  max-inline-size: 23em;
+  margin: 2rem 0 0;
+  font-size: clamp(26px, 3.05vw, 52px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+}
+
+/* Live: each word comes up to full contrast as the reading line passes it. `--p` is the scroll's
+   progress through the paragraph, `--i` the word's place, `--n` the number of words. */
+.statementText[data-live] > span > span {
+  opacity: clamp(0.18, calc((var(--p, 1) * (var(--n) + 6) - var(--i)) / 6), 1);
+}
+
+.reasonsWrap {
+  padding-block: clamp(7rem, 11vw, 10rem) clamp(4rem, 8vw, 7rem);
+  background: linear-gradient(180deg, #5b21b6 0, #c4b5fd 5.5rem, var(--sl-ice) 9.5rem, var(--sl-paper) 100%);
+}
+
+.reasonsWrap .inner {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--sl-gutter);
+}
+
+.reasons,
+.disclosure {
+  grid-column: 1 / 3;
+}
+
+/* The chain of blocks, large and faint, in the third column beside the reasons. */
+.reasonsArt {
+  --drawing-dot: var(--sl-accent);
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: center;
+  inline-size: 100%;
+  color: rgb(10 10 11 / 30%);
+}
+
+.reasons {
+  inline-size: min(100%, 46rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reasons li {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 2rem;
+  padding-block: 1.75rem;
+  background: var(--h-dots) left bottom / 100% 1px no-repeat;
+}
+
+.reasons li:last-child {
+  background: none;
+}
+
+.reasonDrawing {
+  --drawing-dot: var(--sl-accent);
+  --drawing-flash: rgb(10 10 11 / 70%);
+  inline-size: 100%;
+  max-block-size: 5rem;
+  color: rgb(10 10 11 / 48%);
+}
+
+.reasons h3 {
+  margin-block-end: 0.5rem;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.reasons p {
+  max-inline-size: 48ch;
+  margin: 0;
+  color: var(--sl-ink-2);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.disclosure {
+  margin: 2.5rem 0 0;
+  color: var(--sl-ink-2);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* --- 7. Questions ----------------------------------------------------------------- */
+
+/* Picks up the near white the policy layer ends on, and ends on the page's own white, which is
+   where the footer's fade begins: no seam at either edge. */
+.faq {
+  padding-block: clamp(4rem, 8vw, 7rem) clamp(5rem, 10vw, 9rem);
+  background:
+    radial-gradient(60% 40% at 14% 22%, rgb(255 255 255 / 45%), transparent 70%),
+    linear-gradient(180deg, var(--sl-paper) 0%, var(--sl-ice) 26%, var(--sl-ice-2) 62%, var(--color-canvas, #ffffff) 100%);
+}
+
+.faqHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem 2rem;
+  margin-block-start: 1.75rem;
+}
+
+.faqMore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.faqMore p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The questions take the right two columns; a dotted rule runs across the first at their top. */
+.faqList {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  margin-block-start: clamp(3rem, 6vw, 5rem);
+  margin-inline-start: calc((100% - 2 * var(--sl-gutter)) / 3 + var(--sl-gutter));
+}
+
+.faqList::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: calc(100% + var(--sl-gutter));
+  inline-size: calc((100% - var(--sl-gutter)) / 2);
+  block-size: 1px;
+  background: var(--h-dots);
+}
+
+.faqItem {
+  background: var(--sl-card-light);
+}
+
+.faqItem summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.5rem;
+  min-block-size: 76px;
+  padding: 12px 20px;
+  font-size: 18px;
+  line-height: 1.3;
+  list-style: none;
+  cursor: pointer;
+}
+
+.faqItem summary::-webkit-details-marker {
+  display: none;
+}
+
+.faqItem .num {
+  align-self: center;
+  background: rgb(10 10 11 / 8%);
+  color: var(--sl-ink-2);
+}
+
+.toggle {
+  display: grid;
+  place-items: center;
+  inline-size: 34px;
+  block-size: 34px;
+  background: var(--sl-ink);
+  color: var(--color-text-on-brand);
+}
+
+.faqItem[open] .toggle {
+  rotate: 45deg;
+}
+
+.faqItem > p {
+  max-inline-size: 64ch;
+  margin: 0;
+  padding: 0 20px 24px 5.4rem;
+  color: var(--sl-ink-2);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ===========================================================================
+   Motion
+   =========================================================================== */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes answerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes chartFade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes limitIn {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+}
+
+@keyframes dotIn {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+@keyframes ping {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.6);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .heroGlass {
+    transition: opacity 700ms ease-out;
+  }
+
+  /* Hero, once, on load: the headline, the sub, the actions, then the foot; the org chart draws
+     itself in beside them (HeroOrg.module.css). */
+  .hero h1,
+  .heroActions,
+  .heroFoot > *,
+  .heroSub {
+    animation: rise 900ms var(--ease-entrance) both;
+  }
+  .heroSub {
+    animation-delay: 80ms;
+  }
+  .heroActions {
+    animation-delay: 160ms;
+  }
+  .heroFoot > :nth-child(1) {
+    animation-delay: 260ms;
+  }
+  .heroFoot > :nth-child(2) {
+    animation-delay: 340ms;
+  }
+  /* The chart. `waiting` hides what draws in; the line's wipe and the scan line are moved by
+     script (see .chartWipe). */
+  .chartCard[data-draw="waiting"] .chartWipe {
+    transform: scaleX(0);
+  }
+  .chartCard[data-draw="waiting"] :is(.chartGrid, .chartLimit, .chartLimitLabel, .chartDot) {
+    opacity: 0;
+  }
+  .chartCard[data-draw="in"] .chartGrid {
+    animation: chartFade 600ms ease-out calc(250ms + var(--i, 0) * 80ms) both;
+  }
+  .chartCard[data-draw="in"] .chartLimit {
+    animation: limitIn 1100ms var(--ease-entrance) 300ms both;
+  }
+  .chartCard[data-draw="in"] .chartLimitLabel {
+    animation: chartFade 700ms ease-out 700ms both;
+  }
+  .chartCard[data-draw="in"] .chartDot {
+    animation: dotIn 420ms var(--ease-entrance) 2650ms both;
+  }
+  .chartCard[data-draw="in"] .chartDot::after {
+    animation: ping 3s ease-out 3.2s infinite;
+  }
+  .chartCard[data-draw="live"] .chartDot::after {
+    animation: ping 3s ease-out infinite;
+  }
+
+  /* The numbered cards' drawings come up a little under the pointer. */
+  .stepDrawing {
+    transition: opacity 360ms ease-out;
+  }
+
+  /* Off screen, in a hidden tab, or paused from the hero's control, every loop holds its place.
+     Important, because each loop sets the `animation` shorthand, which resets the play state. */
+  .landing [data-visible="false"] *,
+  .landing [data-visible="false"] *::before,
+  .landing [data-visible="false"] *::after,
+  .landing[data-tab] *,
+  .landing[data-tab] *::before,
+  .landing[data-tab] *::after,
+  .landing[data-paused] *,
+  .landing[data-paused] *::before,
+  .landing[data-paused] *::after {
+    animation-play-state: paused !important;
+  }
+
+  /* Scroll reveal. `waiting` is set only after hydration and only below the fold. */
+  .landing [data-reveal="waiting"] {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  .landing [data-reveal="shown"] {
+    transition:
+      opacity 800ms var(--ease-entrance),
+      transform 800ms var(--ease-entrance);
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+
+  .prop > * {
+    transition: opacity 450ms ease-out;
+  }
+  .fact {
+    transition:
+      opacity 450ms ease-out,
+      border-color 450ms ease-out,
+      background-color 450ms ease-out;
+  }
+
+  .faqItem[open] > p {
+    animation: answerIn 280ms var(--ease-entrance) both;
+  }
+  .toggle {
+    transition: rotate 240ms var(--ease-entrance);
+  }
+
+  /* Controls. Named properties only, and interruptible. */
+  .actionLabel,
+  .actionTile,
+  .news {
+    transition: background-color 160ms ease-out;
+  }
+  .action {
+    transition: scale 200ms ease-out;
+  }
+  .action:active {
+    scale: 0.98;
+  }
+  .actionTile svg,
+  .newsTile svg {
+    transition: translate 200ms var(--ease-entrance);
+  }
+}
+
+@media (hover: hover) {
+  .action:hover .actionLabel {
+    background: var(--action-bg-hover);
+  }
+  .action:hover .actionTile {
+    background: var(--action-tile-hover);
+  }
+  .action:hover .actionTile svg,
+  .news:hover .newsTile svg {
+    translate: 3px 0;
+  }
+  .news:hover {
+    background: rgb(19 17 24 / 72%);
+  }
+  .step:hover .stepDrawing {
+    opacity: 1;
+  }
+  .faqItem summary:hover .question {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+}
+
+/* ===========================================================================
+   Narrower
+   =========================================================================== */
+
+@media (max-width: 64rem) {
+  .howGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+  .rowLines {
+    display: none;
+  }
+  .howLead {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .howCopy {
+    grid-column: 1;
+    grid-row: 2;
+    margin-block-start: 0;
+  }
+  .chartCard {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    min-block-size: 28rem;
+  }
+  .steps {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    grid-template-rows: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sl-gutter);
+  }
+  .step {
+    min-block-size: 15rem;
+  }
+
+  .propRows {
+    grid-column: 1 / -1;
+  }
+  .propVisual {
+    display: none;
+  }
+}
+
+@media (max-width: 48rem) {
+  .guides {
+    display: none;
+  }
+
+  .hero {
+    gap: 2.5rem;
+  }
+  .heroActions {
+    inline-size: 100%;
+  }
+  .heroActions .action {
+    display: flex;
+  }
+  .heroFoot {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1.75rem;
+  }
+  .builtOn {
+    order: 2;
+  }
+  .news {
+    grid-column: auto;
+    order: 3;
+  }
+
+  .howGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .howCopy {
+    grid-row: 2;
+  }
+  .chartCard {
+    grid-column: 1;
+    grid-row: 3;
+    min-block-size: 26rem;
+  }
+  .steps {
+    grid-row: 4;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .step {
+    min-block-size: 12rem;
+  }
+
+  /* Walk: one column, and each step a row, its station on the right; the way on points down. */
+  .walkHead {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .walkIntro {
+    grid-column: 1;
+  }
+  .walk {
+    --station: 6.5rem;
+  }
+  .flowSteps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .flowStep {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--station);
+    grid-template-rows: auto auto 1fr;
+    align-content: start;
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+  }
+  .flowStep > :not(.station, .flowLink) {
+    grid-column: 1;
+  }
+  .flowStep .num {
+    justify-self: start;
+  }
+  .station {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: center;
+    margin: 0;
+    padding: 0;
+    background: none;
+  }
+  .flowLink {
+    inset-block-start: calc(100% + var(--sl-gutter) / 2);
+    inset-inline-start: calc(100% - var(--card-pad) - var(--station) / 2);
+    rotate: 90deg;
+  }
+
+  .prop {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1rem;
+    padding-block: 1.75rem 2.75rem;
+  }
+
+  .ctaPanel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "mark"
+      "drawing"
+      "title"
+      "actions";
+    min-block-size: 0;
+    row-gap: 1.5rem;
+  }
+  .ctaDrawing {
+    justify-self: center;
+    inline-size: min(100%, 18rem);
+  }
+  .ctaActions {
+    margin-block-start: 0.5rem;
+  }
+
+  .reasonsWrap .inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reasons,
+  .disclosure {
+    grid-column: 1;
+  }
+  .reasonsArt {
+    display: none;
+  }
+  .reasons li {
+    grid-template-columns: 4rem minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .faqHead {
+    flex-direction: column;
+  }
+  .faqList {
+    margin-inline-start: 0;
+  }
+  .faqList::before {
+    display: none;
+  }
+  .faqItem summary {
+    gap: 1rem;
+    padding-inline: 14px;
+    font-size: 16px;
+  }
+  .faqItem > p {
+    padding-inline: 14px;
+  }
+}
+
+/* On a phone every target is a thumb's width. */
+@media (pointer: coarse) {
+  .action {
+    min-block-size: 44px;
+  }
+  .actionTile {
+    inline-size: 44px;
+  }
+}

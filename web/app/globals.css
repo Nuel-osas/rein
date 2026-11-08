@@ -1,0 +1,390 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   Rein design tokens. Light sections: white, near-black ink, dark purple accents.
+
+   Named for role, never for appearance or first use. A component asks for
+   `--color-text-secondary`, never `--gray-500`, so changing a value changes
+   every correct usage and nothing else.
+
+   Two rules paid for in a previous product:
+
+   1. Components consume tokens, never hardcoded hex. That codebase defined a
+      full token set and then wrote `text-[#15300c]` in every component, so the
+      tokens existed, nothing read them, and a theme change became a
+      find-and-replace.
+
+   2. Every var() in a font stack carries its own fallback. One undefined
+      variable invalidates the entire declaration, which is how that codebase
+      rendered every heading in the wrong face for weeks without noticing.
+   =========================================================================== */
+
+/* `static` emits every token below, whether or not anything references it yet.
+ *
+ * Tailwind v4 tree-shakes unused `@theme` variables, which is sensible until a
+ * token fails silently: `border-radius: var(--radius-card)` with no fallback is
+ * invalid at computed-value time and falls back to `0`, so a card renders
+ * square with no error anywhere to explain why.
+ *
+ * Measured rather than assumed: with tree-shaking on, the only token actually
+ * dropped from this file was `--icon-nav`, because nothing referenced it. Values
+ * used from CSS Modules survive, so `var()` in a `.module.css` IS discovered.
+ * The exposure is narrow, but it is the shape of bug that costs an afternoon,
+ * and it lands on whoever adds the next token rather than on whoever wrote it.
+ *
+ * A few hundred bytes of custom properties buys "a token exists the moment you
+ * declare it".
+ */
+@theme static {
+  /* --- Ink -----------------------------------------------------------
+     Three steps, and only three. Hierarchy comes from these, not from
+     opacity: a translucent grey shifts whenever the surface behind it
+     changes, so the same "secondary" text reads differently on a card than
+     on the canvas. Solid values stay put. */
+  --color-text-primary: #0a0a0b;
+  --color-text-secondary: #4a4553;
+  /* Muted ink still meets normal-text contrast on the light canvas and cards.
+     Previously #9e9e9e was decorative-only; the light workspace needs a
+     readable third step. Meaningful controls retain secondary or primary ink. */
+  --color-text-tertiary: #5e5869;
+  --color-text-on-accent: #ffffff;
+
+  /* --- Surfaces ------------------------------------------------------- */
+  --color-canvas: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f5f3f8;
+  /* A loading placeholder's fill, where a value has not arrived yet. */
+  --color-skeleton: #ece9f1;
+  --color-brand-black: #0a0a0b;
+  --color-brand-mid: #4c1d95;
+  --color-brand-glow: #7c3aed;
+  --color-brand-mist: #ddd6fe;
+  /* The purple light that pools in a black backdrop: the landing hero, the sign-in story. */
+  --color-brand-backdrop-glow: #5b21b6;
+  /* Ink and the accent ON the brand's dark grounds: the black strip, the dark hero and bands, the
+     sign-in story. Brand constants like the black under them, so the dark palette leaves them be. */
+  --color-text-on-brand: #ffffff;
+  --color-accent-on-brand: #a78bfa;
+
+  /* The strip that contrasts with the page, as a ROLE rather than a brand.
+     The announcement bar needs a ground that is clearly not the canvas in both
+     schemes. It was using `--color-accent-solid`, which works and is the wrong
+     token: accent means "the brand", so the day the brand green changes, a
+     strip that was never about the brand changes with it. That is the reuse
+     this file's own header warns about. */
+  --color-inverse-surface: #292929;
+  --color-inverse-hover: #3a3a3a;
+  --color-text-on-inverse: #f7f7f7;
+
+  /* --- Glass -------------------------------------------------------------
+
+     A frosted panel is three things stacked, and naming them separately is
+     what keeps them from being re-invented slightly differently on each card:
+
+       --glass-surface  a translucent ground, so what is behind shows through
+       --glass-blur     how far the backdrop is smeared
+       --glass-ring     the edge, which on glass is brighter than the fill
+
+     The ring matters more here than on an opaque card. A translucent panel over
+     a busy background has no reliable contrast at its boundary, so without a
+     lit edge it stops reading as a panel and starts reading as a smudge.
+
+     `backdrop-filter` is the expensive part, so it is only ever applied to a
+     handful of large panels, never to list rows. */
+  --glass-surface: rgba(255, 255, 255, 0.72);
+  --glass-blur: blur(20px) saturate(140%);
+  --glass-ring: inset 0 0 0 1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  /* --- Noise -------------------------------------------------------------
+
+     One tiling SVG turbulence, inlined as a data URI.
+
+     Inlined rather than a PNG in /public for two reasons: it is ~250 bytes
+     against a few KB, and it costs no request, which matters because this sits
+     on top of a hero image that is already the largest thing on the page.
+
+     `baseFrequency` at 0.8 is fine grain rather than clouds, which is what
+     stops a large flat gradient banding. It is decoration, so anything using it
+     needs `pointer-events: none` or it swallows clicks meant for the card. */
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+
+  /* --- Logo ----------------------------------------------------------
+     The mark's two colours, measured from the brand files (public/brand/). They
+     are brand constants, not theme steps: `--color-logo-mark` picks one per
+     scheme, and a light card inside a dark page can point it back at the ink. */
+  --color-logo-ink: #282828;
+  --color-logo-paper: #f9f8f6;
+  --color-logo-mark: var(--color-logo-ink);
+
+  /* --- Accent --------------------------------------------------------- */
+  --color-accent-solid: #5b21b6;
+  --color-accent-hover: #4c1d95;
+  --color-accent-text: #5b21b6;
+  --color-accent-soft: #ede9fe;
+  --color-assistant-surface: #ede9fe;
+  --color-assistant-ink: #5b21b6;
+  --color-team-surface: #f4f2f7;
+  --color-team-ink: #3b3445;
+
+  /* --- Money ---------------------------------------------------------- */
+  --color-money-in: #1d6b58;
+  --color-money-out: #a04a26;
+  /* Paid and settled are green, never the brand purple. */
+  --color-settled-text: #1d6b58;
+  --color-settled-surface: #e7f4ef;
+
+  /* --- States ---------------------------------------------------------
+     `blocked` is deliberately NOT red. A blocked payment is the product
+     working, not an error, and colouring it like a failure teaches people to
+     fear the feature that protects them. Red is reserved for something that
+     actually went wrong. */
+  --color-blocked-text: #8a5a12;
+  --color-blocked-surface: #fdf5e6;
+  --color-pending-text: #5d5d5d;
+  --color-pending-surface: #f1f1f1;
+  --color-danger-text: #9a3324;
+  --color-danger-surface: #fdefeb;
+
+  /* --- Lines ---------------------------------------------------------- */
+  --color-border-subtle: #ebebeb;
+  --color-border-strong: #dcdcdc;
+  --color-border-focus: #5b21b6;
+
+  /* --- Type ----------------------------------------------------------
+     Four sizes. Nothing else.
+
+     A payments interface is short labels and figures, so a ten-step scale
+     invents decisions nobody needs to make and guarantees two screens
+     disagree. 24px carries every heading; 14px is body and primary UI; 13px
+     is secondary; 12px is meta and labels. If something needs to feel
+     bigger, change weight or colour, not size. */
+  --text-meta: 12px;
+  --text-small: 13px;
+  --text-base: 14px;
+  --text-display: 24px;
+
+  /* Tracking is a flat -0.15px rather than an em value. Em scales with size,
+     so a single em setting tightens a 24px heading far more than 12px meta
+     text. A fixed px keeps the optical correction identical everywhere. */
+  --tracking: -0.15px;
+
+  --font-sans: var(--font-rounded-face, "SF Pro Rounded"), ui-rounded, system-ui, -apple-system, sans-serif;
+  --font-rounded: var(--font-rounded-face, ui-rounded), system-ui, -apple-system, sans-serif;
+
+  /* A system stack, not a downloaded face: no new dependency and no extra
+     request. Used for the one class of string a reader is expected to compare
+     character by character -- a transaction hash, a derived receipt reference.
+     Prose never uses it.
+
+     Anything set in this face must also force `letter-spacing: 0`, because the
+     global `--tracking` above is negative and tightens hex into an unreadable
+     run. */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* --- Radius --------------------------------------------------------
+     Three values, assigned by role rather than by taste. Nested elements
+     take inner = outer − padding so corners stay concentric.
+
+     `--radius-control` covers navigation, inputs and buttons. They are one
+     role at one value, so they get one name: two names for the same number is
+     how a system starts disagreeing with itself. */
+  --radius-control: 8px;
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  /* --- Icons ---------------------------------------------------------- */
+  --icon-nav: 14px;
+  --icon-card: 20px;
+
+  /* --- Elevation -----------------------------------------------------
+     One light source, from directly above and slightly forward, like an
+     overcast glow. Every raised element agrees about it, so shadows stop
+     fighting each other.
+
+     The question to ask of any new shadow is not "what looks good here"
+     but "what would this cast under the same light as everything else".
+
+     Each level pairs a contact shadow with a wider ambient one, and raised
+     controls also take an inset highlight on the top edge, which is what
+     the light striking the near edge actually looks like. */
+  --shadow-raised:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 1px 2px rgba(41, 41, 41, 0.08),
+    0 2px 6px -2px rgba(41, 41, 41, 0.1);
+  --shadow-card: 0 1px 2px rgba(41, 41, 41, 0.04), 0 8px 24px -16px rgba(41, 41, 41, 0.16);
+  --shadow-overlay: 0 2px 4px rgba(41, 41, 41, 0.06), 0 16px 40px -12px rgba(41, 41, 41, 0.22);
+
+  /* --- Motion --------------------------------------------------------
+     Most interface state does not need animating. Use motion where it
+     explains a relationship, and nowhere else. One curve for anything that
+     arrives. */
+  --ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+}
+
+/* ===========================================================================
+   Base
+   =========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Rubber-band overscroll otherwise reveals the browser's background behind
+     the canvas, which reads as a rendering fault. */
+  background: var(--color-canvas);
+}
+
+/* The landing page starts in a dark hero and ends in the footer's black and light, so a bounce
+   past either end shows black rather than the light canvas. Other marketing pages start white and
+   keep the canvas. */
+html:has([data-landing]) {
+  background: var(--color-brand-black, #0a0a0b);
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  letter-spacing: var(--tracking);
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1;
+}
+
+/* Never remove a focus ring without replacing it. */
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Long values wrap rather than pushing the layout sideways. */
+code,
+.address {
+  overflow-wrap: anywhere;
+}
+
+svg {
+  /* Decorative strokes must never swallow a click meant for the control. */
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* ===========================================================================
+   Type utilities. Four sizes, assigned by role.
+   =========================================================================== */
+
+/* One rule, two names. In a four-size scale a page display and a section title
+   are the same size, so they share a declaration rather than drifting into two
+   values that are meant to match and eventually do not. */
+.t-display,
+.t-title {
+  font-family: var(--font-rounded);
+  font-size: var(--text-display);
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: var(--tracking);
+  text-wrap: balance;
+}
+
+.t-heading {
+  font-size: var(--text-base);
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: var(--tracking);
+}
+
+.t-body {
+  font-size: var(--text-base);
+  line-height: 1.55;
+  max-width: 68ch;
+  text-wrap: pretty;
+}
+
+.t-secondary {
+  font-size: var(--text-small);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.t-meta {
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+}
+
+.eyebrow {
+  font-size: var(--text-meta);
+  font-weight: 600;
+  /* The one place positive tracking is correct: small uppercase text needs
+     the extra room to stay legible. */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* Every figure the user reads. Rounded face, tabular so digits do not jitter
+   as a balance updates. */
+.figure {
+  font-family: var(--font-rounded);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: var(--tracking);
+}
+
+/* ===========================================================================
+   Surfaces
+   =========================================================================== */
+
+/* No outline (facelift, 4 Oct): white on the app canvas with the app's soft elevation; outside
+   the app shell, where `--app-ring` is not defined, the card shadow as before. */
+.card {
+  background: var(--color-surface);
+  border: 0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--app-ring, var(--shadow-card));
+}
+
+/* ===========================================================================
+   Motion
+   =========================================================================== */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise var(--duration-slow) var(--ease-entrance) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* The app and the live demo are dark: black canvas behind them, so overscroll never flashes white. */
+html:has([data-app]),
+html:has([data-app]) body {
+  background: #0a0a0b;
+}

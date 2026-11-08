@@ -1,0 +1,312 @@
+/* ===========================================================================
+   One spender.
+
+   The order answers the questions in the order they get asked: what is left,
+   can they still spend, what are the rules, who can they pay, what have they
+   been doing.
+   =========================================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  align-self: flex-start;
+  min-block-size: 2.75rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .back:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+/* --- Head ----------------------------------------------------------------- */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-inline-size: 0;
+}
+
+.name {
+  margin: 0;
+}
+
+.role {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+/* --- What is left --------------------------------------------------------- */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: clamp(1.25rem, 4vw, 1.75rem);
+  /* The global .card draws a stroke; boxes here do not (UI-STANDARD §7). */
+  border: 0;
+  box-shadow: var(--app-ring, 0 1px 2px rgb(0 0 0 / 0.04));
+}
+
+.heroLabel {
+  margin: 0;
+}
+
+.heroFigure {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.heroWord {
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+.heroLine {
+  margin: -0.25rem 0 0.25rem;
+  font-size: var(--text-small);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/* The read failed. Explained in a full sentence rather than left as a bare
+   dash, because a dash on its own is a puzzle. */
+.heroUnknown {
+  margin: -0.25rem 0 0.25rem;
+  font-size: var(--text-small);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  max-inline-size: 62ch;
+  text-wrap: pretty;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-start: 0.625rem;
+}
+
+/* --- Panels --------------------------------------------------------------- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: clamp(1rem, 3vw, 1.25rem);
+  /* The global .card draws a stroke; boxes here do not (UI-STANDARD §7). */
+  border: 0;
+  box-shadow: var(--app-ring, 0 1px 2px rgb(0 0 0 / 0.04));
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.panelTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panelCount {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 1.375rem;
+  block-size: 1.375rem;
+  padding-inline: 0.375rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+  font-size: var(--text-meta);
+  font-weight: 500;
+}
+
+.panelLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-block-size: 2.75rem;
+  color: var(--color-accent-text);
+  font-size: var(--text-small);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .panelLink:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-underline-position: from-font;
+  }
+}
+
+/* --- Policy facts --------------------------------------------------------- */
+
+.facts {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+@media (min-width: 34rem) {
+  .facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.125rem 1.5rem;
+  }
+}
+
+@media (min-width: 62rem) {
+  .facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  min-inline-size: 0;
+}
+
+.factLabel {
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+}
+
+.factValue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.45;
+  color: var(--color-text-primary);
+}
+
+.factNote {
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+/* --- Merchants ------------------------------------------------------------ */
+
+.merchants {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 34rem) {
+  .merchants {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 62rem) {
+  .merchants {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.merchant {
+  min-inline-size: 0;
+}
+
+/* Concentric: the 16px card has 20px of padding, so the rows inside it take the
+   control radius rather than repeating the card's own corner. */
+.merchantLink {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  min-block-size: 2.75rem;
+  justify-content: center;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-sunken);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* A link only on your own page, where a merchant is somewhere you can pay. On anyone else's it is
+   the same row with nothing to press, so it does not light up as if it were. */
+@media (hover: hover) {
+  a.merchantLink:hover {
+    background: var(--color-accent-soft);
+  }
+}
+
+.merchantName {
+  font-size: var(--text-small);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.merchantCategory {
+  font-size: var(--text-meta);
+  color: var(--color-text-tertiary);
+}
+
+.merchantNote {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  max-inline-size: 64ch;
+  text-wrap: pretty;
+}
+
+/* --- Activity ------------------------------------------------------------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sectionTitle {
+  margin: 0;
+}
+
+.loading { margin: 0; padding: 2rem 0; font-size: var(--text-base); color: var(--color-text-secondary); }

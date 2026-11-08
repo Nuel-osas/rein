@@ -1,0 +1,96 @@
+/* ===========================================================================
+   Money.
+
+   Every figure is `.figure` from globals: rounded face, tabular digits so a
+   balance does not jitter as it updates. Nothing here sets a colour that is
+   not a token.
+   =========================================================================== */
+
+/* No `gap`. The two children are the dollars and the decimal point, and a
+   decimal point butts against the digits it belongs to — `$7.30`, never
+   `$7 .30`. A 0.08em gap here read as ~3px at hero size, which is small in the
+   stylesheet and unmistakable on a 40px figure: it made the headline number on
+   every screen look like two numbers. */
+.money {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+
+/* --- Sizes ---------------------------------------------------------------- */
+
+/* Four names, two sizes. The scale has exactly four steps and a balance is not
+   entitled to a fifth, so `hero` and `title` are both `--text-display` and the
+   balance outranks a section heading on weight, ink and the space around it
+   rather than on points. A clamped 68px figure was a size the system does not
+   have, and it made the one number people check the only thing on the page
+   that could not be matched anywhere else. */
+.hero {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  line-height: 1.1;
+  font-weight: 400;
+}
+
+.title {
+  font-size: var(--text-display);
+  line-height: 1.1;
+  font-weight: 500;
+}
+
+.body {
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.inline {
+  font-size: inherit;
+  font-weight: 500;
+}
+
+/* Cents sit on the baseline, one step down. Raising them into a superscript is
+   a retail habit; it costs legibility on a figure people are checking rather
+   than skimming. A step of the scale rather than an em fraction, so the cents
+   land on a size the rest of the interface also uses. */
+.hero .cents,
+.title .cents {
+  font-size: .6em;
+  color: var(--color-text-secondary);
+}
+
+/* --- Tones ---------------------------------------------------------------- */
+
+.in {
+  color: var(--color-money-in);
+}
+
+.out {
+  color: var(--color-money-out);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+/* --- Unknown -------------------------------------------------------------- */
+
+/* An em dash, never a zero.
+
+   SECONDARY ink rather than tertiary, and the difference matters more here than
+   almost anywhere else in the product. Tertiary measures 2.37:1 on the sunken
+   surface in light mode, below even the large-text threshold, so the dash can
+   be effectively invisible. And this dash is not decoration: it is the ONLY
+   thing distinguishing "we could not read this" from a figure. An invisible
+   dash renders as an empty space, which a reader completes as nothing, which is
+   exactly the null-read-as-zero mistake this codebase is built to avoid. The
+   care taken in the data layer is undone at the render boundary if the marker
+   cannot be seen.
+
+   Still quieter than a real figure, because secondary is two steps below the
+   primary ink a value is set in, so absence still reads as absence.
+
+   Tracking is inherited: `--tracking` is a flat -0.15px, so it does not need
+   suppressing on a wide glyph the way an em value would. */
+.unknown {
+  color: var(--color-text-secondary);
+}

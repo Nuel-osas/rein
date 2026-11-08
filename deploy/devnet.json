@@ -1,0 +1,54 @@
+{
+  "cluster": "devnet",
+  "rpc": "https://api.devnet.solana.com",
+  "programId": "F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe",
+  "config": "9wir7aGbR6CHs1Ctf9o5uegvBbaBULZgsf2mbo7kodYF",
+  "mint": "Cwc241qD8qJiXDTgGZ2y6nLQg59cdkXzhCHz3vgFoa14",
+  "mintAuthority": "9VUaEpHp4Bka2Yce6EtBxNGi5sb3pbd8SvkY75URQ2bx",
+  "sponsor": "hEczh4E1DGuGPTikSLGZKZUAxSAF7Cw1vaSNrxatfjF",
+  "team": "EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5",
+  "teamName": "Acme Research",
+  "vault": "FdPTBxs2FcN4L5bHHUuXpDi2x6aYcnn5q7bpDisnaJkK",
+  "owner": "FHMcsEbJ53Npt4VfXLBFq33wUmQZR8vFFXvFDzTqa875",
+  "agent": {
+    "authority": "EYCrH75r2ELjg8LR2S3v4DLErGa5d3y7Lr7x5jhHEdhT",
+    "spender": "GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d"
+  },
+  "person": {
+    "authority": "EoGi1axnbXHvVYEX68cLHZPxxxY8W8zogywC2RtCjVhd",
+    "spender": "4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK"
+  },
+  "services": {
+    "web-search": {
+      "address": "8uLAhqCCWRF4JqT9GgnUQvLozRCp3JKcQo5gJfwPsj1Z",
+      "payee": "DRckFc5v8tysFrcQobV3C5jQf7MXFteQPcQrFuyi8cXd",
+      "payeeToken": "7MoJfzeL9CaTkTACcUVzoXX1zjDbnwiyv9xthRhXoWXw",
+      "price": "0.40"
+    },
+    "llm-inference": {
+      "address": "DEj1rr9Q3zBuNcC9FeFeWi6BZrHMxq34G4AqDYSnHg7p",
+      "payee": "7UU7vEBucPnYnfWxsQ5VvT9b1CcxM1KdSg8TCejaJHhR",
+      "payeeToken": "3HvFSDEtvinT46nHkDiESw1LL1qfsfahEhcWA2rVxypA",
+      "price": "2"
+    },
+    "market-data": {
+      "address": "Hft9fRxre32TCa9T8nooDPhqBxJNnfsGurwzdBBQAQRS",
+      "payee": "ASg8GpySaUmu8KyY1tgWwFRUCdgeKm5y2L1swv44TjBa",
+      "payeeToken": "HiqJernvq6H5mYoABkTGu3QseqjpgSQvWBabGcT3H8B9",
+      "price": "1.50"
+    },
+    "gpu-hour": {
+      "address": "4RwFfvF93w5aFB4S56UhiUdF2b91ZugP9p9ENdQxS4Di",
+      "payee": "4W9kLDtFVFSQxDj252gi4E8h9egRyMFqGWVtB8jzUmwA",
+      "payeeToken": "F5geYLQHhSsha98ptKKsMy5Ge3dJtJfigQa6XkrhiZga",
+      "price": "3"
+    },
+    "premium-dataset": {
+      "address": "GvMw9LZqdgQyhkfybT6mp6XgSRRGAgSLKxZnTp8AfXNc",
+      "payee": "7aue3gsMrHqJU6Atgrsa63HpHBjac3GpukwvFXD8J1L",
+      "payeeToken": "Ec5N4QM6Zo81m3D4NrpS9qkNtG63C4Ldi2Uavih8tbA5",
+      "price": "12"
+    }
+  },
+  "seededAt": "2026-11-08T03:39:43.255Z"
+}

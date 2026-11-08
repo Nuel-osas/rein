@@ -1,0 +1,372 @@
+/* ===========================================================================
+   List pages: one bar, one card, rows.
+
+   Every edge and corner is a theme token, never a literal: the card is a white
+   surface on the canvas with the theme's card edge (`--app-ring`) and corner
+   (`--radius-card`); inside it, one hairline (`--app-divider`) under the column
+   heads and one between rows. A change of look lands here through the tokens.
+
+   Rows that are links are a list of links laid out on a grid (`.head` + `.rows`):
+   a whole row is one target and a list is the honest semantic for it. Rows that
+   hold their own buttons stay a real `<table>` on the page that owns them.
+
+   Every `var()` carries a fallback: the spike harness renders outside the app
+   layout that defines some of these tokens.
+   =========================================================================== */
+
+/* --- The bar ---------------------------------------------------------------- */
+
+.bar {
+  container: list-bar / inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.barStart {
+  min-inline-size: 0;
+}
+
+/* The tools stay on one line; when the bar is too narrow for both halves, the
+   tools take a line of their own and the search field gives up width first. */
+.barEnd {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  margin-inline-start: auto;
+}
+
+/* A phone-width bar: the tools take their own full line and the search field takes what the
+   button leaves, rather than sitting right-aligned at its desktop width. */
+@container list-bar (max-width: 36rem) {
+  .barEnd {
+    flex: 1 1 100%;
+    margin-inline-start: 0;
+  }
+
+  .search {
+    flex: 1 1 auto;
+  }
+}
+
+/* Filter chips: tags on a sunken tint. The one that is on is white, carries the
+   edge of a control and a heavier word, so it reads as selected by shape and
+   weight as well as colour. Its count is in the tag, never a separate badge. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 2.25rem;
+  padding-inline: 0.75rem;
+  border: 0;
+  border-radius: var(--radius-control, 8px);
+  background: var(--color-surface-sunken, #f5f3f8);
+  box-shadow: none;
+  color: var(--color-text-secondary, #4a4553);
+  font: inherit;
+  font-size: var(--text-base, 14px);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast, 120ms) linear,
+    color var(--duration-fast, 120ms) linear;
+}
+
+.tab[aria-pressed="true"] {
+  background: var(--color-surface, #fff);
+  box-shadow: inset 0 0 0 1px var(--app-control-edge, #d2ccdb);
+  color: var(--color-text-primary, #0a0a0b);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .tab[aria-pressed="false"]:hover {
+    color: var(--color-text-primary, #0a0a0b);
+  }
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-border-focus, #5b21b6);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .tab {
+    min-block-size: 2.75rem;
+  }
+}
+
+.tabCount {
+  color: var(--color-text-tertiary, #5e5869);
+  font-size: var(--text-small, 13px);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A search field in the bar: a control, so it keeps an edge. */
+.search {
+  display: flex;
+  flex: 0 1 20rem;
+  min-inline-size: 9rem;
+}
+
+.search input {
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding-inline: 0.875rem;
+  border: 1px solid var(--app-control-edge, #e4e0ea);
+  border-radius: var(--radius-control, 8px);
+  background: var(--color-surface, #fff);
+  color: var(--color-text-primary, #0a0a0b);
+  font: inherit;
+  font-size: var(--text-base, 14px);
+}
+
+.search input:focus-visible {
+  outline: none;
+  border-color: var(--color-accent-solid, #5b21b6);
+  box-shadow: 0 0 0 1px var(--color-accent-solid, #5b21b6);
+}
+
+/* --- The card ---------------------------------------------------------------- */
+
+/* The container the rows query: a phone-width card turns each row into two
+   lines rather than squeezing columns. Clipped, so a hovered last row keeps the
+   card's rounded corners. */
+.card {
+  container: list-card / inline-size;
+  overflow: hidden;
+  border-radius: var(--radius-card, 16px);
+  background: var(--color-surface, #fff);
+  box-shadow: var(--app-ring, 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.03));
+}
+
+/* The column heads. Each page sets `--cols` on the card, so heads and rows share one grid. */
+.head {
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 0 1.5rem;
+  padding: 0.75rem var(--app-card-pad, 1.5rem);
+  border-block-end: 1px solid var(--app-divider, #f1eff4);
+  color: var(--color-text-secondary, #4a4553);
+  font-size: var(--text-meta, 12px);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows > li + li {
+  border-block-start: 1px solid var(--app-divider, #f1eff4);
+}
+
+/* One row, one link. No transition on the hover tint: it is the highest
+   frequency interaction on the page. */
+.row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  gap: 0.375rem 1.5rem;
+  min-block-size: 4rem;
+  padding: 0.875rem var(--app-card-pad, 1.5rem);
+  color: inherit;
+  text-decoration: none;
+}
+
+.rows > li:last-child .row {
+  border-end-start-radius: var(--radius-card, 16px);
+  border-end-end-radius: var(--radius-card, 16px);
+}
+
+@media (hover: hover) {
+  a.row:hover {
+    background: var(--color-surface-sunken, #f5f3f8);
+  }
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--color-border-focus, #5b21b6);
+  outline-offset: -2px;
+}
+
+/* A cell: a main line and, under it, a quieter one. Children keep their own
+   width, so a status tag stays a tag rather than stretching across the column. */
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-inline-size: 0;
+}
+
+.numeric {
+  align-items: flex-end;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.headNumeric {
+  text-align: end;
+}
+
+/* Avatar beside a name and its second line. */
+.who {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-inline-size: 0;
+}
+
+.main {
+  color: var(--color-text-primary, #0a0a0b);
+  font-size: var(--text-base, 14px);
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.text {
+  color: var(--color-text-primary, #0a0a0b);
+  font-size: var(--text-base, 14px);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.sub {
+  color: var(--color-text-secondary, #4a4553);
+  font-size: var(--text-small, 13px);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.nameLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+/* Inside the card when there is nothing to list: one sentence and, maybe, one action. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1.5rem var(--app-card-pad, 1.5rem);
+  color: var(--color-text-secondary, #4a4553);
+  font-size: var(--text-base, 14px);
+  line-height: 1.55;
+}
+
+.empty p {
+  margin: 0;
+  max-inline-size: 60ch;
+  text-wrap: pretty;
+}
+
+/* One quiet line under a list: how complete it is, whether anything runs. */
+.quiet {
+  margin: 0;
+  max-inline-size: 72ch;
+  color: var(--color-text-secondary, #4a4553);
+  font-size: var(--text-small, 13px);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* --- Sections under the list --------------------------------------------------- */
+
+.section {
+  container: list-section / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-gap, 1rem);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text-primary, #0a0a0b);
+  font-size: var(--text-base, 14px);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Template cards: two columns once there is room for two, as in the reference. */
+.templates {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@container list-section (min-width: 40rem) {
+  .templates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.template {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  padding: 1.25rem var(--app-card-pad, 1.5rem);
+  border-radius: var(--radius-card, 16px);
+  background: var(--color-surface, #fff);
+  box-shadow: var(--app-ring, 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.03));
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The title takes the link colour on hover: no lift, no shadow (the edges are the theme's). */
+@media (hover: hover) {
+  .template:hover .templateTitle {
+    color: var(--color-accent-text, #5b21b6);
+  }
+}
+
+.template:focus-visible {
+  outline: 2px solid var(--color-border-focus, #5b21b6);
+  outline-offset: 2px;
+}
+
+.trigger {
+  color: var(--color-text-secondary, #4a4553);
+  font-size: var(--text-meta, 12px);
+  font-weight: 500;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+.templateTitle {
+  margin-block-start: 0.625rem;
+  color: var(--color-text-primary, #0a0a0b);
+  font-size: var(--text-base, 14px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.templateBody {
+  margin-block-start: 0.25rem;
+  color: var(--color-text-secondary, #4a4553);
+  font-size: var(--text-small, 13px);
+  line-height: 1.5;
+  text-wrap: pretty;
+}

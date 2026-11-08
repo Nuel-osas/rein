@@ -1,0 +1,1828 @@
+{
+  "address": "F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe",
+  "metadata": {
+    "name": "rein",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Rein: spending rules for teams and their AI agents, on Solana"
+  },
+  "instructions": [
+    {
+      "name": "add_spender",
+      "docs": [
+        "Grants a person or an agent a policy. A revoked spender can be granted again, with a new",
+        "generation, so nothing it filed before the revoke can settle."
+      ],
+      "discriminator": [
+        124,
+        73,
+        160,
+        154,
+        78,
+        211,
+        227,
+        177
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "spender",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  112,
+                  101,
+                  110,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "team"
+              },
+              {
+                "kind": "arg",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "kind",
+          "type": {
+            "defined": {
+              "name": "Kind"
+            }
+          }
+        },
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "policy",
+          "type": {
+            "defined": {
+              "name": "Policy"
+            }
+          }
+        },
+        {
+          "name": "services",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "approve",
+      "docs": [
+        "The owner approves a pending payment and it settles in the same transaction.",
+        "A stop that applies now (revoked, expired, service suspended or moved) refuses it for good."
+      ],
+      "discriminator": [
+        69,
+        74,
+        217,
+        36,
+        115,
+        117,
+        97,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          },
+          "relations": [
+            "spender",
+            "payment"
+          ]
+        },
+        {
+          "name": "spender",
+          "writable": true
+        },
+        {
+          "name": "service"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "payee_token",
+          "writable": true
+        },
+        {
+          "name": "payment",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel",
+      "docs": [
+        "The owner, or the spender who filed it, withdraws a pending payment."
+      ],
+      "discriminator": [
+        232,
+        219,
+        223,
+        41,
+        219,
+        236,
+        220,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "team",
+          "relations": [
+            "payment"
+          ]
+        },
+        {
+          "name": "payment",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_team",
+      "discriminator": [
+        122,
+        161,
+        98,
+        67,
+        178,
+        128,
+        116,
+        113
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Pays the rent for the team and its vault. Can be a sponsor."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "team",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "team"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "decline",
+      "discriminator": [
+        24,
+        57,
+        90,
+        162,
+        91,
+        94,
+        245,
+        177
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          },
+          "relations": [
+            "payment"
+          ]
+        },
+        {
+          "name": "payment",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_config",
+      "docs": [
+        "One registry per deployment: who may list services, and which token teams hold."
+      ],
+      "discriminator": [
+        23,
+        235,
+        115,
+        232,
+        168,
+        96,
+        1,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "pay",
+      "docs": [
+        "Pays a registered service from the vault under the signer's policy.",
+        "",
+        "`payer` covers the fee and the payment record's rent, so the spender never needs SOL.",
+        "The payment record's address is derived from (spender, intent), so one intent can be",
+        "paid or filed at most once."
+      ],
+      "discriminator": [
+        119,
+        18,
+        216,
+        65,
+        192,
+        117,
+        122,
+        220
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Pays the fee and the payment record's rent. A sponsor, so spenders never hold SOL."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "The person or agent paying. Holds no money of its own."
+          ],
+          "signer": true,
+          "relations": [
+            "spender"
+          ]
+        },
+        {
+          "name": "team",
+          "writable": true,
+          "relations": [
+            "spender"
+          ]
+        },
+        {
+          "name": "spender",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  112,
+                  101,
+                  110,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "team"
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "service",
+          "docs": [
+            "The registry entry. An unknown service id has no account, so the call fails here."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  114,
+                  118,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "service.id",
+                "account": "Service"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "payee_token",
+          "docs": [
+            "Must be the payee the registry names. A made-up recipient cannot be passed."
+          ],
+          "writable": true
+        },
+        {
+          "name": "payment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "spender"
+              },
+              {
+                "kind": "arg",
+                "path": "intent"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "intent",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "memo",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "register_service",
+      "docs": [
+        "Lists a service a team can pay. `price` is the list price shown to agents; it is not a limit."
+      ],
+      "discriminator": [
+        11,
+        133,
+        158,
+        232,
+        193,
+        19,
+        229,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "service",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  114,
+                  118,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payee_token"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "revoke",
+      "discriminator": [
+        170,
+        23,
+        31,
+        34,
+        133,
+        173,
+        93,
+        242
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          },
+          "relations": [
+            "spender"
+          ]
+        },
+        {
+          "name": "spender",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  112,
+                  101,
+                  110,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "team"
+              },
+              {
+                "kind": "account",
+                "path": "spender.authority",
+                "account": "Spender"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "set_paused",
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "set_policy",
+      "discriminator": [
+        40,
+        133,
+        12,
+        157,
+        235,
+        202,
+        2,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          },
+          "relations": [
+            "spender"
+          ]
+        },
+        {
+          "name": "spender",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  112,
+                  101,
+                  110,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "team"
+              },
+              {
+                "kind": "account",
+                "path": "spender.authority",
+                "account": "Spender"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "policy",
+          "type": {
+            "defined": {
+              "name": "Policy"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_service_active",
+      "docs": [
+        "Suspends or restores a service. A suspended service cannot be paid or settled."
+      ],
+      "discriminator": [
+        221,
+        172,
+        149,
+        49,
+        212,
+        184,
+        77,
+        101
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "service",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  114,
+                  118,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "service.id",
+                "account": "Service"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "active",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "set_services",
+      "discriminator": [
+        179,
+        40,
+        158,
+        232,
+        75,
+        174,
+        228,
+        252
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          },
+          "relations": [
+            "spender"
+          ]
+        },
+        {
+          "name": "spender",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  112,
+                  101,
+                  110,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "team"
+              },
+              {
+                "kind": "account",
+                "path": "spender.authority",
+                "account": "Spender"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "services",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_spender_status",
+      "docs": [
+        "Pauses or resumes a spender. Revoking is its own call because it cannot be undone."
+      ],
+      "discriminator": [
+        160,
+        201,
+        124,
+        196,
+        87,
+        121,
+        118,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          },
+          "relations": [
+            "spender"
+          ]
+        },
+        {
+          "name": "spender",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  112,
+                  101,
+                  110,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "team"
+              },
+              {
+                "kind": "account",
+                "path": "spender.authority",
+                "account": "Spender"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "active",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "Moves money out of the vault to an account the owner names. Only the owner can."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "team",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "relations": [
+            "team"
+          ]
+        },
+        {
+          "name": "to",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Payment",
+      "discriminator": [
+        227,
+        231,
+        51,
+        26,
+        244,
+        88,
+        4,
+        148
+      ]
+    },
+    {
+      "name": "Service",
+      "discriminator": [
+        144,
+        62,
+        76,
+        129,
+        167,
+        36,
+        151,
+        250
+      ]
+    },
+    {
+      "name": "Spender",
+      "discriminator": [
+        157,
+        194,
+        95,
+        95,
+        55,
+        132,
+        208,
+        151
+      ]
+    },
+    {
+      "name": "Team",
+      "discriminator": [
+        140,
+        218,
+        177,
+        140,
+        193,
+        241,
+        199,
+        106
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TeamPaused",
+      "msg": "the team is paused"
+    },
+    {
+      "code": 6001,
+      "name": "NotActive",
+      "msg": "spender is not active"
+    },
+    {
+      "code": 6002,
+      "name": "Expired",
+      "msg": "spender policy has expired"
+    },
+    {
+      "code": 6003,
+      "name": "ServiceSuspended",
+      "msg": "the service is suspended"
+    },
+    {
+      "code": 6004,
+      "name": "WrongPayee",
+      "msg": "the payee is not the one the registry names"
+    },
+    {
+      "code": 6005,
+      "name": "NotPending",
+      "msg": "payment is not pending"
+    },
+    {
+      "code": 6006,
+      "name": "RequestExpired",
+      "msg": "the pending payment has expired"
+    },
+    {
+      "code": 6007,
+      "name": "NotOwnerOrFiler",
+      "msg": "only the owner or the filer can cancel"
+    },
+    {
+      "code": 6008,
+      "name": "AlreadySpender",
+      "msg": "already a spender: change its policy instead"
+    },
+    {
+      "code": 6009,
+      "name": "KindChanged",
+      "msg": "a spender keeps its kind"
+    },
+    {
+      "code": 6010,
+      "name": "ZeroAmount",
+      "msg": "amount must be above zero"
+    },
+    {
+      "code": 6011,
+      "name": "MemoTooLong",
+      "msg": "a memo is at most 64 bytes"
+    },
+    {
+      "code": 6012,
+      "name": "BadIntent",
+      "msg": "an intent is 1 to 32 characters of a-z, A-Z, 0-9, - and _"
+    },
+    {
+      "code": 6013,
+      "name": "BadServiceId",
+      "msg": "a service id is 1 to 32 characters of a-z, 0-9 and -"
+    },
+    {
+      "code": 6014,
+      "name": "BadLabel",
+      "msg": "a label is 1 to 32 characters"
+    },
+    {
+      "code": 6015,
+      "name": "BadPolicy",
+      "msg": "allowance and cap above zero, cap within allowance, period at least 60 s, at least 1 payment, expiry in the future"
+    },
+    {
+      "code": 6016,
+      "name": "TooManyServices",
+      "msg": "at most 8 services per spender"
+    }
+  ],
+  "types": [
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "services",
+            "type": "u32"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Kind",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Person"
+          },
+          {
+            "name": "Agent"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Payment",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "team",
+            "type": "pubkey"
+          },
+          {
+            "name": "spender",
+            "docs": [
+              "The spender account (PDA)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "docs": [
+              "The key that signed `pay`."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "kind",
+            "type": {
+              "defined": {
+                "name": "Kind"
+              }
+            }
+          },
+          {
+            "name": "service",
+            "type": "pubkey"
+          },
+          {
+            "name": "payee_token",
+            "docs": [
+              "The payee the registry named when the payment was filed. Only this account can be paid."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "intent",
+            "type": "string"
+          },
+          {
+            "name": "memo",
+            "type": "string"
+          },
+          {
+            "name": "generation",
+            "type": "u32"
+          },
+          {
+            "name": "reasons",
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "PaymentStatus"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "deadline",
+            "docs": [
+              "Pending payments can be approved until this time. Zero when paid at once."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "decided_at",
+            "type": "i64"
+          },
+          {
+            "name": "number",
+            "docs": [
+              "Order within the team, from zero."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Paid"
+          },
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Settled"
+          },
+          {
+            "name": "Declined"
+          },
+          {
+            "name": "Cancelled"
+          },
+          {
+            "name": "Refused"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Policy",
+      "docs": [
+        "Amounts are token base units (USDC has 6 decimals). Times are unix seconds."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "allowance",
+            "docs": [
+              "What the spender may pay in one period."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "period_secs",
+            "type": "u32"
+          },
+          {
+            "name": "cap",
+            "docs": [
+              "The most one payment may be."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_payments",
+            "docs": [
+              "The most payments in one period."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "expires_at",
+            "docs": [
+              "The policy refuses from this instant on."
+            ],
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Service",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "label",
+            "type": "string"
+          },
+          {
+            "name": "payee",
+            "type": "pubkey"
+          },
+          {
+            "name": "payee_token",
+            "type": "pubkey"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Spender",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "team",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "kind",
+            "type": {
+              "defined": {
+                "name": "Kind"
+              }
+            }
+          },
+          {
+            "name": "label",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          },
+          {
+            "name": "generation",
+            "type": "u32"
+          },
+          {
+            "name": "policy",
+            "type": {
+              "defined": {
+                "name": "Policy"
+              }
+            }
+          },
+          {
+            "name": "services",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "period_start",
+            "type": "i64"
+          },
+          {
+            "name": "spent",
+            "type": "u64"
+          },
+          {
+            "name": "count",
+            "type": "u32"
+          },
+          {
+            "name": "added_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Status",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Revoked"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Team",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "spenders",
+            "type": "u32"
+          },
+          {
+            "name": "payments",
+            "type": "u64"
+          },
+          {
+            "name": "paid_count",
+            "type": "u64"
+          },
+          {
+            "name": "paid_total",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

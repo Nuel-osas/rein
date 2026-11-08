@@ -1,0 +1,9 @@
+.brand { display: inline-flex; align-items: center; gap: .5rem; color: inherit; font-size: var(--text-display); font-weight: 500; letter-spacing: -.04em; line-height: 1; }
+/* Sized to the wordmark's ascenders, not to a box: the mark has no frame of its own. */
+.mark { block-size: 1.3em; inline-size: auto; aspect-ratio: 1; flex: none; }
+.brand .mark { block-size: 1.05em; }
+/* The mark changes colour with its surface (the landing header goes from black to canvas on
+   scroll), so it follows the same 280ms the header's text does. */
+@media (prefers-reduced-motion: no-preference) {
+  .mark path { transition: fill 280ms ease-out; }
+}
