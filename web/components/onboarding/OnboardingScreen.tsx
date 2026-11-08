@@ -2,7 +2,6 @@ import Link from "next/link";
 import {Brand} from "@/components/Brand";
 import {IconArrowLeft, IconArrowRight, IconCheck, IconShield} from "@/components/app/Icons";
 import {NETWORK_NAME} from "@/components/app/network-copy";
-import {TestnetStrip} from "@/components/app/TestnetMark";
 import {OnboardingStory} from "./OnboardingStory";
 import styles from "./Onboarding.module.css";
 
@@ -22,36 +21,36 @@ export function OnboardingScreen({state, onLogin, onLogout, error, name, address
 }) {
   const signedIn = state === "signed-in";
   const unavailable = state === "unavailable";
-  return <main className={styles.page} data-onboarding="split">
+  return <main className={styles.page} data-onboarding="split" data-theme="dark">
     <OnboardingStory />
     <section className={styles.panel} aria-labelledby="onboarding-title">
-      <TestnetStrip />
       <header className={styles.header}>
         <Link className={styles.mobileBrand} href="/" aria-label="Rein home"><Brand /></Link>
         <Link className={styles.back} href="/"><IconArrowLeft />Back to home</Link>
       </header>
       <div className={styles.panelContent}>
+        {/* One traced frame holds the whole decision: the heading, the way in, and what the money is. */}
         <div className={styles.frame}>
           <div className={styles.frameHead}>
             <p className={styles.label}>{signedIn ? "Signed in" : unavailable ? "Unavailable" : "Sign in"}</p>
             {signedIn ? <span className={styles.successMark} aria-hidden="true"><IconCheck size="card" /></span> : null}
-            <h1 id="onboarding-title">{signedIn ? "You’re signed in." : unavailable ? "Sign-in is not configured" : "Welcome to Rein."}</h1>
+            <h1 id="onboarding-title">{signedIn ? "You’re signed in." : unavailable ? "Sign-in unavailable" : "Welcome to Rein."}</h1>
             <p className={styles.description}>
               {signedIn
                 ? name ?? "Your Solana wallet is ready."
                 : unavailable
-                  ? "This deployment has no Privy app id. Everything public still works: the demo team, its approvals and the live views."
-                  : "Spending rules for your team and its AI agents. Sign in with Google and Rein gives you a Solana wallet. You never need SOL."}
+                  ? "Explore the live demo while sign-in is unavailable."
+                  : "One shared vault, with rules for every spender and agent."}
             </p>
           </div>
           <div className={styles.frameBody}>
             {state === "loading" ? (
               <div className={styles.loading} role="status"><span />Checking your session…</div>
             ) : unavailable ? (
-              <Link className={styles.primary} href="/demo"><span>Try the live demo</span><IconArrowRight /></Link>
+              <Link className={styles.primary} href="/demo"><span>See how it works</span><IconArrowRight /></Link>
             ) : signedIn ? (
               <>
-                {address ? <p className={styles.description}>Wallet <span style={{fontFamily: "var(--font-mono)", letterSpacing: 0}}>{address.slice(0, 4)}…{address.slice(-4)}</span></p> : null}
+                {address ? <p className={styles.wallet}>Solana wallet <code>{address.slice(0, 4)}…{address.slice(-4)}</code></p> : null}
                 {next ? (
                   <Link className={styles.primary} href={next.href}><span>{next.label}</span><IconArrowRight /></Link>
                 ) : (
@@ -68,7 +67,9 @@ export function OnboardingScreen({state, onLogin, onLogout, error, name, address
           </div>
           <div className={styles.frameFoot}>
             <p className={styles.provider}><IconShield />Secure sign-in with Privy</p>
-            <p className={styles.disclosure}>{NETWORK_NAME} · Test USDC, not real money · A sponsor pays the fees, so you need no SOL</p>
+            <p className={styles.disclosure}>{NETWORK_NAME} · Test USDC, not real money</p>
+            {/* Said once, here, before anybody signs anything: the sponsor pays every fee. */}
+            <p className={styles.risk}>Rein gives you a Solana wallet and a sponsor pays every network fee, so you never need SOL.</p>
           </div>
         </div>
       </div>
