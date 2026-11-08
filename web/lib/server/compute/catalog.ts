@@ -1,50 +1,37 @@
-// Per-model prices for the compute gateway, in micro-USD per million tokens (so $1.00/MTok is
-// 1_000_000n). Money stays integer: a quote is computed from these with bigint math only.
+// The compute services Rein sells, each one Solana registry service backed by one 0G Compute
+// operation (`@rein/zg-compute`, ported from Nuntio). Prices are not here: every quote asks 0G for
+// the worst case of one run right now (provider prices × 0G's USD rate) and marks it up 1.5×.
 //
-// Sources:
-//   claude-haiku-5-5  $0.10 in / $0.50 out per MTok, prompts up to 100K tokens. Anthropic's model
-//                     table as bundled with the Claude API skill (cached 2026-10-06), which cites
-//                     https://platform.claude.com/docs/en/about-claude/pricing. Prompts here are
-//                     capped at 4,000 characters, far under the 100K tier.
-//   claude-haiku-4-5  $1.00 / $5.00 per MTok, same source.
-//   claude-sonnet-5-5 $2.00 / $10.00 per MTok, same source.
-//
-// OpenAI (codex-run): no model is listed because the model is not chosen yet (CODEX_MODEL has no
-// default) and no price was verified. Until one is added here, set COMPUTE_PRICE_CODEX_RUN to
-// "<input USD per MTok>/<output USD per MTok>" from OpenAI's pricing page, or codex-run answers
-// 503 "not configured". An unknown model is never priced at a guess.
+// What 0G serves was read live on mainnet (chain 16661) on 2026-11-08 with
+// `~/.cache/rein/gw/zg-providers.mts` (read only, a throwaway wallet): chat `0GM-1.0-35B-A3B` from
+// a TeeML provider whose signer 0G acknowledges (model-in-enclave). No Claude model was listed by
+// any provider, and GPT-5.4 mini's provider was refused (TEE signer not acknowledged), so only
+// `ai-chat` is registered. Add a row here, register it with scripts/compute-setup.ts, and it sells.
 
-export type ModelPrice = {
-  /** micro-USD per million input tokens */
-  inMicroPerMTok: bigint;
-  /** micro-USD per million output tokens */
-  outMicroPerMTok: bigint;
-  source: string;
-  /** Extra request fields this model needs (Anthropic only). */
-  anthropicExtras?: Record<string, unknown>;
+export type ComputeService = 'ai-chat';
+
+export type ServiceMeta = {
+  /** The `@rein/zg-compute` operation id. */
+  op: 'chat' | 'claude' | 'gpt';
+  /** The 0G model, exactly as 0G lists it (checked against the adapter's operation at wiring). */
+  model: string;
+  /** Registry label, at most 32 bytes. */
+  label: string;
+  summary: string;
+  maxPromptChars: number;
+  maxOutputTokens: number;
+  /** List price shown in the registry, base units (0.01). Not a limit and not the quote. */
+  listPrice: bigint;
 };
 
-const ANTHROPIC_PRICING = 'Anthropic pricing (platform.claude.com/docs/en/about-claude/pricing), as of 2026-10-06';
-
-export const CATALOG: Record<string, ModelPrice> = {
-  // Thinking is on by default on Haiku 5.5 and counts against max_tokens; low effort keeps a short
-  // request's answer inside the 1,024-token cap.
-  'claude-haiku-5-5': { inMicroPerMTok: 100_000n, outMicroPerMTok: 500_000n, source: ANTHROPIC_PRICING, anthropicExtras: { output_config: { effort: 'low' } } },
-  'claude-haiku-4-5': { inMicroPerMTok: 1_000_000n, outMicroPerMTok: 5_000_000n, source: ANTHROPIC_PRICING },
-  'claude-sonnet-5-5': { inMicroPerMTok: 2_000_000n, outMicroPerMTok: 10_000_000n, source: ANTHROPIC_PRICING, anthropicExtras: { output_config: { effort: 'low' } } },
+export const SERVICE_TABLE: Record<ComputeService, ServiceMeta> = {
+  'ai-chat': {
+    op: 'chat',
+    model: '0GM-1.0-35B-A3B',
+    label: '0G Chat (0GM-1.0-35B-A3B)',
+    summary: 'One answer of up to 1,024 tokens from 0GM-1.0-35B-A3B, run in a TEE on 0G and signed',
+    maxPromptChars: 4_000,
+    maxOutputTokens: 1_024,
+    listPrice: 10_000n,
+  },
 };
-
-/** "0.10/0.50" (USD per MTok, at most 6 decimals) to micro-USD per MTok, or null when malformed. */
-export function parsePriceOverride(raw: string | undefined): ModelPrice | null {
-  if (!raw) return null;
-  const m = /^\s*(\d{1,6}(?:\.\d{1,6})?)\s*\/\s*(\d{1,6}(?:\.\d{1,6})?)\s*$/.exec(raw);
-  if (!m) return null;
-  const micro = (s: string) => {
-    const [w, f = ''] = s.split('.');
-    return BigInt(w) * 1_000_000n + BigInt(f.padEnd(6, '0'));
-  };
-  const inP = micro(m[1]);
-  const outP = micro(m[2]);
-  if (inP <= 0n || outP <= 0n) return null;
-  return { inMicroPerMTok: inP, outMicroPerMTok: outP, source: 'operator-set env price' };
-}

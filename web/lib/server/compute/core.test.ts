@@ -1,23 +1,23 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { memoryStore, MemoryKV } from '../store';
-import { CATALOG, parsePriceOverride } from './catalog';
 import {
+  catalog,
   intentFor,
   INTENT_RE,
+  neuronToMicroUsd,
   priceOf,
   quote,
   readComputeEnv,
   result,
   run,
-  serviceSetup,
-  SYSTEM_PROMPT,
+  type ComputeBackendLike,
   type Deps,
   type PaymentView,
   type Quote,
   type RefundOutcome,
 } from './core';
-import { FAKE_PREFIX, realUpstream } from './upstream';
+import { FAKE_PREFIX, fakeBackend } from './backend';
 
 const PROGRAM = 'F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe';
 const TEAM = 'EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5';
@@ -26,11 +26,18 @@ const SPENDER = 'GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d';
 const SVC = 'SvcPda1111111111111111111111111111111111111';
 const GW_TOKEN = 'GwTok11111111111111111111111111111111111111';
 
-function harness(over: { env?: Record<string, string>; payment?: PaymentView | null | 'error'; upstreamFails?: boolean; payee?: string } = {}) {
+function harness(over: { env?: Record<string, string>; payment?: PaymentView | null | 'error'; upstreamFails?: boolean; payee?: string; ledgerNeuron?: bigint | null; noBackend?: boolean } = {}) {
   const store = memoryStore();
   let payment: PaymentView | null | 'error' = over.payment === undefined ? null : over.payment;
   const calls = { upstream: 0, refund: 0, refunds: [] as string[] };
-  const fake = realUpstream(true);
+  const fake = fakeBackend({ ledgerNeuron: over.ledgerNeuron, fail: over.upstreamFails });
+  const counted: ComputeBackendLike = {
+    ...fake,
+    run: async (svc, prompt, o) => {
+      calls.upstream++;
+      return fake.run(svc, prompt, o);
+    },
+  };
   const d: Deps = {
     store,
     env: readComputeEnv({ GATEWAY_SECRET: 'x'.repeat(40), COMPUTE_FAKE_UPSTREAM: '1', NODE_ENV: 'test', ...over.env }),
@@ -41,11 +48,7 @@ function harness(over: { env?: Record<string, string>; payment?: PaymentView | n
     spenderPda: () => SPENDER,
     paymentPda: (s, i) => `pay:${s}:${i}`,
     readPayment: async () => payment,
-    upstream: async (a) => {
-      calls.upstream++;
-      if (over.upstreamFails) throw new Error('boom');
-      return fake(a);
-    },
+    backend: async () => (over.noBackend ? { error: 'no 0G wallet key on this server' } : counted),
     refund: async (q: Quote, reason: string): Promise<RefundOutcome> => {
       calls.refund++;
       calls.refunds.push(reason);
@@ -73,36 +76,32 @@ const paidFor = (q: { amount: string }, over: Partial<PaymentView> = {}): Paymen
 });
 
 async function quoted(h: ReturnType<typeof harness>, prompt = 'What is Rein?') {
-  const r = await quote(h.d, { team: TEAM, authority: AUTH, service: 'claude-run', prompt, maxTokens: 1024 });
+  const r = await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   return r.body as { intent: string; amount: string };
 }
 
 describe('pricing', () => {
   it('charges at least one cent', () => {
-    const { amount } = priceOf(CATALOG['claude-haiku-5-5'], 'hi', 1024);
-    assert.equal(amount, 10_000n);
+    // The live probe's chat worst case: 0.00583 0G at $0.2536 is about $0.0015, so the floor applies.
+    assert.equal(priceOf(5_830_000_000_000_000n, 0.2536).amount, 10_000n);
   });
-  it('rounds the marked-up worst case up to the cent', () => {
-    // $10/MTok in and out: bytes × 10 + 1000 × 10 micro... = 1.5 × (bytes + 1000) × 10 base units
-    const p = { inMicroPerMTok: 10_000_000n, outMicroPerMTok: 10_000_000n, source: 't' };
-    const prompt = 'a'.repeat(4000);
-    const bytes = BigInt(Buffer.byteLength(SYSTEM_PROMPT + prompt));
-    const raw = (bytes + 1000n) * 10n; // base units
-    const want = ((raw * 3n + 2n * 10_000n - 1n) / (2n * 10_000n)) * 10_000n;
-    const { amount, worst } = priceOf(p, prompt, 1000);
-    assert.equal(amount, want);
-    assert.equal(worst, raw);
-    assert.equal(amount % 10_000n, 0n);
+  it('is 0G worst case x rate x 1.5, rounded up to the cent', () => {
+    // 1 0G at $0.25 = 250,000 base units; x1.5 = 375,000 = $0.375 -> $0.38
+    const { amount, worst } = priceOf(10n ** 18n, 0.25);
+    assert.equal(worst, 250_000n);
+    assert.equal(amount, 380_000n);
+    // the rate is rounded up to the micro-dollar, never down
+    assert.equal(priceOf(10n ** 18n, 0.2500001).worst, 250_001n);
   });
-  it('counts bytes, not characters', () => {
-    const p = { inMicroPerMTok: 1_000_000_000n, outMicroPerMTok: 1n, source: 't' };
-    assert.ok(priceOf(p, 'é'.repeat(100), 1).worst > priceOf(p, 'e'.repeat(100), 1).worst);
+  it('refuses nonsense inputs', () => {
+    assert.throws(() => priceOf(0n, 0.25));
+    assert.throws(() => priceOf(1n, 0));
+    assert.throws(() => priceOf(1n, Number.NaN));
   });
-  it('parses an operator price and refuses junk', () => {
-    assert.deepEqual(parsePriceOverride('1.25/10')?.inMicroPerMTok, 1_250_000n);
-    assert.equal(parsePriceOverride('free'), null);
-    assert.equal(parsePriceOverride('0/0'), null);
+  it('values the ledger rounding down', () => {
+    assert.equal(neuronToMicroUsd(10n ** 18n, 0.2536), 253_600n);
+    assert.equal(neuronToMicroUsd(1n, 0.2536), 0n);
   });
 });
 
@@ -119,19 +118,16 @@ describe('intent', () => {
 });
 
 describe('config', () => {
-  it('needs a key unless the fake upstream is on, and a price for codex', () => {
-    const env = readComputeEnv({ NODE_ENV: 'production' });
-    assert.equal(serviceSetup(env, 'claude-run').ok, false);
-    assert.equal(serviceSetup(env, 'codex-run').ok, false);
-    const withKey = readComputeEnv({ NODE_ENV: 'production', ANTHROPIC_API_KEY: 'k', OPENAI_API_KEY: 'k', CODEX_MODEL: 'some-codex' });
-    assert.equal(serviceSetup(withKey, 'claude-run').ok, true);
-    assert.equal(serviceSetup(withKey, 'codex-run').ok, false, 'no verified price for an unknown codex model');
-    const priced = readComputeEnv({ OPENAI_API_KEY: 'k', CODEX_MODEL: 'some-codex', COMPUTE_PRICE_CODEX_RUN: '1.25/10' });
-    assert.equal(serviceSetup(priced, 'codex-run').ok, true);
+  it('never fakes in production', () => {
+    assert.equal(readComputeEnv({ NODE_ENV: 'production', COMPUTE_FAKE_UPSTREAM: '1' }).fake, false);
+    assert.equal(readComputeEnv({ NODE_ENV: 'development', COMPUTE_FAKE_UPSTREAM: '1' }).fake, true);
   });
-  it('treats a malformed budget as zero', () => {
+  it('defaults to a $5 day and a $0.25 ledger floor, and fails closed on junk', () => {
+    const e = readComputeEnv({});
+    assert.equal(e.dailyBudget, 5_000_000n);
+    assert.equal(e.ledgerFloor, 250_000n);
     assert.equal(readComputeEnv({ COMPUTE_DAILY_BUDGET_USD: 'lots' }).dailyBudget, 0n);
-    assert.equal(readComputeEnv({}).dailyBudget, 10_000_000n);
+    assert.ok(readComputeEnv({ ZG_LEDGER_FLOOR_USD: 'none' }).ledgerFloor > 10n ** 12n);
   });
 });
 
@@ -147,28 +143,49 @@ describe('quote', () => {
   });
   it('refuses when halted by env or by the Redis key', async () => {
     const off = harness({ env: { COMPUTE_ENABLED: 'false' } });
-    assert.equal((await quote(off.d, { team: TEAM, authority: AUTH, service: 'claude-run', prompt: 'x', maxTokens: 10 })).status, 503);
+    assert.equal((await quote(off.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).status, 503);
     const h = harness();
     await h.store.set('compute:halt', '1', 60);
-    assert.equal((await quote(h.d, { team: TEAM, authority: AUTH, service: 'claude-run', prompt: 'x', maxTokens: 10 })).status, 503);
+    assert.equal((await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).status, 503);
   });
-  it('answers 503 without a key in production', async () => {
-    const h = harness({ env: { COMPUTE_FAKE_UPSTREAM: '0', NODE_ENV: 'production' } });
-    const r = await quote(h.d, { team: TEAM, authority: AUTH, service: 'claude-run', prompt: 'x', maxTokens: 10 });
+  it('answers 503 "not configured" without a 0G key', async () => {
+    const h = harness({ noBackend: true });
+    const r = await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' });
     assert.equal(r.status, 503);
     assert.match(String(r.body.error), /not configured/);
   });
+  it('refuses quotes when the 0G ledger is under its floor or unread', async () => {
+    const low = harness({ ledgerNeuron: 10n ** 17n }); // 0.1 0G = $0.025 < $0.25
+    assert.equal((await quote(low.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).status, 503);
+    const unread = harness({ ledgerNeuron: null });
+    assert.equal((await quote(unread.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).status, 503);
+  });
+  it('lists registered services with a live price', async () => {
+    const h = harness();
+    const c = await catalog(h.d);
+    const rows = c.body.services as { id: string; price: string; available: boolean; model: string }[];
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].id, 'ai-chat');
+    assert.equal(rows[0].model, '0GM-1.0-35B-A3B');
+    assert.equal(rows[0].price, '10000');
+    assert.equal(rows[0].available, true);
+    const low = harness({ ledgerNeuron: 0n });
+    const r = (await catalog(low.d)).body.services as { available: boolean; price: string | null; reason: string }[];
+    assert.equal(r[0].available, false);
+    assert.equal(r[0].price, null);
+    assert.match(r[0].reason, /floor/);
+  });
   it('refuses a service whose registry payee is not the gateway', async () => {
     const h = harness({ payee: 'Other1111111111111111111111111111111111111' });
-    assert.equal((await quote(h.d, { team: TEAM, authority: AUTH, service: 'claude-run', prompt: 'x', maxTokens: 10 })).status, 503);
+    assert.equal((await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).status, 503);
   });
   it('refuses over the daily budget and over the team run count', async () => {
     const h = harness({ env: { COMPUTE_DAILY_BUDGET_USD: '0.01' } });
-    await h.store.set('spend:2026-11-08', '10000', 60);
-    assert.equal((await quote(h.d, { team: TEAM, authority: AUTH, service: 'claude-run', prompt: 'x', maxTokens: 10 })).status, 429);
+    await h.store.set('spend:2026-11-08', '9000', 60);
+    assert.equal((await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).status, 429);
     const t = harness();
     await t.store.set(`runs:${TEAM}:2026-11-08`, '20', 60);
-    assert.equal((await quote(t.d, { team: TEAM, authority: AUTH, service: 'claude-run', prompt: 'x', maxTokens: 10 })).status, 429);
+    assert.equal((await quote(t.d, { team: TEAM, authority: AUTH, service: 'ai-chat', prompt: 'x' })).status, 429);
   });
 });
 
@@ -184,8 +201,9 @@ describe('run', () => {
     h.setPayment(paidFor(q, { status: 'settled' }));
     const done = await run(h.d, q.intent);
     assert.equal(done.status, 200, JSON.stringify(done.body));
-    const res = done.body.result as { text: string; fake: boolean };
+    const res = done.body.result as { text: string; fake: boolean; verified: boolean };
     assert.equal(res.fake, true);
+    assert.equal(res.verified, false, 'a fake is never reported as verified');
     assert.ok(res.text.startsWith(FAKE_PREFIX));
     const again = await run(h.d, q.intent);
     assert.equal(again.body.status, 'done');
@@ -235,11 +253,11 @@ describe('run', () => {
     const h = harness({ env: { COMPUTE_DAILY_BUDGET_USD: '0.01' } });
     const q = await quoted(h);
     h.setPayment(paidFor(q));
-    await h.store.set('spend:2026-11-08', '9999', 60);
+    await h.store.set('spend:2026-11-08', '9000', 60);
     const r = await run(h.d, q.intent);
     assert.equal(r.body.status, 'refunded');
     assert.equal(h.calls.upstream, 0);
-    assert.equal(await h.store.get('spend:2026-11-08'), '9999', 'the counter is restored');
+    assert.equal(await h.store.get('spend:2026-11-08'), '9000', 'the counter is restored');
   });
   it('refunds when the team has used its runs, and when halted after payment', async () => {
     const h = harness();
