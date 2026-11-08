@@ -1,0 +1,13 @@
+/* The page's own rhythm, and nothing else. The heading and its lead belong to
+   `PageHeader` now, so the `.head` / `.lead` / `.title` rules that used to live
+   here styled nothing.
+
+   The fallback is not decoration. `--app-gap-group` is declared in a stylesheet
+   this module does not import, so a surface that renders without it gets
+   `gap: <nothing>` and every section on the page collapses together. One
+   undefined variable invalidates the whole declaration, silently. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-gap-group, 2.5rem);
+}

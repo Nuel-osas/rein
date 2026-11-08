@@ -1,0 +1,14 @@
+/* TOP rail, not centre.
+
+   `align-items: center` centred the action against a two-line copy block, so on
+   every page carrying one the button's cap sat between the h1 and the
+   description below it -- a heading at one y beside a control at another, which
+   is the thing the standard names as reading like slop. The title and the
+   action are a pair and they start together. */
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--app-gap, 1rem) var(--app-gap-group, 2.5rem); flex-wrap: wrap; }
+/* A floor under the copy: below it the action wraps under the title instead of squeezing the
+   description into a column one word wide (it did, on a phone, beside two buttons). */
+.copy { min-inline-size: 0; flex: 1 1 18rem; }
+.copy h1 { font-size: var(--text-display); line-height: 1.2; font-weight: 500; letter-spacing: -.035em; margin: 0 0 var(--app-gap-tight, .5rem); text-wrap: balance; }
+.copy p { font-size: var(--text-base); color: var(--color-text-secondary); margin: 0; line-height: 1.6; max-inline-size: 58ch; text-wrap: pretty; }
+.action { flex: none; }

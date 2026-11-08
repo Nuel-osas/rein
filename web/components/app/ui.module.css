@@ -1,0 +1,219 @@
+/* ===========================================================================
+   Shared primitives for the authenticated surface.
+
+   Every colour is a token. Every tone is paired with a label and an icon at
+   the call site, so a status never depends on colour alone.
+   =========================================================================== */
+
+/* --- Status pill ---------------------------------------------------------- */
+
+/* The edge is a ring inside the shadow stack, not a border. On a tinted ground
+   an opaque line cuts the tint; a ring at the same alpha bounds it. No
+   elevation: a pill is a label printed on the surface it sits on, not a control
+   lifted off it, so it casts nothing. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-block: 0.25rem;
+  padding-inline: 0.5rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: var(--tracking);
+  white-space: nowrap;
+}
+
+.pill svg {
+  flex: none;
+  inline-size: var(--icon-nav);
+  block-size: var(--icon-nav);
+}
+
+.toneSettled {
+  color: var(--color-settled-text);
+  background: var(--color-settled-surface);
+}
+
+/* Amber, deliberately. A refusal is the account working, not a failure. */
+.toneBlocked {
+  color: var(--color-blocked-text);
+  background: var(--color-blocked-surface);
+}
+
+.tonePending {
+  color: var(--color-pending-text);
+  background: var(--color-pending-surface);
+}
+
+/* The only red in the product. Something that meant to happen did not. */
+.toneFailed {
+  color: var(--color-danger-text);
+  background: var(--color-danger-surface);
+}
+
+.toneNeutral {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+}
+
+/* --- Avatar --------------------------------------------------------------- */
+
+/* Inset ring rather than a border, because the avatar has a fixed inline-size
+   and an outset ring would grow the circle by a pixel wherever it sits beside
+   something aligned to it. */
+.avatar {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  box-shadow: var(--app-ring-inset);
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  font-weight: 600;
+  letter-spacing: var(--tracking);
+}
+
+.avatar svg {
+  inline-size: var(--icon-card);
+  block-size: var(--icon-card);
+}
+
+.avatarAgent {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.avatarSmall {
+  inline-size: 2rem;
+  block-size: 2rem;
+  font-size: var(--text-meta);
+}
+
+.avatarSmall svg {
+  inline-size: var(--icon-nav);
+  block-size: var(--icon-nav);
+}
+
+/* --- Meter ---------------------------------------------------------------- */
+
+/* Sunken, so the ring is inset and there is no shadow: a groove cut into the
+   surface does not cast one. */
+.meter {
+  --meter-fill: var(--color-accent-solid);
+  block-size: 0.4375rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  box-shadow: var(--app-ring-inset);
+  overflow: hidden;
+}
+
+/* No transition on the fill. It is rendered once from server data and never
+   changes in place, so the transition could only ever fire on a remount, where
+   it would animate a bar that was not moving. */
+.meterFill {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--meter-fill);
+}
+
+/* Close to the limit. The caption beside it says so in words as well. */
+.meterTight {
+  --meter-fill: var(--color-blocked-text);
+}
+
+/* Nothing was read, so nothing is claimed. Stripes rather than an empty track,
+   because an empty track reads as "none spent". */
+.meterUnknown {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-border-subtle) 0 0.25rem,
+    transparent 0.25rem 0.5rem
+  );
+}
+
+/* --- Empty state ---------------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  /* Dashed, so it reads as a space waiting to be filled rather than as a
+     surface. It stays a `border` for that reason: a shadow ring cannot be
+     dashed, and the dash is the signal.
+
+     No concentric claim here. This renders both inside a card and directly on
+     the canvas, so there is no single outer radius to be concentric with, and
+     the previous comment asserting one was describing an arrangement that does
+     not always exist. It takes the control radius because it bounds a region
+     rather than being a surface of its own. */
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+
+.emptyTitle {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.emptyBody {
+  margin: 0;
+  color: var(--color-text-secondary);
+  max-inline-size: 44ch;
+}
+
+.emptyAction {
+  margin-block-start: 0.5rem;
+}
+
+/* The action in an empty state is a primary next step, not an inline prose
+   link, so the WCAG 2.5.8 exemption for links inside a sentence does not apply
+   and it needs a real target. Several call sites pass a bare `<Link>` styled by
+   their own page module, which sets colour and weight but no height, so this
+   sets the floor in the one place every empty state passes through rather than
+   in each of the four modules that happened to need it. */
+.emptyAction > a,
+.emptyAction > button {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: 0.25rem;
+}
+
+/* --- Chip ----------------------------------------------------------------- */
+
+/* A chip here is a read-only tag, not a control, so it sits on the surface
+   rather than above it: sunken ground, inset ring, no shadow. The pressable
+   chips in the activity filters are a different component and take
+   `--shadow-raised`, because those are controls. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-block: 0.25rem;
+  padding-inline: 0.625rem;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--app-ring-inset);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  letter-spacing: var(--tracking);
+  white-space: nowrap;
+}
+
+.loadingCard { padding: 1.5rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-card); background: var(--color-surface); }
+.loadingHeading { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 1.5rem; }
+.loadingRow { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 0; border-top: 1px solid var(--color-border-subtle); }
+.loadingLines { flex: 1; display: grid; gap: .75rem; }
+.empty { border: 0; background: var(--color-surface); border-radius: var(--radius-card); padding: clamp(1.5rem, 4vw, 3rem); box-shadow: var(--app-ring); }
+.emptyTitle { font-size: 1.125rem; font-weight: 500; }
+.emptyBody { max-inline-size: 52ch; font-size: var(--text-base); line-height: 1.65; }

@@ -1,0 +1,205 @@
+/* ===========================================================================
+   Buttons and button-shaped links.
+
+   Radius is `--radius-control`, never an arbitrary value. Hit area clears
+   44px on touch. Hover is behind `@media (hover: hover)` so a tap does not
+   leave a button looking selected. Nothing transitions `all`.
+
+   A button is a raised control, so it takes `--shadow-raised`: a contact
+   shadow, an ambient one, and an inset highlight on the top edge, which is
+   what light striking the near edge of a raised surface actually looks like.
+   The one variant that does not take it is `.ghost`, and the reason is stated
+   where it is declared.
+   =========================================================================== */
+
+.button {
+  --button-bg: transparent;
+  --button-fg: var(--color-text-primary);
+  --button-border: var(--app-control-edge, #e4e0ea);
+  --button-shadow: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  min-block-size: 2.75rem;
+  padding-block: 0.5rem;
+  padding-inline: 0.9375rem;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--button-border);
+  background: var(--button-bg);
+  box-shadow: var(--button-shadow);
+  color: var(--button-fg);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: var(--tracking);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  /* Named properties only. `all` would animate layout as well. A button is a
+     single control rather than one row of a list, so the colour change is
+     worth 120ms; the press scale is the part people actually feel. */
+  transition:
+    background-color var(--duration-fast) linear,
+    border-color var(--duration-fast) linear,
+    color var(--duration-fast) linear,
+    scale var(--duration-base) var(--ease-entrance);
+}
+
+/* Icons sit inline with the label, so they take the nav step of the icon
+   scale. The `size` prop on the component sets the same number; this is what
+   makes the token the source of truth rather than the call site. */
+.button svg {
+  inline-size: var(--icon-nav);
+  block-size: var(--icon-nav);
+}
+
+/* Touch needs the full 44px. Pointer devices do not, and the extra height
+   makes dense rows look inflated. */
+@media (pointer: coarse) {
+  .button {
+    min-block-size: 2.75rem;
+  }
+}
+
+.button svg {
+  flex: none;
+}
+
+@media (hover: hover) {
+  .button:hover {
+    background: var(--color-surface-sunken);
+  }
+}
+
+.button:active {
+  scale: 0.97;
+}
+
+/* --- Variants ------------------------------------------------------------- */
+
+.primary {
+  --button-bg: var(--color-accent-solid);
+  --button-fg: var(--color-text-on-accent);
+  --button-border: var(--color-accent-solid);
+}
+
+@media (hover: hover) {
+  .primary:hover {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+  }
+}
+
+.secondary {
+  --button-bg: var(--color-surface);
+  --button-fg: var(--color-text-primary);
+  /* A control keeps an edge (it is pressable, a box is not), at the lightest that still reads. */
+  --button-border: var(--app-control-edge, #e4e0ea);
+}
+
+/* The one variant with no elevation. A ghost button has no ground and no edge,
+   so it is not a raised surface and has nothing to cast a shadow from; giving
+   it one would paint a shadow under an object that is not there. */
+.ghost {
+  --button-border: transparent;
+  --button-fg: var(--color-text-secondary);
+  --button-shadow: none;
+}
+
+@media (hover: hover) {
+  .ghost:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+/* Destructive. The label repeats the consequence, so the colour is the second
+   signal rather than the only one. */
+.danger {
+  --button-fg: var(--color-danger-text);
+  --button-border: color-mix(in oklab, var(--color-danger-text) 32%, transparent);
+}
+
+@media (hover: hover) {
+  .danger:hover {
+    background: var(--color-danger-surface);
+  }
+}
+
+/* --- Sizes ---------------------------------------------------------------- */
+
+.small {
+  font-size: var(--text-small);
+  padding-inline: 0.75rem;
+  min-block-size: 2.25rem;
+}
+
+@media (pointer: coarse) {
+  .small {
+    min-block-size: 2.75rem;
+  }
+}
+
+.block {
+  inline-size: 100%;
+}
+
+/* --- Unavailable ---------------------------------------------------------- */
+
+/* `aria-disabled` rather than `disabled`: the control keeps its place in the
+   tab order so the reason beside it can be reached by keyboard. */
+.unavailable {
+  /* Flat as well as dimmed. A control that cannot be pressed should not sit
+     above the page looking like one that can. */
+  --button-shadow: none;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* An unavailable PRIMARY stops being an accent button rather than becoming a
+   faded one.
+
+   Opacity alone was not enough here and the difference is visible on the pay
+   flow: a solid #5b21b6 at 55% is still unmistakably a purple button, so it read
+   as the thing to press that had gone slightly wrong, rather than as a control
+   waiting on something. Dropping to the neutral surface says "not yet" in a
+   way a tint cannot, and it removes the only strong colour on the screen until
+   the step is genuinely complete — which is also what makes the enabled state
+   mean something when it arrives.
+
+   Opacity stays at 1 here because the contrast now comes from the surface. */
+.primary.unavailable {
+  --button-bg: var(--color-surface-sunken);
+  --button-fg: var(--color-text-tertiary);
+  --button-border: var(--color-border-subtle);
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .unavailable:hover {
+    background: var(--button-bg);
+  }
+}
+
+.unavailable:active {
+  scale: 1;
+}
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+/* The reason a control cannot be used, in visible text beside it. A tooltip
+   would never open for keyboard or touch. */
+.reason {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  max-inline-size: 34ch;
+}
