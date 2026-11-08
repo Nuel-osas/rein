@@ -54,3 +54,15 @@
 @media (hover: hover) { .primary:hover { background: var(--color-accent-hover, #4c1d95); border-color: var(--color-accent-hover, #4c1d95); } .google:hover { background: var(--color-surface-sunken); } .back:hover, .footer a:hover, .switchAccount:hover { color: var(--color-text-primary); } }
 @media (prefers-reduced-motion: no-preference) { .primary, .google { transition: background-color 120ms linear, border-color 120ms linear, scale 200ms ease-out; } .primary:active, .google:active { scale: .98; } }
 @media (max-width: 52rem) { .page { grid-template-columns: 1fr; } .panel { min-height: 100dvh; padding: 1.25rem; box-shadow: none; } .mobileBrand { display: inline-flex; margin-right: auto; color: var(--color-text-primary); text-decoration: none; } .panelContent { padding-block: 2rem; } .footer { flex-wrap: wrap; } .frameHead h1 { font-size: 26px; } .frameHead, .frameBody, .frameFoot { padding-inline: 1.25rem; } }
+
+/* First sign-in: the team setup's progress, inside the frame body. */
+.setup { display: grid; gap: .75rem; min-block-size: 6.5rem; align-content: start; }
+.setupText { display: flex; align-items: baseline; gap: .75rem; margin: 0; color: var(--color-text-secondary); font-size: 14px; line-height: 1.5; text-wrap: pretty; }
+.setup[data-tone="ok"] .setupText { color: var(--color-text-primary); }
+.setup[data-tone="bad"] .setupText { color: var(--color-danger-text); }
+.setupDot { flex: none; inline-size: 6px; block-size: 6px; background: var(--color-accent-text, #a78bfa); transform: translateY(-1px); animation: setupPulse 1.2s ease-in-out infinite; }
+@keyframes setupPulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .setupDot { animation: none; } }
+.setupLink { color: var(--color-accent-text, #a78bfa); font-size: 13px; text-decoration: none; }
+.setupLink:hover { text-decoration: underline; }
+.setupActions { display: grid; gap: .5rem; }
