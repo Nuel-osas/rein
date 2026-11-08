@@ -1,7 +1,8 @@
 // The claim pool: a plain keypair whose test-USDC token account holds what /api/claim hands out,
-// 0.10 per team per day. Safe to re-run: it creates the key and the token account only when they are
-// missing, and mints the 50 USDC (500 claims, the pool's global cap) only into an account that has
-// never been funded. A drained pool stays drained unless you pass --refill, so the cap stays a cap.
+// 0.30 once per Google account. Safe to re-run: it creates the key and the token account only when
+// they are missing, and mints the 6 USDC (20 claims) only into an account that has never been funded.
+// A drained pool stays drained unless you pass --refill, so the pool's balance stays a hard cap
+// (the route's CLAIM_TOTAL_CAP, default 16, is the softer one).
 //
 //   REIN_CLUSTER=devnet REIN_RPC_URL=https://api.devnet.solana.com pnpm pool:setup [--refill]
 //
@@ -19,8 +20,8 @@ import {
 } from '@solana/spl-token';
 import { adminKey, client, cluster, deployFile, explorer, fmt, key, pda, rpcUrl, U } from './lib';
 
-const TARGET = 50n * U; // 50 test USDC = 500 claims of 0.10
-const CLAIM = 100_000n; // 0.10 test USDC
+const TARGET = 6n * U; // 6 test USDC = 20 claims of 0.30
+const CLAIM = 300_000n; // 0.30 test USDC
 
 async function balanceOf(conn: Connection, account: PublicKey): Promise<bigint | null> {
   try {
@@ -75,7 +76,7 @@ async function main() {
     sigs.fund = await sendAndConfirmTransaction(conn, tx, [admin, mintAuthority], { commitment: 'confirmed' });
     console.log(`minted ${fmt(amount)} test USDC into the pool: ${explorer('tx', sigs.fund)}`);
   } else {
-    console.log(before >= TARGET ? 'already funded' : 'funded before and drawn down; pass --refill to top it up to 50');
+    console.log(before >= TARGET ? 'already funded' : 'funded before and drawn down; pass --refill to top it up to 6');
   }
   const after = await balanceOf(conn, token);
   console.log(`balance ${fmt(after)} test USDC (${after === null ? '—' : (after / CLAIM).toString()} claims left)`);
@@ -85,7 +86,7 @@ async function main() {
     ...previous,
     authority: pool.publicKey.toBase58(),
     token: token.toBase58(),
-    claim: '0.10',
+    claim: fmt(CLAIM),
     target: fmt(TARGET),
     ...(sigs.createTokenAccount ? { createdSignature: sigs.createTokenAccount } : {}),
     ...(sigs.fund ? { fundedSignature: sigs.fund, fundedAmount: fmt(TARGET - before) } : {}),

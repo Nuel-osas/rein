@@ -54,12 +54,14 @@
   "pool": {
     "authority": "5VMePooDsQpnkyRtekaGdnR2UHUcZ2eWboza5tt9mqaN",
     "token": "GTjreGPro3Dpg5rdn5EpqHA749yA6CK5uYPeTySxfwoZ",
-    "claim": "0.10",
-    "target": "50",
+    "claim": "0.3",
+    "target": "6",
     "createdSignature": "5fuDqPzWL5iw8bHqNdPRTerW7XeNKN6DB8ANDKXyECKD51X1Ut491UvAMiuLNBh2aNmV3nJjzTnX595KN2dR25aG",
     "fundedSignature": "4XPFwcWP3giASuHHZy941zuPjtrqtRv6SMGeWoWG1ngGQgArXKrBQ6jZAgHawM32HE2RupN2AgTVVmNt3y4wijGR",
     "fundedAmount": "50",
-    "balanceAtSetup": "50",
-    "checkedAt": "2026-11-08T13:57:47.606Z"
+    "balanceAtSetup": "6",
+    "checkedAt": "2026-11-08T14:06:22.757Z",
+    "trimmedSignature": "5e9FjPZCVZY8wbMiaN1Xsft4omqRsM3q3y5YnHdKYyKFae3umqJxgbnHENzMCF5EeNJfq665EjFGinBrMGXoPtY3",
+    "trimmedAmount": "43.9"
   }
 }
