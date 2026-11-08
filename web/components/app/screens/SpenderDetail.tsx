@@ -4,6 +4,7 @@ import Link from "next/link";
 import {useEffect, useState} from "react";
 import {PublicKey} from "@solana/web3.js";
 import {ago, connection, period, short, usdc} from "@/lib/chain";
+import {budgetSeenKey, writeFlag} from "@/lib/get-started";
 import {ixs, pda, readTokenBalance, remainingOf, rolled, type Spender} from "@/lib/rein";
 import {errorText, useWallet} from "@/lib/wallet";
 import {Button, ButtonLink} from "../Button";
@@ -49,6 +50,11 @@ export function SpenderDetail({by, id}: {by: "address" | "authority"; id: string
   const {publicKey, send} = useWallet();
   const [status, setStatus] = useState<Status>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const agentSeen = !!s && s.kind === "agent" && t.isOwner;
+  // Get started on Home ticks "Review your agent's budget" once the owner has opened an agent here.
+  useEffect(() => {
+    if (agentSeen) writeFlag(budgetSeenKey(t.address));
+  }, [agentSeen, t.address]);
 
   if (t.at === 0) return <ContentLoading label="Reading this spender from chain…" rows={3} />;
   const back = `${t.base}/spenders`;

@@ -4,8 +4,11 @@
 // full. The vault balance, a short summary that links to Team, Approvals and Activity, the $0.30
 // claim card for the owner, what is waiting for the owner, and how the team is held on chain.
 // Every amount is devnet test USDC; a failed read shows as a dash, never as zero.
+// For the owner, "Get started" sits on top until its six steps are done or hidden. `data-tour`
+// marks what the first-visit tour (AppFrame, Tour.tsx) points at.
 
 import Link from "next/link";
+import {useState} from "react";
 import {PublicKey} from "@solana/web3.js";
 import {PROGRAM_ID, short, usdc} from "@/lib/chain";
 import {isLive, pda} from "@/lib/rein";
@@ -17,6 +20,7 @@ import {Explorer} from "../rein/bits";
 import {ApprovalsList} from "../rein/ApprovalsList";
 import {ClaimCard} from "../rein/ClaimCard";
 import {useTeamPage} from "../rein/context";
+import {GetStarted} from "../rein/GetStarted";
 import styles from "../rein/rein.module.css";
 
 function plural(n: number, one: string, many: string) {
@@ -26,6 +30,8 @@ function plural(n: number, one: string, many: string) {
 export function Dashboard() {
   const t = useTeamPage();
   const info = t.team;
+  // The claim card's own "claimed" state, for Get started; null until the card knows.
+  const [claimed, setClaimed] = useState<boolean | null>(null);
 
   if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={3} />;
   if (t.missing) return <EmptyState as="h1" title="Not a Rein team" body={`${t.address} is not a Rein team on this cluster. Check the link, or open the demo team.`} action={<Link href="/app">Your teams</Link>} />;
@@ -60,6 +66,8 @@ export function Dashboard() {
         }
       />
 
+      <GetStarted claimed={claimed} />
+
       {t.demo && !t.isOwner ? (
         <p className={styles.notice}>
           <b>Public demo team.</b> No sign-in needed: Approve and Decline below are signed on the server with the demo owner&apos;s key, and land on chain like any
@@ -69,7 +77,7 @@ export function Dashboard() {
       {info?.paused ? <p className={styles.notice}><b>The team is paused.</b> No payment or settlement can move money until the owner resumes it.</p> : null}
 
       <div className={page.top}>
-        <div className={`${styles.figure} ${page.vault}`} data-strong="">
+        <div className={`${styles.figure} ${page.vault}`} data-strong="" data-tour="vault">
           <span className={styles.figureLabel}>In the vault</span>
           <Money value={t.balance} size="title" label="Vault balance" />
           <span className={styles.figureNote}>
@@ -98,7 +106,11 @@ export function Dashboard() {
         </section>
       </div>
 
-      {t.isOwner ? <ClaimCard teamAddress={t.address} onClaimed={refresh} /> : null}
+      {t.isOwner ? (
+        <div id="claim" className={page.claim} data-tour="claim">
+          <ClaimCard teamAddress={t.address} onClaimed={refresh} onState={setClaimed} />
+        </div>
+      ) : null}
 
       <section className={styles.section} aria-labelledby="needs-you">
         <div className={styles.sectionHead}>
