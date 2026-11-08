@@ -10,7 +10,7 @@
 //                                  also kept in sessionStorage because Google sign-in leaves the page)
 //   wallet not created yet      -> "Creating your Solana wallet…"
 //   team found                  -> the page, framed on the top-level routes; /teams/new -> /dashboard
-//   no team on chain            -> /teams/new (and /teams/join stays reachable)
+//   no team on chain            -> /teams/new
 //   chain read failed (unknown) -> a retry state. Never "no team": that would send somebody who
 //                                  owns a team to create a second one.
 //
@@ -81,7 +81,6 @@ export function OwnTeamGate({children}: {children: ReactNode}) {
 
   const mine = read && read.team === team ? read : null;
   const found = mine?.status === "found";
-  const onJoin = under(pathname, "/teams/join");
   const onNew = under(pathname, "/teams/new");
 
   // The team read. Until a team is found it is read again on every page, so a team created on
@@ -105,7 +104,7 @@ export function OwnTeamGate({children}: {children: ReactNode}) {
       ? "signin"
       : !fresh
         ? null
-        : mine.status === "missing" && !onNew && !onJoin
+        : mine.status === "missing" && !onNew
           ? "/teams/new"
           : mine.status === "found" && onNew
             ? "/dashboard"
@@ -137,9 +136,6 @@ export function OwnTeamGate({children}: {children: ReactNode}) {
       </AppFrame>
     );
   }
-
-  // Joining another team does not depend on owning one: reachable with no team, and while unknown.
-  if (onJoin && mine) return <AppFrame team={null} own>{children}</AppFrame>;
 
   if (mine?.status === "unknown") {
     return (
