@@ -9,6 +9,7 @@ import {PageHeader} from "../PageHeader";
 import {ContentLoading} from "../ui";
 import {Explorer, Fact, StatusLine, sentStatus, type Status} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
+import {WithdrawPanel} from "../rein/WithdrawPanel";
 import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
@@ -37,7 +38,7 @@ export function Settings() {
 
   return (
     <div className={styles.section}>
-      <PageHeader kind="settings" title="Settings" description="The team's accounts on chain, and the one switch that stops everything." />
+      <PageHeader kind="settings" title="Settings" description="The team's accounts on chain, the one switch that stops everything, and the owner's withdraw." />
       <dl className={styles.facts}>
         <Fact label="Team">{team?.name ?? "—"}</Fact>
         <Fact label="Team account">
@@ -68,6 +69,7 @@ export function Settings() {
         </div>
       </div>
       <StatusLine status={status} />
+      <WithdrawPanel t={t} />
     </div>
   );
 }

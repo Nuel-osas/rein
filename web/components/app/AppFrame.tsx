@@ -15,7 +15,7 @@ import {short} from "@/lib/chain";
 import {isLive} from "@/lib/rein";
 import {useNow, useTeam} from "@/lib/team";
 import {useWallet} from "@/lib/wallet";
-import {IconAdd, IconAgent, IconApprovals, IconBank, IconCard, IconCompute, IconGlobal, IconHistory, IconHome, IconMetrics, IconNini, IconRecipients, IconSendAbroad, IconSettings, IconSignOut, IconSpenders, IconSwitch, IconUserAdd, type IconProps} from "./Icons";
+import {IconAdd, IconAgent, IconApprovals, IconCard, IconCompute, IconGlobal, IconHistory, IconHome, IconMetrics, IconNini, IconRecipients, IconSendAbroad, IconSettings, IconSignOut, IconSpenders, IconSwitch, IconUserAdd, type IconProps} from "./Icons";
 import {NETWORK_NAME} from "./network-copy";
 import {TestnetStrip, TestnetTag} from "./TestnetMark";
 import {WalletButton} from "./WalletButton";
@@ -44,7 +44,6 @@ function sectionsFor(base: string, home: string): Section[] {
     {
       label: "Money",
       items: [
-        {href: `${base}/money`, label: "Vault", short: "Vault", icon: IconBank},
         {href: `${base}/global`, label: "Global account", short: "Global", icon: IconGlobal, note: "not yet"},
         {href: `${base}/global/cards`, label: "Cards", short: "Cards", icon: IconCard, note: "not yet"},
         {href: `${base}/global/send`, label: "Send abroad", short: "Send abroad", icon: IconSendAbroad, note: "not yet"},
