@@ -10,10 +10,10 @@ import {useWallet} from "@/lib/wallet";
 import {Button, ButtonLink} from "../Button";
 import {PageHeader} from "../PageHeader";
 import {StatusLine, type Status} from "../rein/bits";
-import {WalletButton} from "../WalletButton";
+import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
-/** One team per owner: the connected wallet's team is the PDA ["team", wallet]. */
+/** One team per owner: the signed-in wallet's team is the PDA ["team", wallet]. */
 export function TeamsHome() {
   const {address, publicKey} = useWallet();
   const router = useRouter();
@@ -50,7 +50,7 @@ export function TeamsHome() {
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <h2 className={styles.panelTitle}>The demo team</h2>
-            <p className={styles.panelNote}>Seeded with an AI agent, a person and five services. Anyone can approve its pending payments, no wallet needed.</p>
+            <p className={styles.panelNote}>Seeded with an AI agent, a person and five services. Anyone can approve its pending payments, no sign-in needed.</p>
           </div>
           <div className={styles.actions}>
             <ButtonLink href={`/app/${DEMO_TEAM}`} variant="primary">
@@ -67,10 +67,7 @@ export function TeamsHome() {
         </div>
         {!address ? (
           <>
-            <p className={styles.panelNote}>Connect a Solana wallet to open or create your team. Phantom, Solflare and Backpack appear on their own.</p>
-            <div style={{maxInlineSize: "18rem"}}>
-              <WalletButton />
-            </div>
+            <SignInPrompt action="open or create your team" note="Google sign-in gives you a Solana wallet; you never need SOL." />
           </>
         ) : mine === null ? (
           <p className={styles.panelNote}>Reading your team from chain…</p>
@@ -83,7 +80,7 @@ export function TeamsHome() {
           </div>
         ) : mine.read ? (
           <div className={styles.actions}>
-            <p className={styles.panelNote}>This wallet does not own a team yet.</p>
+            <p className={styles.panelNote}>Your wallet does not own a team yet.</p>
             <ButtonLink href="/app/teams/new" variant="primary">
               Create a team
             </ButtonLink>
@@ -95,7 +92,7 @@ export function TeamsHome() {
       <div className={styles.panel}>
         <div className={styles.panelHead}>
           <h2 className={styles.panelTitle}>Open a team by address</h2>
-          <p className={styles.panelNote}>For a team where you are a spender, or to look at any team. Every team is readable without a wallet.</p>
+          <p className={styles.panelNote}>For a team where you are a spender, or to look at any team. Every team is readable without signing in.</p>
         </div>
         <div className={styles.form}>
           <input className={styles.input} value={open} onChange={(e) => setOpen(e.target.value)} placeholder="team account address" spellCheck={false} />

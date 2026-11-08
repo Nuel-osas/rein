@@ -30,7 +30,7 @@ export function Dashboard() {
 
   const waiting = (t.payments ?? []).filter((p) => isLive(p, t.now));
   const held = waiting.reduce((a, p) => a + p.amount, 0n);
-  const role = t.isOwner ? "owner" : t.me ? "spender" : t.wallet ? "viewer" : "viewer, no wallet";
+  const role = t.isOwner ? "owner" : t.me ? "spender" : t.wallet ? "viewer" : "viewer, signed out";
   let derivedOk: boolean | null = null;
   let vaultOk: boolean | null = null;
   if (info) {
@@ -57,7 +57,7 @@ export function Dashboard() {
 
       {t.demo && !t.isOwner ? (
         <p className={styles.notice}>
-          <b>Public demo team.</b> No wallet needed: Approve and Decline below are signed on the server with the demo owner&apos;s key, and land on chain like any
+          <b>Public demo team.</b> No sign-in needed: Approve and Decline below are signed on the server with the demo owner&apos;s key, and land on chain like any
           owner&apos;s would.
         </p>
       ) : null}

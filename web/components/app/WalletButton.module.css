@@ -31,7 +31,14 @@ header .menu { inset-block-end: auto; inset-block-start: calc(100% + .5rem); ins
 }
 .item:hover { background: var(--app-sidebar-hover, #1c1924); }
 .item img { border-radius: 4px; }
-.blank { inline-size: 20px; block-size: 20px; background: var(--color-skeleton); }
+
 .note { font-size: var(--text-meta); color: var(--color-text-tertiary); }
 .foot { margin: .5rem 0 0; font-size: var(--text-meta); line-height: 1.45; color: var(--color-text-secondary); }
 .error { margin: .25rem 0 0; font-size: var(--text-meta); color: var(--color-danger-text); }
+.who { margin: 0; font-size: var(--text-small); color: var(--color-text-primary); }
+.address { margin: 0 0 .25rem; font-family: var(--font-mono); font-size: var(--text-meta); letter-spacing: 0; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.blank { inline-size: 6px; block-size: 6px; background: var(--color-accent-text); }
+.prompt { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; padding: .875rem 1rem; background: var(--color-accent-soft); color: var(--color-assistant-ink); font-size: var(--text-small); }
+.prompt p { margin: 0; }
+.promptButton { flex: none; }
+.promptButton .wrap { inline-size: auto; }

@@ -12,7 +12,7 @@ import {PageHeader} from "../PageHeader";
 import {ContentLoading, EmptyState} from "../ui";
 import {Fact, StatusLine, sentStatus, serviceName, type Status} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
-import {WalletButton} from "../WalletButton";
+import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
 export function Pay() {
@@ -26,8 +26,8 @@ export function Pay() {
 
   if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={2} />;
   const header = <PageHeader kind="pay" title="New payment" description="Pick a registered service and an amount. Inside your policy it settles in the same transaction; outside it, it waits on chain for the owner." />;
-  if (!t.wallet) return <div className={styles.section}>{header}<EmptyState title="Connect a wallet to pay" body="People pay from their own wallet under their policy. Agents pay from their own key, through the assistant." action={<WalletButton />} /></div>;
-  if (!t.me || !t.team) return <div className={styles.section}>{header}<EmptyState title="You are not a spender on this team" body="The owner can add your wallet under Spenders." /></div>;
+  if (!t.wallet) return <div className={styles.section}>{header}<SignInPrompt action="pay" note="People pay from their own Solana wallet under their policy; agents pay from their own key." /></div>;
+  if (!t.me || !t.team) return <div className={styles.section}>{header}<EmptyState title="You are not a spender on this team" body={`The owner can add your wallet, ${t.wallet.slice(0, 4)}…${t.wallet.slice(-4)}, under Spenders.`} /></div>;
   const me = t.me;
   const team = t.team;
 
@@ -43,7 +43,7 @@ export function Pay() {
     const intent = newIntent("web");
     const at = pda.payment(new PublicKey(me.address), intent).toBase58();
     setBusy(true);
-    setStatus({tone: "wait", text: "Confirm in your wallet."});
+    setStatus({tone: "wait", text: "Signing and sending…"});
     try {
       const sent = await send([ixs.pay({payer, authority: publicKey, team: team.address, vault: team.vault, service: chosen, intent, amount: units, memo: memo.trim()})]);
       if (sent.status === "confirmed") {

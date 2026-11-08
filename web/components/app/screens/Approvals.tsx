@@ -23,7 +23,7 @@ export function Approvals() {
       />
       {t.demo && !t.isOwner ? (
         <p className={styles.notice}>
-          <b>Public demo team.</b> You can approve or decline as the owner without a wallet. The server signs with the demo owner&apos;s key.
+          <b>Public demo team.</b> You can approve or decline as the owner without signing in. The server signs with the demo owner&apos;s key.
         </p>
       ) : null}
       <section className={styles.section} aria-labelledby="waiting">

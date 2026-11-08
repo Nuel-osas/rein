@@ -10,6 +10,7 @@ import {countdown, usdc} from "@/lib/chain";
 import {PENDING_TTL_SECS, ixs, isLive, reasonsOf, type Payment, type Service, type Spender, type Team} from "@/lib/rein";
 import {useWallet, errorText} from "@/lib/wallet";
 import {Button} from "../Button";
+import {SignInPrompt} from "../WalletButton";
 import {PaymentPill, StatusLine, sentStatus, serviceName, spenderName, type Status} from "./bits";
 import styles from "./rein.module.css";
 
@@ -54,7 +55,7 @@ export function ApprovalsList({
     const started = performance.now();
     const secs = () => ((performance.now() - started) / 1000).toFixed(2);
     const svc = serviceName(p.service, services);
-    setStatus({tone: "wait", text: `${action === "approve" ? "Approving" : "Declining"} ${usdc(p.amount)} for ${svc}${viaWallet ? ". Confirm in your wallet." : " as the demo owner…"}`});
+    setStatus({tone: "wait", text: `${action === "approve" ? "Approving" : "Declining"} ${usdc(p.amount)} for ${svc}${viaWallet ? "…" : " as the demo owner…"}`});
     try {
       if (viaWallet) {
         const ix = action === "approve" ? ixs.approve({owner: publicKey!, team, payment: p}) : ixs.decline({owner: publicKey!, team: team.address, payment: p.address});
@@ -150,7 +151,9 @@ export function ApprovalsList({
           </article>
         );
       })}
-      {!canAct && shown.some((p) => isLive(p, now)) ? <p className={styles.approvalMeta}>Only the team owner can approve or decline. Connect the owner wallet to act.</p> : null}
+      {!canAct && shown.some((p) => isLive(p, now)) ? (
+        publicKey ? <p className={styles.approvalMeta}>Only the team owner can approve or decline. Your signed-in wallet is not the owner.</p> : <SignInPrompt action="approve or decline" note="Only the team owner can." />
+      ) : null}
       <StatusLine status={status} />
     </div>
   );
