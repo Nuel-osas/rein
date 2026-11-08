@@ -1,0 +1,327 @@
+/* ===========================================================================
+   The landing page's line drawings (Drawings.tsx).
+
+   At rest (the server HTML, no JavaScript, reduced motion) a drawing is whole
+   and still: the reveal mask is a white sheet and nothing below runs.
+
+   Everything that moves is inside `prefers-reduced-motion: no-preference` and
+   keyed on `data-draw`, which LandingPage's `useDrawings` sets after hydration.
+   Only stroke-dashoffset, opacity and transform are animated. Every drawing
+   keeps a slow loop going for as long as it is on screen (a turning wheel, a
+   ring whose dashes run, a crawl along the edges, a travelling dot), and the
+   loops pause off screen (`data-visible="false"`, set by the same hook), in a
+   hidden tab, or when the page's motion is paused.
+   =========================================================================== */
+
+.drawing {
+  overflow: visible;
+  /* The reveal: every line starts within this window, whatever the line count. */
+  --stagger: calc(1100ms / var(--n, 12));
+  --draw-time: 900ms;
+  --ease-draw: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.edge,
+.hidden,
+.flash {
+  vector-effect: non-scaling-stroke;
+}
+
+.edge {
+  stroke-dasharray: 2 2.5;
+}
+
+/* What a solid would hide: finer dots, fainter. */
+.hidden {
+  stroke-dasharray: 1 3;
+  opacity: 0.5;
+}
+
+/* A solid copy of a part that can flash. Invisible at rest. */
+.flash {
+  stroke: var(--drawing-flash, currentColor);
+  opacity: 0;
+}
+
+/* A flat part drawn in its own plane: the CSS transform repeats the matrix, so a rotation can be
+   added after it. Lengths in an SVG CSS transform are user units. */
+.plane {
+  transform: var(--plane);
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+.mover {
+  fill: var(--drawing-dot, currentColor);
+  opacity: 0;
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+.markCore {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.maskLine,
+.loopLine {
+  fill: none;
+}
+
+@keyframes drawOn {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes sheetOn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* A line that holds, wipes away along itself, and draws on again behind its own tail. The dash
+   is the line's whole length and the gap the same, so 0, -1 and -2 are drawn, gone, drawn. */
+@keyframes redraw {
+  0%,
+  52% {
+    stroke-dashoffset: 0;
+  }
+  66%,
+  74% {
+    stroke-dashoffset: -1;
+  }
+  92%,
+  100% {
+    stroke-dashoffset: -2;
+  }
+}
+
+@keyframes turn {
+  from {
+    transform: var(--plane) rotate(0deg);
+  }
+  to {
+    transform: var(--plane) rotate(360deg);
+  }
+}
+
+@keyframes march {
+  to {
+    stroke-dashoffset: -9;
+  }
+}
+
+@keyframes flashOnce {
+  0% {
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.85;
+  }
+  20%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Two waypoints: in, along, out. */
+@keyframes travel {
+  0% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  5% {
+    opacity: 1;
+    transform: translate(var(--x0), var(--y0));
+  }
+  26% {
+    opacity: 1;
+    transform: translate(var(--x1), var(--y1));
+  }
+  31%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--x1), var(--y1));
+  }
+}
+
+/* The chain: through each block at one speed (stops at the projected lengths of the
+   segments), then into the last block's mark. */
+@keyframes settle {
+  0% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  2% {
+    opacity: 1;
+    transform: translate(var(--x0), var(--y0));
+  }
+  8.2% {
+    transform: translate(var(--x1), var(--y1));
+  }
+  15.1% {
+    transform: translate(var(--x2), var(--y2));
+  }
+  27.5% {
+    transform: translate(var(--x3), var(--y3));
+  }
+  34.5% {
+    transform: translate(var(--x4), var(--y4));
+  }
+  46.9% {
+    transform: translate(var(--x5), var(--y5));
+  }
+  53.8% {
+    transform: translate(var(--x6), var(--y6));
+  }
+  60% {
+    opacity: 1;
+    transform: translate(var(--x7), var(--y7));
+  }
+  64%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--x7), var(--y7));
+  }
+}
+
+@keyframes markPulse {
+  0%,
+  59% {
+    transform: scale(1);
+  }
+  63% {
+    transform: scale(1.7);
+  }
+  74%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* --- Draw-in ------------------------------------------------------------------ */
+
+  .drawing[data-draw="waiting"] .maskFill,
+  .drawing[data-draw="in"] .maskFill {
+    opacity: 0;
+  }
+
+  .drawing[data-draw="waiting"] .maskLine,
+  .drawing[data-draw="in"] .maskLine {
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 1;
+  }
+
+  .drawing[data-draw="in"] .maskLine {
+    animation: drawOn var(--draw-time) var(--ease-draw) calc(var(--i) * var(--stagger)) both;
+  }
+
+  /* Once every line is down, the mask becomes a plain sheet, so a part that turns or moves is
+     never clipped to where its line was. */
+  .drawing[data-draw="in"] .maskFill {
+    animation: sheetOn 1ms linear calc(var(--n) * var(--stagger) + var(--draw-time)) both;
+  }
+
+  /* --- Idle -------------------------------------------------------------------------
+     `--idle` is when the loops start: after the draw-in, or at once for a drawing that was
+     already on screen. */
+
+  .drawing[data-draw="in"] {
+    --idle: calc(var(--n) * var(--stagger) + var(--draw-time) + 200ms);
+  }
+
+  .drawing[data-draw="live"] {
+    --idle: 0ms;
+  }
+
+  .drawing:is([data-draw="in"], [data-draw="live"]) .loopLine {
+    stroke-dasharray: 1 1;
+  }
+
+  /* Always moving: besides each drawing's own event below, its edges crawl, very slowly, so no
+     drawing ever stands still between events. The vault's wheel and the registry's ring already
+     turn without a pause. */
+  .drawing:is([data-name="shield"], [data-name="chain"], [data-name="receipt"]):is([data-draw="in"], [data-draw="live"]) [data-part="body"] .edge,
+  .drawing[data-name="phone"]:is([data-draw="in"], [data-draw="live"]) [data-part="cards"] .edge {
+    animation: march 8s linear var(--idle) infinite;
+  }
+
+  /* The vault: the wheel turns, slowly. */
+  .drawing[data-name="vault"]:is([data-draw="in"], [data-draw="live"]) [data-part="dial"] {
+    animation: turn 18s linear var(--idle) infinite;
+  }
+
+  /* The registry: the ring's dashes run around it; each service flashes in turn and sends a
+     dot down its spoke into the account. */
+  .drawing[data-name="nodes"]:is([data-draw="in"], [data-draw="live"]) [data-part="ring"] .edge {
+    animation: march 3s linear var(--idle) infinite;
+  }
+
+  .drawing[data-name="nodes"]:is([data-draw="in"], [data-draw="live"]) [data-part="service"] .flash {
+    animation: flashOnce 6s ease-out calc(var(--idle) + var(--i) * 1.5s) infinite;
+  }
+
+  .drawing[data-name="nodes"]:is([data-draw="in"], [data-draw="live"]) [data-mover="spoke"] {
+    animation: travel 6s cubic-bezier(0.45, 0, 0.25, 1) calc(var(--idle) + var(--i) * 1.5s + 250ms) infinite;
+  }
+
+  /* The shield: the tick holds, wipes away and draws on again. */
+  .drawing[data-name="shield"]:is([data-draw="in"], [data-draw="live"]) [data-part="check"] .loopLine {
+    animation: redraw 7s var(--ease-draw) var(--idle) infinite;
+  }
+
+  .drawing[data-name="shield"][data-quiet]:is([data-draw="in"], [data-draw="live"]) [data-part="check"] .loopLine {
+    animation-duration: 10s;
+  }
+
+  /* Small and several at once: the registry's services take turns more slowly. */
+  .drawing[data-name="nodes"][data-quiet]:is([data-draw="in"], [data-draw="live"]) :is([data-part="service"] .flash, [data-mover="spoke"]) {
+    animation-duration: 9s;
+  }
+
+  /* The receipt: its lines print again, one after another. */
+  .drawing[data-name="receipt"]:is([data-draw="in"], [data-draw="live"]) [data-part="text"] .loopLine {
+    animation: redraw 11s var(--ease-draw) calc(var(--idle) + var(--i) * 160ms) infinite;
+  }
+
+  /* The phone: a payment lifts from the screen to each card in turn. */
+  .drawing[data-name="phone"]:is([data-draw="in"], [data-draw="live"]) [data-mover="lift"] {
+    animation: travel 9s cubic-bezier(0.45, 0, 0.25, 1) calc(var(--idle) + var(--i) * 4.5s) infinite;
+  }
+
+  /* The bank: its edges crawl, and the coin on its roof flashes now and then. */
+  .drawing[data-name="bank"]:is([data-draw="in"], [data-draw="live"]) [data-part="body"] .edge {
+    animation: march 8s linear var(--idle) infinite;
+  }
+
+  .drawing[data-name="bank"]:is([data-draw="in"], [data-draw="live"]) [data-part="coin"] .flash {
+    animation: flashOnce 6s ease-out calc(var(--idle) + 1s) infinite;
+  }
+
+  /* The exchange: the two ways between the coins run, each in its own direction. */
+  .drawing[data-name="exchange"]:is([data-draw="in"], [data-draw="live"]) :is([data-part="over"], [data-part="back"]) .edge {
+    animation: march 2.4s linear var(--idle) infinite;
+  }
+
+  /* The chain: a payment passes through each block and settles on the mark. */
+  .drawing[data-name="chain"]:is([data-draw="in"], [data-draw="live"]) [data-mover="settle"] {
+    animation: settle 9s linear var(--idle) infinite;
+  }
+
+  .drawing[data-name="chain"]:is([data-draw="in"], [data-draw="live"]) .markCore {
+    animation: markPulse 9s ease-out var(--idle) infinite;
+  }
+
+  /* Off screen, or with the page's motion paused, every loop holds where it is. Important,
+     because each loop above sets the `animation` shorthand, which resets the play state, on a
+     longer selector. */
+  .drawing[data-visible="false"] *,
+  [data-paused] .drawing * {
+    animation-play-state: paused !important;
+  }
+}

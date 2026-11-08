@@ -1,0 +1,295 @@
+/* The site footer. It fades from the page above into deep purple, opens on a
+   dotted rule with a small white square like every section, sets its links in
+   the page's three columns, and ends in light rising out of the foot of the
+   page in columns, as you scroll to the end.
+
+   It sits under every marketing page, so it starts transparent and takes the
+   page's own ground as the first stop of its fade. */
+
+.footer {
+  --f-dots: repeating-linear-gradient(90deg, rgb(255 255 255 / 30%) 0 1px, transparent 1px 4px);
+  position: relative;
+  overflow: hidden;
+  padding-block-start: clamp(9rem, 16vw, 14rem);
+  background: linear-gradient(
+    180deg,
+    transparent 0,
+    #ddd6fe clamp(3rem, 5vw, 5rem),
+    #5b21b6 clamp(9rem, 16vw, 14rem),
+    #3b1478 48%,
+    var(--color-brand-black, #0a0a0b) 82%
+  );
+  color: var(--color-text-on-brand);
+  font-family: var(--sl-display, ui-sans-serif, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+.inner {
+  padding-inline: var(--sl-margin, 1.5rem);
+}
+
+.rule {
+  position: relative;
+  block-size: 1px;
+  background: var(--f-dots);
+}
+
+.rule::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: -3px;
+  inline-size: 6px;
+  block-size: 6px;
+  background: #ffffff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--sl-gutter, 28px);
+  row-gap: 2.5rem;
+  padding-block: 1.75rem 3.5rem;
+}
+
+.wordmark {
+  margin: 0 0 1rem;
+  font-size: 24px;
+  --color-logo-mark: var(--color-logo-paper);
+}
+
+.summary {
+  max-inline-size: 30ch;
+  margin: 0;
+  color: rgb(255 255 255 / 82%);
+  font-size: 17px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.label {
+  margin: 0 0 0.75rem;
+  color: rgb(255 255 255 / 70%);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem var(--sl-gutter, 28px);
+}
+
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  /* A flex item drops leading whitespace, so the gap is the space before "↗". */
+  gap: 0.3em;
+  min-block-size: 2.25rem;
+  color: var(--color-text-on-brand);
+  font-size: 17px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+/* Not a link: a step quieter, and no hit area. Not a flex container, so the
+   space inside a network name survives. */
+.plain {
+  display: block;
+  padding-block: 0.5rem;
+  color: rgb(255 255 255 / 66%);
+  font-size: 17px;
+}
+
+.onchain {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex: none;
+  min-inline-size: 44px;
+  color: var(--color-text-on-brand);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.topTile {
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  background: rgb(255 255 255 / 14%);
+}
+
+.legal {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--sl-gutter, 28px);
+  row-gap: 1rem;
+  align-items: end;
+  padding-block-end: 1.75rem;
+  color: rgb(255 255 255 / 72%);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+  text-transform: uppercase;
+}
+
+.legal p {
+  margin: 0;
+}
+
+.legalLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+}
+
+.legalLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.25rem;
+  color: var(--color-text-on-brand);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+  text-underline-position: from-font;
+}
+
+/* A gutter row, as the grid draws it: two dotted rules a gutter apart. */
+.gutter {
+  block-size: var(--sl-gutter, 28px);
+  background:
+    var(--f-dots) left top / 100% 1px no-repeat,
+    var(--f-dots) left bottom / 100% 1px no-repeat;
+}
+
+/* The end of the page (FooterLight): light rising in columns out of its foot, full bleed, each
+   column ruled on its left by a dotted line that stands a little above its light. `--rise` is the
+   scroll's share, `--h` each column's height; both default to whole for the server and for
+   reduced motion. The grain is the noise tile, blended into the purple and faded with it. */
+.light {
+  --rise: 1;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0.7' intercept='0.15'/%3E%3CfeFuncG type='linear' slope='0.7' intercept='0.15'/%3E%3CfeFuncB type='linear' slope='0.7' intercept='0.15'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  display: flex;
+  block-size: clamp(15rem, 34vw, 32rem);
+  margin-block-start: clamp(2.5rem, 6vw, 5rem);
+  /* Down into black behind the light, so the gaps between columns are dark as the reference's are. */
+  background: linear-gradient(180deg, rgb(10 10 11 / 0%), var(--color-brand-black, #0a0a0b) 38%);
+  contain: layout paint;
+  pointer-events: none;
+  user-select: none;
+}
+
+.column {
+  position: relative;
+  flex: 1 1 0;
+  --stand: calc(var(--h, 1) * var(--rise, 1) * 100%);
+}
+
+.column + .column::before {
+  content: "";
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  z-index: 1;
+  inline-size: 1px;
+  block-size: min(100%, calc(var(--stand) + 12%));
+  background: repeating-linear-gradient(180deg, rgb(255 255 255 / 78%) 0 1px, transparent 1px 4px);
+  -webkit-mask-image: linear-gradient(to top, #000 75%, transparent);
+  mask-image: linear-gradient(to top, #000 75%, transparent);
+}
+
+.beam {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--stand);
+  background:
+    var(--grain) 0 0 / 180px 180px,
+    linear-gradient(to top, #f5f3ff 0%, #c4b5fd 5%, #8b5cf6 16%, #6d28d9 34%, #4c1d95 60%, #2e1065 100%);
+  background-blend-mode: overlay, normal;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 38%, rgb(0 0 0 / 50%) 68%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 38%, rgb(0 0 0 / 50%) 68%, transparent 100%);
+}
+
+/* A phone: the five middle columns, so each keeps some width. */
+@media (max-width: 40rem) {
+  .column:first-child,
+  .column:last-child,
+  .column:nth-child(2)::before {
+    display: none;
+  }
+}
+
+.link:focus-visible,
+.top:focus-visible,
+.legalLinks a:focus-visible {
+  outline: 2px solid var(--color-text-on-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .topTile {
+    transition: background-color 200ms ease-out;
+  }
+  .topTile svg {
+    transition: translate 200ms var(--ease-entrance);
+  }
+}
+
+@media (hover: hover) {
+  .link:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: auto;
+  }
+  .top:hover .topTile {
+    background: rgb(255 255 255 / 24%);
+  }
+  .top:hover .topTile svg {
+    translate: 0 -3px;
+  }
+}
+
+@media (max-width: 48rem) {
+  .grid,
+  .legal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .onchain {
+    align-items: flex-end;
+  }
+}
+
+@media (pointer: coarse) {
+  .link,
+  .legalLinks a {
+    min-block-size: 44px;
+  }
+  .topTile {
+    inline-size: 44px;
+    block-size: 44px;
+  }
+}

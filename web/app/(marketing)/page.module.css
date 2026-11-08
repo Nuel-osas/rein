@@ -1,0 +1,172 @@
+/* Editorial sizing is scoped to marketing; the payment app keeps its four sizes. */
+.page {
+  /* 100rem, up from 70. At 1920 the old value used 1120px and left a 400px
+     gutter on each side, so the page read as a column floating on a black
+     field rather than as a site. 1600px uses the screen while still stopping
+     short of the edges, which a full-bleed layout needs for the artwork to
+     have somewhere to breathe.
+
+     Line length is protected separately and deliberately: every text block
+     caps its own measure in `ch`, so widening the shell widens the CARDS and
+     the grids without ever widening a paragraph past what is readable. Those
+     are different problems and one token cannot solve both. */
+  --nt-shell: 100rem;
+  --nt-gutter: clamp(1.25rem, 4vw, 4rem);
+  /* HALF the intended gap between two sections, because `.section` sets
+     `padding-block` on both sides and two adjacent sections therefore
+     contribute it TWICE. At the old 8rem that summed to 16rem — a 256px void
+     nobody chose, which was the single biggest reason this page read as empty.
+
+     Stated as a gap rather than as a padding: desktop ~7rem between sections,
+     mobile ~4rem. If you want a bigger break somewhere, say so on that section
+     rather than raising this and moving every gap on the page. */
+  --nt-section-block: clamp(2rem, 3.5vw, 3.5rem);
+  --nt-gap-between: 2rem;
+
+  /* --- Type -------------------------------------------------------------
+
+     Raised across the board. The old scale bottomed out at the app's 12px and
+     13px, which are right in a dense table of figures and too small on a page
+     somebody is reading rather than scanning. A marketing surface has no rows
+     to fit, so the smallest thing on it is now 14px and the reading size is
+     17 to 19.
+
+     `--nt-text-meta` exists so a caption stops falling back to `--text-meta`,
+     which is the app's 12px. */
+  --nt-text-hero: clamp(40px, 4.6vw, 68px);
+  --nt-text-title: clamp(30px, 3.2vw, 44px);
+  --nt-text-lead: clamp(18px, 1.6vw, 22px);
+  --nt-text-body: clamp(17px, 1.3vw, 19px);
+  --nt-text-small: clamp(15px, 1vw, 16px);
+  --nt-text-meta: 14px;
+
+  /* The app's four sizes, re-pointed at the marketing scale for this subtree.
+
+     About seventy declarations across the marketing components name
+     `--text-base` / `--text-small` / `--text-meta` directly, because they were
+     written before this scope had a scale of its own. Rewriting each one would
+     be seventy chances to miss one and leave a single 12px caption sitting in
+     a 19px paragraph, and it would not stop the next component from doing the
+     same thing again.
+
+     Redefining the tokens here fixes all of them at once and makes the app
+     tokens mean the right thing inside marketing, so a component written
+     against the familiar names lands on the right size without knowing this
+     file exists. Nothing outside `.page` is affected: these are scoped
+     declarations, not a change to `:root`. */
+  --text-meta: var(--nt-text-meta);
+  --text-small: var(--nt-text-small);
+  --text-base: var(--nt-text-body);
+  --text-display: clamp(24px, 1.9vw, 28px);
+
+  --color-canvas: #ffffff;
+  --nt-light: var(--color-marketing-light);
+  --nt-ember: var(--color-marketing-ember);
+
+  /* --- THE DRAWING (10 Oct) ------------------------------------------------
+
+     The marketing site is set like a technical drawing: square corners, no
+     soft shadows, a three-column grid whose column guides are drawn as dotted
+     lines, and a dotted rule with a small brand-purple square at the start of
+     every section. These are the tokens; LandingPage.module.css, SiteHeader
+     and SiteFooter draw with them.
+
+     THE GRID. A margin, three equal columns and two gutters. At 1440 the
+     margin and the gutter are both 28px. */
+  --sl-margin: clamp(16px, 1.95vw, 40px);
+  --sl-gutter: clamp(16px, 1.95vw, 32px);
+
+  /* Display type: Neue Montreal, tight, large and left-aligned. The face is
+     loaded once as `--font-neue` (app/fonts.ts); every `var()` in a font stack
+     carries its own fallback. */
+  --sl-display: var(--font-neue, "Neue Montreal"), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Ink on the light sections, and its quieter step. */
+  --sl-ink: #0a0a0b;
+  --sl-ink-2: #4a4553;
+  /* The pale icy purple the light sections start from, and the near-white they
+     fade to. */
+  --sl-ice: #e9e5f5;
+  --sl-ice-2: #f3f0fa;
+  --sl-paper: #f6f7f6;
+  /* The dark sections. */
+  --sl-black: #050506;
+  --sl-panel: #131118;
+  /* The one accent: the small squares, the arrow tiles. */
+  --sl-accent: var(--color-accent-solid, #5b21b6);
+  /* The same accent where it has to read on the dark hero: the testnet tag's brackets. */
+  --sl-accent-on-dark: #a78bfa;
+
+  /* Lines. Dotted on light and on dark; a solid hairline where a box needs
+     an edge. */
+  --sl-dot: rgb(10 10 11 / 26%);
+  --sl-dot-dark: rgb(255 255 255 / 24%);
+  --sl-hair: rgb(10 10 11 / 12%);
+  --sl-hair-dark: rgb(255 255 255 / 22%);
+
+  /* Square translucent tiles: the nav, the buttons, the cards. */
+  --sl-tile-light: rgb(150 136 176 / 26%);
+  --sl-tile-light-hover: rgb(150 136 176 / 40%);
+  --sl-tile-dark: rgb(19 17 24 / 58%);
+  --sl-tile-dark-hover: rgb(42 37 51 / 72%);
+  --sl-card-light: rgb(255 255 255 / 42%);
+
+  /* Every marketing component that names the shared radius and shadow tokens
+     squares off and loses its shadow here at once. The shadows are a
+     transparent shadow, NOT `none`: several components join them into a list
+     (`var(--glass-ring), var(--shadow-card)`), and `none` inside a list
+     invalidates the whole declaration, ring included. */
+  --radius-control: 0px;
+  --radius-card: 0px;
+  --radius-pill: 2px;
+  --shadow-raised: 0 0 #0000;
+  --shadow-card: 0 0 #0000;
+  --shadow-overlay: 0 0 #0000;
+  --nt-ring: 0 0 0 1px var(--sl-hair);
+  --nt-ring-strong: 0 0 0 1px rgb(10 10 11 / 20%);
+  --nt-ring-amber: 0 0 0 1px color-mix(in oklab, var(--color-blocked-text) 32%, transparent);
+  --nt-ring-accent: 0 0 0 1px color-mix(in oklab, var(--color-accent-solid) 24%, transparent);
+  --nt-ring-danger: 0 0 0 1px color-mix(in oklab, var(--color-danger-text) 30%, transparent);
+  /* SF PRO ROUNDED LEADS. Neue Montreal supports.
+
+     The two faces were the other way round by default: `body` set
+     `--font-sans`, which is Neue Montreal, and the rounded face appeared only
+     on section titles and figures. The hero headline then set `--font-sans`
+     explicitly, so the largest text on the site was in the supporting face
+     while the section titles under it were in the leading one. Whichever way
+     round it should be, it should not be both.
+
+     Setting it here rather than on `body` keeps the product's own choice
+     intact: the app is dense, and Neue Montreal is the better face for a
+     column of labels. Marketing is the surface that reads as a voice. */
+  font-family: var(--font-sans);
+
+  /* The reading size for the whole surface, so anything that does not name a
+     size gets 17 to 19px rather than inheriting the app's 14px. */
+  font-size: var(--nt-text-body);
+
+  background: var(--color-canvas);
+  min-height: 100dvh;
+  /* Contains artwork without creating a scroll container around the sticky header. */
+  overflow-x: clip;
+}
+.skipLink {
+  position: absolute;
+  inset-inline-start: var(--nt-gutter);
+  inset-block-start: 0;
+  z-index: 20;
+  padding: .75rem 1rem;
+  min-block-size: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-control) var(--radius-control);
+  box-shadow: var(--nt-ring-strong), var(--shadow-overlay);
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+  font-weight: 500;
+  text-decoration: none;
+  transform: translateY(-120%);
+}
+.skipLink:focus-visible { transform: translateY(0); }
+.main { display: block; }
