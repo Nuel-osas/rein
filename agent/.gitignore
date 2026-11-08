@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.env.*
+*.key
+*-keypair.json
+keys/
+id.json
+demo-agent.json
+sponsor.json
