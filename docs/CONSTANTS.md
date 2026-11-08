@@ -42,6 +42,19 @@ Registered by `pnpm seed` with `register_service`. Each payee is a fresh keypair
 | Ada, operations | authority `EoGi1axnbXHvVYEX68cLHZPxxxY8W8zogywC2RtCjVhd`, spender `4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK` | Cap 25, 100 per week, all services |
 | Sponsor (fee payer) | `hEczh4E1DGuGPTikSLGZKZUAxSAF7Cw1vaSNrxatfjF` | Pays every fee and payment-record rent. Topped up to 0.78 SOL on 2026-11-08 ([`61A8Fcz…`](https://explorer.solana.com/tx/61A8FczD5J4cvrgaEDzzogsimF1PeSEwttfxkjXAttjMV3UKe6jwx9QSDuoKew3x6hYZUxQB4s4KKEapKhuTsftz?cluster=devnet)). Each payment record costs about 0.003 SOL of rent |
 
+## Claim pool (devnet, 2026-11-08)
+
+`POST /api/claim` hands each team 0.10 test USDC per UTC day from this pool. The 50 USDC it was
+funded with (500 claims) is the global cap: `pnpm pool:setup` mints only into a never-funded pool,
+and a drained pool stays drained unless someone runs it with `--refill`.
+
+| What | Value | Verified by |
+|---|---|---|
+| Pool authority | `5VMePooDsQpnkyRtekaGdnR2UHUcZ2eWboza5tt9mqaN` | Public key of `~/.config/rein/pool.json`, created by `scripts/pool-setup.ts` (mode 600, never in the repo). Holds no SOL; the sponsor pays each claim's fee. Production reads it from `REIN_POOL_SECRET` |
+| Pool token account | `GTjreGPro3Dpg5rdn5EpqHA749yA6CK5uYPeTySxfwoZ` | ATA of (test USDC mint, pool authority). `spl-token display GTjre… -u devnet`: mint `Cwc241qD…`, owner `5VMePoo…`, balance 50, initialized, no delegate, no close authority. Created in [`5fuDqPzW…`](https://explorer.solana.com/tx/5fuDqPzWL5iw8bHqNdPRTerW7XeNKN6DB8ANDKXyECKD51X1Ut491UvAMiuLNBh2aNmV3nJjzTnX595KN2dR25aG?cluster=devnet), rent paid by the CLI wallet |
+| Funding | 50 test USDC | `mint_to` from the mint authority in [`4XPFwcWP…`](https://explorer.solana.com/tx/4XPFwcWP3giASuHHZy941zuPjtrqtRv6SMGeWoWG1ngGQgArXKrBQ6jZAgHawM32HE2RupN2AgTVVmNt3y4wijGR?cluster=devnet). A second run of the script printed "already funded" and minted nothing |
+| Claim amount | 100000 base units (0.10 test USDC) | `CLAIM_UNITS` in `web/lib/server/claim.ts` |
+
 ## Model
 
 | What | Value | Verified by |
