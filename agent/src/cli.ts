@@ -42,6 +42,7 @@ function print(e: AgentEvent, rpc: string): void {
         (e.unconfirmed ? ' (unconfirmed: do not retry)' : '') +
         (e.error ? `\n    ${e.error}` : ''));
       if (e.signature) console.log(`    sig ${e.signature}\n    ${dim(explorer(e.signature, rpc))}`);
+      if (e.payment && (e.status === 'paid' || e.status === 'pending')) console.log(dim(`    record ${e.payment} (intent ${e.intent})`));
       break;
     }
     case 'final':
