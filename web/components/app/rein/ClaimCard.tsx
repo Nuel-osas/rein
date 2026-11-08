@@ -30,8 +30,12 @@ type ClaimInfo = {
 
 const units = (s: string | null | undefined): bigint | null => (s && /^\d+$/.test(s) ? BigInt(s) : null);
 
-/** Renders anywhere: /app/<team>, the team home, or a route for the signed-in user's own team. */
-export function ClaimCard({teamAddress, onClaimed}: {teamAddress: string; onClaimed?: () => void}) {
+/**
+ * Renders anywhere: /app/<team>, the team home, or a route for the signed-in user's own team.
+ * `onState` hears this card's own "claimed" answer (true, false, or null while unknown), so Home's
+ * Get started ticks from the same read instead of asking again.
+ */
+export function ClaimCard({teamAddress, onClaimed, onState}: {teamAddress: string; onClaimed?: () => void; onState?: (claimed: boolean | null) => void}) {
   const team = teamAddress;
   const view = useTeamView(teamAddress);
   const isOwner = view.isOwner;
@@ -87,6 +91,10 @@ export function ClaimCard({teamAddress, onClaimed}: {teamAddress: string; onClai
   const closed = empty || left === 0;
   const claimed = mine ? true : (info?.claimed ?? null);
   const signature = mine ?? info?.signature ?? null;
+
+  useEffect(() => {
+    onState?.(claimed);
+  }, [claimed, onState]);
 
   let pill = <StatusPill tone="neutral" label="Checking…" />;
   if (claimed === true) pill = <StatusPill tone="settled" label="Claimed" />;

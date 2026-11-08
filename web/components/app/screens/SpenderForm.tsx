@@ -6,9 +6,10 @@
 
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {Keypair, PublicKey} from "@solana/web3.js";
 import {parseAddress, usdc} from "@/lib/chain";
+import {budgetSeenKey, writeFlag} from "@/lib/get-started";
 import {PERIODS, parseCount, parseUsdc} from "@/lib/money";
 import {MAX_SERVICES, checkLabel, ixs, policyProblems, type Kind, type Policy, type Spender} from "@/lib/rein";
 import {errorText, useWallet} from "@/lib/wallet";
@@ -72,6 +73,11 @@ export function SpenderForm({mode, kind = "agent", spenderId, prefill}: {mode: "
   const [busy, setBusy] = useState(false);
   const draft = d ?? (editing ? draftOf(editing, t.now) : null);
   const checked = useMemo(() => (draft ? toPolicy(draft, Math.floor(Date.now() / 1000)) : {problems: [], policy: null}), [draft]);
+  const agentSeen = editing?.kind === "agent" && t.isOwner;
+  // Opening an agent's Edit policy counts as reviewing its budget for Get started on Home.
+  useEffect(() => {
+    if (agentSeen) writeFlag(budgetSeenKey(t.address));
+  }, [agentSeen, t.address]);
 
   if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={2} />;
   if (!t.wallet) return <div className={styles.section}><PageHeader kind="spenders" title={mode === "edit" ? "Edit policy" : kind === "agent" ? "Add agent" : "Add person"} description="Only the team owner can grant or change a policy." /><SignInPrompt action={mode === "edit" ? "edit this policy" : "add a spender"} /></div>;

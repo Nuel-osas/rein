@@ -40,3 +40,9 @@
 }
 .lines a::after { content: " →"; color: var(--color-accent-text); }
 .lines a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* The claim card's anchor: "Claim your $0.30" in Get started scrolls here, clear of the top bar. */
+.claim {
+  display: grid;
+  scroll-margin-block-start: calc(var(--app-topbar, 3.5rem) + 1rem);
+}

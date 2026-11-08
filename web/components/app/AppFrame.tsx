@@ -6,23 +6,28 @@
 //     the whole app for anyone, signed in or not;
 //   - own (`own`), the signed-in person's own team at Nuntio's top-level routes: /dashboard,
 //     /spenders, /approvals and so on, behind the sign-in gate (OwnTeamGate).
+// The "?" in the crumbs line replays the Home tour (Tour.tsx); it also runs once by itself on the
+// first visit to the signed-in Home and to the public demo team's Home.
 
 import Link from "next/link";
-import {usePathname} from "next/navigation";
-import {useId, type ComponentType, type ReactNode} from "react";
+import {usePathname, useRouter} from "next/navigation";
+import {useCallback, useEffect, useId, useRef, useState, type ComponentType, type ReactNode} from "react";
 import {Brand} from "@/components/Brand";
-import {short} from "@/lib/chain";
+import {DEMO_TEAM, short} from "@/lib/chain";
+import {TOUR_DONE_KEY, readFlag, writeFlag} from "@/lib/get-started";
 import {isLive} from "@/lib/rein";
 import {useNow, useTeam} from "@/lib/team";
 import {useWallet} from "@/lib/wallet";
 import {IconAdd, IconApprovals, IconCard, IconCompute, IconHistory, IconHome, IconMetrics, IconPayments, IconSendAbroad, IconSettings, IconSignOut, IconSpenders, IconSwitch, type IconProps} from "./Icons";
 import {NETWORK_NAME} from "./network-copy";
 import {TestnetStrip, TestnetTag} from "./TestnetMark";
+import {REIN_TOUR, Tour} from "./Tour";
 import {WalletButton} from "./WalletButton";
 import a11y from "./a11y.module.css";
 import styles from "./AppShell.module.css";
 
-type Item = {href: string; label: string; short: string; icon: ComponentType<IconProps>; badge?: boolean; exact?: boolean; also?: string[]};
+/** `tour` is the row's `data-tour` name, the target of a step in the Home tour. */
+type Item = {href: string; label: string; short: string; icon: ComponentType<IconProps>; badge?: boolean; exact?: boolean; also?: string[]; tour?: string};
 type Section = {label: string | null; items: Item[]};
 type Soon = {label: string; icon: ComponentType<IconProps>};
 
@@ -33,12 +38,12 @@ type Soon = {label: string; icon: ComponentType<IconProps>};
 function placesFor(base: string, home: string): Item[] {
   return [
     {href: home, label: "Home", short: "Home", icon: IconHome, exact: true},
-    {href: `${base}/spenders`, label: "Team", short: "Team", icon: IconSpenders, also: [`${base}/agents`]},
-    {href: `${base}/approvals`, label: "Approvals", short: "Approve", icon: IconApprovals, badge: true},
-    {href: `${base}/activity`, label: "Activity", short: "Activity", icon: IconHistory},
+    {href: `${base}/spenders`, label: "Team", short: "Team", icon: IconSpenders, also: [`${base}/agents`], tour: "team"},
+    {href: `${base}/approvals`, label: "Approvals", short: "Approve", icon: IconApprovals, badge: true, tour: "approvals"},
+    {href: `${base}/activity`, label: "Activity", short: "Activity", icon: IconHistory, tour: "activity"},
     {href: `${base}/pay`, label: "Pay", short: "Pay", icon: IconPayments},
-    {href: `${base}/compute`, label: "Compute", short: "Compute", icon: IconCompute},
-    {href: `${base}/settings`, label: "Settings", short: "Settings", icon: IconSettings},
+    {href: `${base}/compute`, label: "Compute", short: "Compute", icon: IconCompute, tour: "compute"},
+    {href: `${base}/settings`, label: "Settings", short: "Settings", icon: IconSettings, tour: "settings"},
   ];
 }
 
@@ -89,6 +94,7 @@ export function AppFrame({team, own = false, children}: {team: string | null; ow
   const now = useNow();
   const waiting = t.payments ? t.payments.filter((p) => isLive(p, now)).length : null;
   const {address, authenticated, label: who, disconnect} = useWallet();
+  const tour = useHomeTour(pathname, base !== null ? home : null, base !== null && (own || team === DEMO_TEAM));
 
   return (
     <div className={styles.shell} data-theme="dark" data-app="">
@@ -154,9 +160,16 @@ export function AppFrame({team, own = false, children}: {team: string | null; ow
           <div className={styles.inner}>
             <div className={styles.crumbs}>
               <span className={styles.crumb}>{labelFor(pathname, places, base !== null)}</span>
-              <div className={`${styles.network} ${styles.networkNote}`}>
-                <span className={styles.networkDot} aria-hidden="true" />
-                <span>{NETWORK_NAME}: test USDC only, nothing here is real money.</span>
+              <div className={styles.crumbsEnd}>
+                <div className={`${styles.network} ${styles.networkNote}`}>
+                  <span className={styles.networkDot} aria-hidden="true" />
+                  <span>{NETWORK_NAME}: test USDC only, nothing here is real money.</span>
+                </div>
+                {base !== null ? (
+                  <button type="button" className={styles.help} onClick={tour.replay} aria-label="Replay the tour of Rein" title="Replay the tour" data-tour="help">
+                    ?
+                  </button>
+                ) : null}
               </div>
             </div>
             {children}
@@ -169,7 +182,7 @@ export function AppFrame({team, own = false, children}: {team: string | null; ow
           {places.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.href} href={item.href} className={styles.bottomLink} aria-current={item.href === current ? "page" : undefined}>
+              <Link key={item.href} href={item.href} className={styles.bottomLink} aria-current={item.href === current ? "page" : undefined} data-tour={item.tour}>
                 <Icon size="nav" />
                 {item.short}
                 {item.badge && waiting ? (
@@ -183,8 +196,62 @@ export function AppFrame({team, own = false, children}: {team: string | null; ow
           })}
         </nav>
       ) : null}
+      {tour.open ? <Tour steps={REIN_TOUR} onClose={tour.close} /> : null}
     </div>
   );
+}
+
+/**
+ * The Home tour's switch. `home` is the team's Home (null in the no-team view); `auto` says this
+ * Home runs it once by itself (the signed-in Home and the demo team's). It starts only once Home
+ * has drawn its vault, so the steps are filtered against the real screen, not a loading one. The
+ * done flag is written when it starts; storage that throws never auto-starts, but "?" still works.
+ */
+function useHomeTour(pathname: string, home: string | null, auto: boolean) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  // A "?" press waiting for Home to draw; `asked` re-runs the wait when it is pressed on Home itself.
+  const pending = useRef(false);
+  const [asked, setAsked] = useState(0);
+  const onHome = home !== null && pathname === home;
+
+  // Leaving Home (the back button, say) ends the tour; its targets are gone.
+  useEffect(() => {
+    if (!onHome) setOpen(false);
+  }, [onHome]);
+
+  useEffect(() => {
+    if (!onHome) return;
+    const first = auto && readFlag(TOUR_DONE_KEY) === false;
+    if (!first && !pending.current) return;
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      const ready = document.querySelector('[data-tour="vault"]') !== null;
+      // A Home that never draws (a failed read) gets no tour by itself; a "?" press still opens one.
+      if (!ready && tries < 40) return;
+      clearInterval(timer);
+      if (!ready && !pending.current) return;
+      pending.current = false;
+      if (first) writeFlag(TOUR_DONE_KEY);
+      setOpen(true);
+    }, 250);
+    return () => clearInterval(timer);
+  }, [onHome, auto, asked]);
+
+  const replay = useCallback(() => {
+    if (home === null) return;
+    pending.current = true;
+    if (pathname === home) setAsked((n) => n + 1);
+    else router.push(home);
+  }, [home, pathname, router]);
+
+  const close = useCallback(() => {
+    writeFlag(TOUR_DONE_KEY);
+    setOpen(false);
+  }, []);
+
+  return {open, replay, close};
 }
 
 function Group({section, current, waiting}: {section: Section; current: string | null; waiting: number | null}) {
@@ -195,7 +262,7 @@ function Group({section, current, waiting}: {section: Section; current: string |
         const Icon = item.icon;
         return (
           <li key={item.href}>
-            <Link href={item.href} className={styles.navLink} aria-current={item.href === current ? "page" : undefined}>
+            <Link href={item.href} className={styles.navLink} aria-current={item.href === current ? "page" : undefined} data-tour={item.tour}>
               <Icon size="nav" />
               <span className={styles.navLabel}>{item.label}</span>
               {item.badge && waiting ? (
