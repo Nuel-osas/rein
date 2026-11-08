@@ -15,7 +15,7 @@ import {formatZg, NEURON_PER_ZG} from "./units";
 import {checkBinding, verifyWithRetries} from "./verify";
 
 /*
- * The 0G Compute adapter: `ComputeBackend` (ported from Nuntio's @nuntio/commerce), on 0G mainnet.
+ * The 0G Compute adapter: `ComputeBackend` (src/commerce), on 0G mainnet.
  *
  * - priceOf: the worst case of one run from the provider's live prices and 0G's own USD rate, and
  *   only while the float can actually pay for that run (so the gateway never takes money for work
@@ -100,7 +100,7 @@ export interface ZgCompute extends ComputeBackend {
    * Throws when either cannot be read.
    */
   funds(): Promise<{wallet: bigint; ledger: ZgLedger | null}>;
-  /** The OpenAI-compatible pass-through behind Nuntio AI keys (api.ts). Shares this wallet's funding. */
+  /** The OpenAI-compatible pass-through behind AI keys (api.ts). Shares this wallet's funding. */
   readonly api: ZgApi;
 }
 

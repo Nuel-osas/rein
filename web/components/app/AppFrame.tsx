@@ -4,7 +4,7 @@
 // account), a top bar and a bottom bar below it with the same seven places. Two ways in, one frame:
 //   - public, /app/<team>/…: every link stays under that team, so a link to the demo team opens
 //     the whole app for anyone, signed in or not;
-//   - own (`own`), the signed-in person's own team at Nuntio's top-level routes: /dashboard,
+//   - own (`own`), the signed-in person's own team at the top-level routes: /dashboard,
 //     /spenders, /approvals and so on, behind the sign-in gate (OwnTeamGate).
 // The "?" in the crumbs line replays the Home tour (Tour.tsx); it also runs once by itself on the
 // first visit to the signed-in Home and to the public demo team's Home.

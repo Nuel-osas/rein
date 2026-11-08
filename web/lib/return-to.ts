@@ -1,4 +1,4 @@
-// Where a person was going when sign-in interrupted them. Nuntio keeps this in sessionStorage
+// Where a person was going when sign-in interrupted them. This is kept in sessionStorage
 // because Google sign-in leaves the page (lib/useJoinTeam.ts there); Rein does the same, and also
 // carries it on the onboarding URL as ?next= so a reload of /onboarding keeps it.
 //

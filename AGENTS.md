@@ -32,7 +32,7 @@ authorizes it. Over a limit, the payment waits for the owner's approval.
 | `web/app/` | Next 16 routes; `web/app/api/` server routes |
 | `web/lib/server/` | Keys, store, claim, compute gateway, cached reads |
 | `agent/src/` | Agent loop, tools, chain client, scenarios |
-| `zg-compute/src/` | 0G Compute adapter (ported from Nuntio) |
+| `zg-compute/src/` | 0G Compute adapter |
 | `scripts/` | Seed, evidence, compute setup, pool setup, docs checker |
 | `tests/rein.ts` | Program tests (13) |
 | `docs/` | Constants, evidence, design, provenance, submission kit |

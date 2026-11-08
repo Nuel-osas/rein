@@ -5,8 +5,7 @@
 *The agent proposes a payment. Only the program authorizes it.*
 
 Solana devnet only. Built for MLH's [Solana Hackathon](https://www.mlh.com/events/solana-hackathon)
-(November 2026). Rein is the Solana version of Bursar, our NEAR rebuild of
-[Nuntio](https://nuntio.finance), made with its author's agreement ([provenance](docs/PROVENANCE.md)).
+(November 2026). Rein is the Solana version of Bursar, our NEAR build ([provenance](docs/PROVENANCE.md)).
 
 | | |
 |---|---|
@@ -316,7 +315,7 @@ output tokens), listed in [catalog.ts](web/lib/server/compute/catalog.ts).
 | [idl/](idl/rein.json) | The program's IDL and TypeScript types, copied so the web app and agent build without Anchor |
 | [web/](web/README.md) | Next 16 app: landing, `/demo`, signed-in console, docs, and the server routes (sponsor, agent, claim, compute, cached reads) |
 | [agent/](agent/README.md) | The buying agent: Groq model, six tools, three demo scenarios, CLI |
-| [zg-compute/](zg-compute/README.md) | 0G Compute adapter (`@rein/zg-compute`), ported from Nuntio with its author's agreement |
+| [zg-compute/](zg-compute/README.md) | 0G Compute adapter (`@rein/zg-compute`) |
 | [scripts/](scripts/) | `seed.ts` sets up a cluster; `evidence.ts` proves the claims; `compute-setup.ts` registers compute services; `pool-setup.ts` creates the claim pool; `check-docs.mjs` checks these docs |
 | [tests/rein.ts](tests/rein.ts) | 13 program tests against a seeded validator |
 | [deploy/devnet.json](deploy/devnet.json) | Public devnet addresses written by the scripts |
@@ -420,7 +419,7 @@ Times from `git log` (WAT is UTC+1) and the team's submission record.
 |---|---|
 | 03:10 WAT | First commit: the Anchor 0.31 workspace template |
 | 04:42 to 04:46 WAT | PRs #1 to #5 merged: program and tests, agent, console, agent panel, submission kit |
-| 14:47 to 15:38 WAT | PRs #6 to #9 merged: Privy sign-in, marketing pages, app pages, Nuntio's routes |
+| 14:47 to 15:38 WAT | PRs #6 to #9 merged: Privy sign-in, marketing pages, app pages, top-level routes |
 | 16:02 WAT | Submitted to the MLH Solana Hackathon (main was at `c0f4d5d`, PR #9) |
 | 17:07 WAT | Prize category entries made |
 | 18:00 UTC (19:00 WAT) | Event ended |
@@ -436,13 +435,10 @@ its branches before the deadline, but it reached `main` and the live site afterw
 
 ## Provenance
 
-Rein is the Solana version of Bursar (NEAR), which rebuilt Nuntio (https://nuntio.finance, by Sele
-Odigie / 71Labs) with its author's agreement. The web app's screens and the `zg-compute` adapter
-were adapted from Nuntio with its author's agreement. The Anchor program, the data layer, the
-sponsor, the agent, the claim pool and the compute gateway's Solana side were written for Rein.
+Rein is the Solana version of Bursar, our NEAR build. Parts of the web UI and the 0G adapter (`zg-compute/`) are adapted from Nuntio by 71Labs, with its author's agreement. The Anchor program, the data
+layer, the sponsor, the agent, the claim pool and the compute gateway's Solana side were written for Rein.
 Details: [docs/PROVENANCE.md](docs/PROVENANCE.md).
 
 ## License
 
-No license yet; all rights reserved by the authors. Includes code adapted from Nuntio with its
-author's agreement.
+No license yet; all rights reserved by the authors.

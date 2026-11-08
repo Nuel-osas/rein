@@ -64,7 +64,7 @@ rejected alternatives are quoted from the commit bodies (`git log --format=%B`),
 | The agent package is built with the app through a pnpm workspace | A web-only deploy must install the agent's dependencies | "A relative import" (84591f9) |
 | Each team's agent key is derived from `REIN_AGENT_SEED` and the team | No per-team secret is stored anywhere | "generating and storing a keypair per team (one more secret store to guard and back up)" (6ecd3d7) |
 | The compute gateway reads the `Payment` itself | A client could lie about an address or amount | "trusting a payment address or amount sent by the client, and auto-retrying a refund whose preflight failed (an operator decides)" (ff3f66a) |
-| Port Nuntio's 0G adapter whole | It already handled pricing, funding and verification | "rewriting a smaller adapter from scratch in the time box, and stripping voice/image/video, which are woven through backend.ts" (9d223c2) |
+| Port an existing, tested 0G adapter whole | It already handled pricing, funding and verification | "rewriting a smaller adapter from scratch in the time box, and stripping voice/image/video, which are woven through backend.ts" (9d223c2) |
 | Price each quote from 0G's live worst case x 1.5 | 0G prices follow its USD rate and move | "a fixed per-token catalog ... and keeping the fake available in production behind the flag" (1619240) |
 | Add 0G Private Computer (Router) as a backend | One key, no wallet, no ledger that needs 3 0G to open; the SDK stays as fallback | not stated (bcd33b6) |
 | The faucet tops up only the demo team | Otherwise anyone could mint test USDC and buy real 0G compute | "a per-team daily mint cap, which still lets anyone create teams and drain the 0G budget" (d9e1330) |

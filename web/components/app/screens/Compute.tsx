@@ -1,6 +1,6 @@
 "use client";
 
-// AI compute. Nuntio sells verified inference runs; Rein's equivalent is an AI agent buying compute
+// AI compute. An AI agent buying compute
 // services from the registry (llm-inference, gpu-hour) under its policy. This page lists those
 // services and this team's purchases of them, from its Payment accounts. Rein records the payment,
 // not the run: the service delivers the work off chain, so no run, output or proof is shown here.

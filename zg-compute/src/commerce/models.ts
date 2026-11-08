@@ -1,5 +1,5 @@
 /*
- * Closed models Nuntio sells through 0G's direct providers (decided 30 Oct 2026, "direct now,
+ * Closed models sold through 0G's direct providers (decided 30 Oct 2026, "direct now,
  * newest later"; docs/hackathon/CLOSED-MODELS-PLAN.md).
  *
  * 0G's direct providers relay these to the vendor's own API. How much of a run can be checked

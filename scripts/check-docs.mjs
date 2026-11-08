@@ -28,10 +28,7 @@ const posix = path.posix;
 const IGNORE = new Set([]);
 // Single references inside a doc that name a file in the upstream repo, not this one. The rest of
 // the doc is still checked.
-const UPSTREAM_REFS = new Map([
-  // zg-compute was ported from Nuntio; its README's opening line names Nuntio's own plan document.
-  ['zg-compute/README.md', new Set(['docs/hackathon/AGENT-COMMERCE-PLAN.md'])],
-]);
+const UPSTREAM_REFS = new Map([]);
 const upstreamSkipped = [];
 const isUpstream = (display, where, ref) => {
   if (!UPSTREAM_REFS.get(display)?.has(ref)) return false;

@@ -1,5 +1,5 @@
 import {keccak256, toBytes, type Hex} from "viem";
-/** The networks an operation is listed on (from Nuntio, where this was ported from). */
+/** The networks an operation is listed on. */
 export type NetworkName = "mainnet" | "testnet";
 
 /*

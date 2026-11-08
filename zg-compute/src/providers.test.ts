@@ -64,7 +64,7 @@ describe("closed models (commerce CLOSED_MODELS)", () => {
     expect(relayedAllowed({model: "claude-fable-5", provider: PROVIDERS.claudeOpus})).toBe(false);
     const r = resolveProviders({model: "claude-fable-5", zgServiceType: "chatbot"}, [standard({model: "claude-fable-5", provider: UNPINNED}), standard({model: "claude-fable-5", provider: PROVIDERS.claude})]);
     expect(r.usable.map((p) => p.provider)).toEqual([PROVIDERS.claude]);
-    expect(r.refused).toEqual([{provider: UNPINNED, reason: expect.stringMatching(/not a provider Nuntio relays claude-fable-5 from/)}]);
+    expect(r.refused).toEqual([{provider: UNPINNED, reason: expect.stringMatching(/not a provider this gateway relays claude-fable-5 from/)}]);
   });
 
   it("sends Claude in Anthropic's format and every other model in OpenAI's", () => {

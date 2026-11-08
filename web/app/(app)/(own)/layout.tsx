@@ -4,7 +4,7 @@ import {OwnTeamGate} from "@/components/app/OwnTeamGate";
 export const metadata: Metadata = {title: "Rein"};
 
 /**
- * Nuntio's top-level app routes (/dashboard, /spenders, /approvals, …) for the signed-in person's
+ * The top-level app routes (/dashboard, /spenders, /approvals, …) for the signed-in person's
  * own team. The gate sends a signed-out visit to /onboarding with the path to come back to, and a
  * person with no team to /teams/new. The pages are the same ones /app/<team>/… renders.
  *

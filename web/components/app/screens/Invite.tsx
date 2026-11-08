@@ -1,6 +1,6 @@
 "use client";
 
-// Invites without a backend (lib/invite.ts). Nuntio stores invites and join requests on its server;
+// Invites without a backend (lib/invite.ts). Nothing is stored on a server;
 // Rein stores nothing. The owner shares a link that names the team and a label; the invitee signs
 // in, gets an embedded wallet, and sends a link back that opens the owner's add-a-person form
 // filled in. The owner checks the address and grants a policy on chain. Until then nothing is
@@ -155,7 +155,7 @@ function Accept({team, label}: {team: string; label: string}) {
   const [copied, setCopied] = useState<"yes" | "no" | null>(null);
   const id = useId();
 
-  // Back on the invite, signed in: the way back from sign-in has done its job (Nuntio's JoinTeam).
+  // Back on the invite, signed in: the way back from sign-in has done its job.
   useEffect(() => {
     if (w.authenticated) forgetReturnTo();
   }, [w.authenticated]);

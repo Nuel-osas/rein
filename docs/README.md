@@ -20,7 +20,7 @@ Every document in this repository, what it answers, and which one wins when two 
 | [web/README.md](../web/README.md) | Routes, server API routes, cached reads, env names |
 | [agent/README.md](../agent/README.md) | Tools, scenarios, public API, CLI, tests |
 | [zg-compute/README.md](../zg-compute/README.md) | The 0G Compute adapter, and how Rein uses it |
-| [zg-compute/PROBE.md](../zg-compute/PROBE.md) | Nuntio's live 0G probe results the adapter was built on (Nuntio's original text) |
+| [zg-compute/PROBE.md](../zg-compute/PROBE.md) | Live 0G probe results the adapter was built on |
 
 ## Proof
 
@@ -34,7 +34,7 @@ Every document in this repository, what it answers, and which one wins when two 
 
 | Document | Answers |
 |---|---|
-| [PROVENANCE.md](PROVENANCE.md) | What came from Bursar and Nuntio, what was written for Solana, and the timeline |
+| [PROVENANCE.md](PROVENANCE.md) | Where the code came from, what was written for Solana, and the timeline |
 | [SUBMISSION.md](SUBMISSION.md) | The MLH submission kit as prepared before submitting (its demo script and checklist are a record, not current state) |
 
 ## Site docs

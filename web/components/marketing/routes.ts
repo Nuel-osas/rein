@@ -1,4 +1,4 @@
-/** Where "Open the app" goes: Nuntio's way in, sign-in and then /dashboard. The demo team stays at /demo. */
+/** Where "Open the app" goes: sign-in and then /dashboard. The demo team stays at /demo. */
 export const APP_HREF = "/onboarding";
 
 /** The public, no-wallet demo of the seeded team. */

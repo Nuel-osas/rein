@@ -45,7 +45,7 @@ Status: devnet only, test token, no license yet (all rights reserved by the auth
 - idl/rein.json: the program IDL used by web and agent
 - web/: Next 16 app; web/app/api/* server routes; web/lib/server/* keys, store, claim, compute, cache
 - agent/: Groq-hosted buying agent (openai/gpt-oss-120b), tools in agent/src/tools.ts
-- zg-compute/: 0G Compute adapter, ported from Nuntio with its author's agreement
+- zg-compute/: 0G Compute adapter
 - scripts/: seed.ts, evidence.ts, compute-setup.ts, pool-setup.ts, check-docs.mjs
 - tests/rein.ts: 13 program tests
 - docs/: CONSTANTS.md (addresses), EVIDENCE.md (transactions), DESIGN.md, PROVENANCE.md, SUBMISSION.md
