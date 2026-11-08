@@ -1,16 +1,13 @@
-import type {Metadata} from "next";
-import {SignInExperience} from "@/components/onboarding/SignInExperience";
-import {WalletProvider} from "@/lib/wallet";
+import {redirect} from "next/navigation";
+import {onboardingHref} from "@/lib/return-to";
 
-export const metadata: Metadata = {title: "Sign in | Rein"};
+type Props = {searchParams: Promise<{next?: string | string[]}>};
 
-/** A route that mounts Privy is never prerendered: the provider needs the browser and the app id. */
-export const dynamic = "force-dynamic";
-
-export default function SignInPage() {
-  return (
-    <WalletProvider>
-      <SignInExperience />
-    </WalletProvider>
-  );
+/**
+ * Nuntio has one way in, /onboarding, and no /signin. Rein's earlier /signin links keep working by
+ * redirecting there, with the return-to path (?next=) carried over when it is a safe local path.
+ */
+export default async function SignInPage({searchParams}: Props) {
+  const {next} = await searchParams;
+  redirect(onboardingHref(typeof next === "string" ? next : null));
 }

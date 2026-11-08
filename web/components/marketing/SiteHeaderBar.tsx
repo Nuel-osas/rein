@@ -23,7 +23,7 @@ const LINKS = [
   {href: "/#faq", label: "FAQ"},
   {href: "/docs", label: "Docs"},
   {href: "/build", label: "Build"},
-  {href: "/signin", label: "Sign in"},
+  {href: "/onboarding", label: "Sign in"},
 ] as const;
 
 type Tone = "dark" | "light";
