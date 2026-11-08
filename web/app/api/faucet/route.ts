@@ -1,9 +1,10 @@
-// Test USDC for any Rein team: mints up to 100 USDC into the team's vault from the mint authority.
-// The team must be a Rein team account holding the registry's token. Rate-limited per IP.
+// Test USDC for the demo team only: mints up to 100 USDC into its vault from the mint authority.
+// Any other team is refused: an open faucet would let anyone mint test USDC and buy real 0G
+// compute with it through the gateway. Rate-limited per IP.
 
 import { createMintToInstruction } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
-import { parseAddress } from '@/lib/chain';
+import { DEMO_TEAM, parseAddress } from '@/lib/chain';
 import { parseUsdc } from '@/lib/money';
 import { readConfig, readTeam } from '@/lib/rein';
 import { serverKey } from '@/lib/server/keys';
@@ -29,6 +30,8 @@ export async function POST(req: Request) {
   if (!body || typeof body !== 'object') return fail('bad request');
   const teamAddr = parseAddress(typeof body.team === 'string' ? body.team : null);
   if (!teamAddr) return fail('team must be a team account address');
+  if (!DEMO_TEAM) return fail('The faucet is not configured on this server.', 503);
+  if (teamAddr !== DEMO_TEAM) return fail('The faucet only tops up the demo team.', 403);
   const amount = body.amount === undefined ? MAX : typeof body.amount === 'string' ? parseUsdc(body.amount) : null;
   if (amount === null || amount <= 0n) return fail('amount must be a USDC amount above 0, like "25"');
   if (amount > MAX) return fail('The faucet gives at most 100 USDC at a time.');

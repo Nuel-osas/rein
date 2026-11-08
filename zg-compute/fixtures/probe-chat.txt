@@ -1,0 +1,1 @@
+A spending policy for an AI agent defines the rules and constraints that govern how it allocates computational resources, financial budgets, or data usage to achieve its objectives efficiently.
