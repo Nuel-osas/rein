@@ -2,17 +2,13 @@ import Link from "next/link";
 import {Brand} from "@/components/Brand";
 import {IconArrowLeft, IconArrowRight, IconCheck, IconShield} from "@/components/app/Icons";
 import {NETWORK_NAME} from "@/components/app/network-copy";
-import {explorer} from "@/lib/chain";
 import {OnboardingStory} from "./OnboardingStory";
 import styles from "./Onboarding.module.css";
 
 export type OnboardingState = "loading" | "signed-out" | "signed-in" | "unavailable";
 
-/** First sign-in with no team: the one-transaction setup, as it goes. */
-export type SetupView = {tone: "wait" | "ok" | "bad"; text: string; tx?: string | null; retry?: () => void};
-
 /** Presentation only. The sign-in page decides the state and where a signed-in person goes. */
-export function OnboardingScreen({state, onLogin, onLogout, error, name, address, next, setup}: {
+export function OnboardingScreen({state, onLogin, onLogout, error, name, address, next}: {
   state: OnboardingState;
   onLogin?: () => void;
   onLogout?: () => void;
@@ -22,11 +18,8 @@ export function OnboardingScreen({state, onLogin, onLogout, error, name, address
   address?: string | null;
   /** Where a signed-in person goes next, once their team has been looked up. */
   next?: {href: string; label: string} | null;
-  /** Shown instead of `next` while a first sign-in sets up the team. */
-  setup?: SetupView | null;
 }) {
   const signedIn = state === "signed-in";
-  const settingUp = signedIn && !!setup;
   const unavailable = state === "unavailable";
   return <main className={styles.page} data-onboarding="split" data-theme="dark">
     <OnboardingStory />
@@ -39,13 +32,11 @@ export function OnboardingScreen({state, onLogin, onLogout, error, name, address
         {/* One traced frame holds the whole decision: the heading, the way in, and what the money is. */}
         <div className={styles.frame}>
           <div className={styles.frameHead}>
-            <p className={styles.label}>{settingUp ? "First sign-in" : signedIn ? "Signed in" : unavailable ? "Unavailable" : "Sign in"}</p>
-            {signedIn && !settingUp ? <span className={styles.successMark} aria-hidden="true"><IconCheck size="card" /></span> : null}
-            <h1 id="onboarding-title">{settingUp ? "Setting up your team" : signedIn ? "You’re signed in." : unavailable ? "Sign-in unavailable" : "Welcome to Rein."}</h1>
+            <p className={styles.label}>{signedIn ? "Signed in" : unavailable ? "Unavailable" : "Sign in"}</p>
+            {signedIn ? <span className={styles.successMark} aria-hidden="true"><IconCheck size="card" /></span> : null}
+            <h1 id="onboarding-title">{signedIn ? "You’re signed in." : unavailable ? "Sign-in unavailable" : "Welcome to Rein."}</h1>
             <p className={styles.description}>
-              {settingUp
-                ? "One transaction creates your team and its vault, and gives your Rein agent a $0.30-a-month compute budget you can change any time. The sponsor pays the fee."
-                : signedIn
+              {signedIn
                 ? name ?? "Your Solana wallet is ready."
                 : unavailable
                   ? "Explore the live demo while sign-in is unavailable."
@@ -60,18 +51,7 @@ export function OnboardingScreen({state, onLogin, onLogout, error, name, address
             ) : signedIn ? (
               <>
                 {address ? <p className={styles.wallet}>Solana wallet <code>{address.slice(0, 4)}…{address.slice(-4)}</code></p> : null}
-                {setup ? (
-                  <div className={styles.setup} data-tone={setup.tone} role="status">
-                    <p className={styles.setupText}>{setup.tone === "wait" ? <span className={styles.setupDot} aria-hidden="true" /> : null}{setup.text}</p>
-                    {setup.tx ? <a className={styles.setupLink} href={explorer("tx", setup.tx)} target="_blank" rel="noreferrer">View transaction ↗</a> : null}
-                    {setup.tone === "bad" ? (
-                      <div className={styles.setupActions}>
-                        {setup.retry ? <button className={styles.primary} onClick={setup.retry}><span>Try again</span><IconArrowRight /></button> : null}
-                        <Link className={styles.setupLink} href="/app/teams/new">Create a team by hand instead</Link>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : next ? (
+                {next ? (
                   <Link className={styles.primary} href={next.href}><span>{next.label}</span><IconArrowRight /></Link>
                 ) : (
                   <div className={styles.loading} role="status"><span />{address ? "Looking up your team…" : "Creating your Solana wallet…"}</div>

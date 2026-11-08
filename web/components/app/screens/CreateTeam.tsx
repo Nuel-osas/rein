@@ -9,9 +9,20 @@ import {Button} from "../Button";
 import {PageHeader} from "../PageHeader";
 import {StatusLine, sentStatus, type Status} from "../rein/bits";
 import {SignInPrompt} from "../WalletButton";
+import {TeamSetup} from "../rein/TeamSetup";
 import styles from "../rein/rein.module.css";
 
+/**
+ * /app/teams/new. A signed-in person with no team gets "Setting up your team" (one transaction, the
+ * team and its Rein agent); if that cannot run, the manual form below is still there.
+ */
 export function CreateTeam() {
+  const {publicKey} = useWallet();
+  if (!publicKey) return <ManualCreateTeam />;
+  return <TeamSetup fallback={<ManualCreateTeam />} />;
+}
+
+function ManualCreateTeam() {
   const {publicKey, payer, send, sponsor} = useWallet();
   const router = useRouter();
   const [name, setName] = useState("");
