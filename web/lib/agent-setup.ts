@@ -18,15 +18,17 @@ export function starterPolicy(nowSecs: number): Policy {
   return { allowance: 300_000n, periodSecs: 30 * DAY, cap: 50_000n, maxPayments: 20, expiresAt: nowSecs + 30 * DAY };
 }
 
-export type CatalogService = { id: string; label: string; model: string | null; price: string | null };
+/** `unavailable` is the gateway's reason when it cannot sell the service right now (still granted: it is registered). */
+export type CatalogService = { id: string; label: string; model: string | null; price: string | null; unavailable: string | null };
 export type Catalog = { ok: true; services: CatalogService[] } | { ok: false; missing: boolean; error: string };
 
 const SERVICE_ID_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
+/** The catalog's display price (price_usdc, "0.01") as "$0.01"; anything else as given, or null. */
 function priceText(v: unknown): string | null {
-  if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 40);
-  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
-  return null;
+  const s = typeof v === 'number' && Number.isFinite(v) ? String(v) : typeof v === 'string' ? v.trim() : '';
+  if (!s) return null;
+  return /^\d+(\.\d+)?$/.test(s) ? `$${s}` : s.slice(0, 40);
 }
 
 /**
@@ -54,7 +56,8 @@ export async function fetchCatalog(): Promise<Catalog> {
       id,
       label: typeof x.label === 'string' && x.label.trim() ? x.label.trim() : id,
       model: typeof x.model === 'string' ? x.model : null,
-      price: priceText(x.price_usdc ?? x.priceUsdc ?? x.price ?? x.amount_usdc),
+      price: priceText(x.price_usdc ?? x.amount_usdc),
+      unavailable: x.available === false ? (typeof x.reason === 'string' ? x.reason.slice(0, 120) : 'not available right now') : null,
     }];
   });
   if (!services.length) return { ok: false, missing: false, error: 'The compute catalog lists no active services yet.' };

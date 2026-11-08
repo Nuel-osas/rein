@@ -339,12 +339,12 @@ export function ComputeRunPanel({t, agentKey, catalog}: {t: TeamPage; agentKey: 
     let found: string | null = null;
     let paid = false;
     try {
-      const label = catalog.services.find((s) => s.id === service)?.label ?? service;
-      const task = `Buy one ${service} compute run (${label}) from the Rein compute gateway for this prompt, pay it under your policy, then return the result. Prompt: ${p}`;
+      // The agent route keeps 500 characters of a task: a short instruction, and the prompt capped at 400.
+      const task = `Use buy_compute with service "${service}" and exactly this prompt, then return the answer: ${p}`;
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: {"Content-Type": "application/json", ...(await authHeaders())},
-        body: JSON.stringify({team: t.address, task, service, prompt: p}),
+        body: JSON.stringify({team: t.address, task}),
         signal: ctrl.signal,
       });
       if (!res.ok || !res.body) {
@@ -434,7 +434,8 @@ export function ComputeRunPanel({t, agentKey, catalog}: {t: TeamPage; agentKey: 
                   <option key={s.id} value={s.id}>
                     {s.label}
                     {s.model ? ` · ${s.model}` : ""}
-                    {s.price ? ` · ${s.price}` : ""}
+                    {s.price ? ` · ${s.price} a run` : ""}
+                    {s.unavailable ? " · unavailable" : ""}
                   </option>
                 ))}
               </select>
@@ -446,6 +447,9 @@ export function ComputeRunPanel({t, agentKey, catalog}: {t: TeamPage; agentKey: 
             {prompt.length} / {PROMPT_MAX}
           </span>
         </div>
+        {catalog?.ok && catalog.services.find((s) => s.id === service)?.unavailable ? (
+          <p className={styles.panelNote}>The gateway cannot sell {service} right now: {catalog.services.find((s) => s.id === service)?.unavailable}.</p>
+        ) : null}
         {!authenticated ? (
           <SignInPrompt action="run a prompt" />
         ) : (
