@@ -1,8 +1,9 @@
-// The daily claim pool. 0.10 test USDC per Privy user and per wallet per UTC day, into the vault of
-// the team the user's embedded wallet owns. The pool key signs the transfer; the sponsor pays the fee.
+// The claim pool. 0.30 test USDC once per Privy user and once per wallet, into the vault of the team
+// the user's embedded wallet owns: each Google account's $0.30 of AI compute, CLAIM_TOTAL_CAP claims
+// in all (default 16). The pool key signs the transfer; the sponsor pays the fee.
 //
-//   GET  /api/claim?team=<team PDA>   the pool's balance from chain and, with a Privy token, whether
-//                                     this user has claimed today
+//   GET  /api/claim?team=<team PDA>   the pool's balance from chain, claims taken, and, with a Privy
+//                                     token, whether this user has claimed (and its signature)
 //   POST /api/claim {team}            claim (Privy access token required)
 //
 // Fail closed: no Privy secret, no store, no pool key or an unreadable chain → refused, nothing sent.
@@ -10,7 +11,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { parseAddress } from '@/lib/chain';
 import { pda, readConfig } from '@/lib/rein';
-import { CLAIM_UNITS, claim, claimDay, claimedToday, nextClaimAt, poolBalance, poolToken } from '@/lib/server/claim';
+import { CLAIM_UNITS, claim, claimStatus, claimsTaken, poolBalance, poolToken, totalCap } from '@/lib/server/claim';
 import { allow, allowKey, tooMany } from '@/lib/server/limit';
 import { privyConfigured, privySession, privySolanaWallets } from '@/lib/server/privy';
 import { serverConnection } from '@/lib/server/send';
@@ -43,23 +44,22 @@ export async function GET(req: Request) {
   const config = await readConfig(serverConnection());
   const pool = config ? poolToken(config.mint) : null;
   const balance = pool ? await poolBalance(pool.token) : null;
-  const day = claimDay();
+  const s = store();
   const base = {
     ok: true,
-    configured: !!pool,
+    configured: !!pool && !!s,
     pool: pool ? pool.token.toBase58() : null,
     /** base units as a string; null when unknown */
     balance: balance === null ? null : balance.toString(),
     amount: CLAIM_UNITS.toString(),
-    day,
-    nextAt: nextClaimAt(),
+    cap: totalCap(),
+    taken: s ? await claimsTaken(s) : null,
   };
-  const s = store();
   if (!team || !s || !req.headers.get('authorization')) return Response.json({ ...base, claimed: null, signedIn: false });
   const who = await owner(req, team);
   if (who instanceof Response) return Response.json({ ...base, claimed: null, signedIn: false });
-  const today = await claimedToday(s, who.userId, who.wallet, day);
-  return Response.json({ ...base, claimed: today.claimed, signature: today.signature, signedIn: true });
+  const mine = await claimStatus(s, who.userId, who.wallet);
+  return Response.json({ ...base, claimed: mine.claimed, signature: mine.signature, signedIn: true });
 }
 
 export async function POST(req: Request) {
