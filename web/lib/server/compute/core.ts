@@ -1,14 +1,14 @@
-// The compute gateway's logic, with every outside effect injected (store, chain reads, the model
-// call, the refund) so it can be tested without a validator or an API key. Route handlers wire the
-// real ones in `./wire.ts`. Money is bigint base units of test USDC (6 decimals) throughout.
+// The compute gateway's logic, with every outside effect injected (store, chain reads, the 0G
+// backend, the refund) so it can be tested without a validator, a 0G wallet or a model. Route
+// handlers wire the real ones in `./wire.ts`. Money is bigint base units of test USDC (6 decimals,
+// 1 test USDC = $1) throughout.
 
 import { createHash, createHmac, randomBytes } from 'node:crypto';
-import { CATALOG, parsePriceOverride, type ModelPrice } from './catalog';
+import { SERVICE_TABLE, type ComputeService } from './catalog';
 import type { Store } from '../store';
 
-export const SERVICES = ['claude-run', 'codex-run'] as const;
-export type ComputeService = (typeof SERVICES)[number];
-export const isComputeService = (s: unknown): s is ComputeService => typeof s === 'string' && (SERVICES as readonly string[]).includes(s);
+export { SERVICE_TABLE, type ComputeService };
+export const isComputeService = (s: unknown): s is ComputeService => typeof s === 'string' && Object.hasOwn(SERVICE_TABLE, s);
 
 export const PROMPT_MAX_CHARS = 4_000;
 export const MAX_TOKENS_CAP = 1_024;
@@ -18,32 +18,35 @@ export const REFUND_TTL_SEC = 30 * 24 * 60 * 60;
 export const RUN_LOCK_SEC = 90;
 export const TEAM_LOCK_SEC = 60;
 export const TEAM_RUNS_PER_DAY = 20;
-export const UPSTREAM_TIMEOUT_MS = 35_000;
+/** First runs on a provider include its funding transactions (~20 s live); funded runs take ~5 s. */
+export const UPSTREAM_TIMEOUT_MS = 45_000;
 export const CENT = 10_000n; // base units
 export const INTENT_RE = /^c[A-Za-z0-9_-]{31}$/;
 
-/** Sent with every run; counted in the price. Model output is returned as data to the caller. */
-export const SYSTEM_PROMPT =
-  'You answer one request that a team bought through Rein. Answer the request directly and concisely in plain text.';
 
 // ------------------------------------------------------------------ pricing and intents ---
 
 const ceilDiv = (a: bigint, b: bigint) => (a + b - 1n) / b;
 
 /**
- * price = ceil to the cent of (bytes(system+prompt) × input price + max_tokens × output price) × 1.5,
- * at least $0.01. Bytes stand in for tokens: a token is at least one byte, so this never under-prices.
- * `worst` is the same upstream cost without the markup, rounded up to a base unit: what the daily
- * budget is charged.
+ * price = 0G's worst case for one run (maxCostNeuron × USD per 0G) × 1.5, rounded up to the cent,
+ * at least $0.01, in test USDC base units (1 test USDC = $1, so a base unit is a micro-dollar).
+ * `worst` is the same cost without the markup, rounded up to a base unit: what the daily budget is
+ * charged. The rate is rounded up to the micro-dollar so a float never under-prices.
  */
-export function priceOf(price: ModelPrice, prompt: string, maxTokens: number): { amount: bigint; worst: bigint } {
-  const bytes = BigInt(Buffer.byteLength(SYSTEM_PROMPT + prompt, 'utf8'));
-  // micro-USD per MTok × tokens = base units × 1e6
-  const scaled = bytes * price.inMicroPerMTok + BigInt(maxTokens) * price.outMicroPerMTok;
-  const amountCents = ceilDiv(scaled * 3n, 2n * 1_000_000n * CENT);
-  const amount = (amountCents < 1n ? 1n : amountCents) * CENT;
-  const worst = ceilDiv(scaled, 1_000_000n);
-  return { amount, worst };
+export function priceOf(maxCostNeuron: bigint, usdPerZg: number): { amount: bigint; worst: bigint } {
+  if (!(usdPerZg > 0) || !Number.isFinite(usdPerZg) || maxCostNeuron <= 0n) throw new Error('bad price inputs');
+  const microPerZg = BigInt(Math.ceil(usdPerZg * 1e6));
+  const worst = ceilDiv(maxCostNeuron * microPerZg, NEURON_PER_ZG);
+  const cents = ceilDiv(worst * 3n, 2n * CENT);
+  return { amount: (cents < 1n ? 1n : cents) * CENT, worst };
+}
+
+export const NEURON_PER_ZG = 10n ** 18n;
+
+/** Neuron at a USD rate, in base units (micro-dollars), rounded down: a balance is never overstated. */
+export function neuronToMicroUsd(neuron: bigint, usdPerZg: number): bigint {
+  return (neuron * BigInt(Math.floor(usdPerZg * 1e6))) / NEURON_PER_ZG;
 }
 
 export const sha256Hex = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
@@ -62,49 +65,34 @@ export const utcDay = (nowMs: number) => new Date(nowMs).toISOString().slice(0, 
 export type ComputeEnv = {
   production: boolean;
   enabled: boolean;
+  /** The labelled fake 0G backend. Never in production, whatever the flag says. */
   fake: boolean;
   dailyBudget: bigint; // base units
+  ledgerFloor: bigint; // base units
   gatewaySecret: string | null;
-  models: Record<ComputeService, string | null>;
-  keys: Record<ComputeService, string | null>;
-  priceOverrides: Record<ComputeService, ModelPrice | null>;
+  zgKeyPresent: boolean;
+};
+
+const usd = (raw: string | undefined, dflt: string): bigint => {
+  // Fail closed: a malformed amount is zero (a budget of zero refuses everything).
+  const m = /^(\d{1,6})(?:\.(\d{1,6}))?$/.exec(raw?.trim() || dflt);
+  return m ? BigInt(m[1]) * 1_000_000n + BigInt((m[2] ?? '').padEnd(6, '0')) : 0n;
 };
 
 export function readComputeEnv(env: Record<string, string | undefined> = process.env): ComputeEnv {
-  const budgetUsd = env.COMPUTE_DAILY_BUDGET_USD?.trim() || '10';
-  // Fail closed: a malformed budget is zero, so every quote is refused.
-  const m = /^(\d{1,6})(?:\.(\d{1,2}))?$/.exec(budgetUsd);
-  const dailyBudget = m ? BigInt(m[1]) * 1_000_000n + BigInt((m[2] ?? '').padEnd(2, '0')) * CENT : 0n;
+  const production = env.NODE_ENV === 'production';
   const secret = env.GATEWAY_SECRET?.trim();
+  const floorRaw = env.ZG_LEDGER_FLOOR_USD?.trim();
   return {
-    production: env.NODE_ENV === 'production',
+    production,
     enabled: (env.COMPUTE_ENABLED ?? 'true').trim().toLowerCase() !== 'false',
-    fake: env.COMPUTE_FAKE_UPSTREAM === '1',
-    dailyBudget,
+    fake: !production && env.COMPUTE_FAKE_UPSTREAM === '1',
+    dailyBudget: usd(env.COMPUTE_DAILY_BUDGET_USD, '5'),
+    // A malformed floor is treated as huge, so quotes stop rather than run the ledger dry.
+    ledgerFloor: floorRaw && !/^\d{1,6}(?:\.\d{1,6})?$/.test(floorRaw) ? 10n ** 15n : usd(floorRaw, '0.25'),
     gatewaySecret: secret && secret.length >= 32 ? secret : null,
-    models: {
-      'claude-run': env.CLAUDE_MODEL?.trim() || 'claude-haiku-5-5',
-      'codex-run': env.CODEX_MODEL?.trim() || null,
-    },
-    keys: {
-      'claude-run': env.ANTHROPIC_API_KEY?.trim() || null,
-      'codex-run': env.OPENAI_API_KEY?.trim() || null,
-    },
-    priceOverrides: {
-      'claude-run': parsePriceOverride(env.COMPUTE_PRICE_CLAUDE_RUN),
-      'codex-run': parsePriceOverride(env.COMPUTE_PRICE_CODEX_RUN),
-    },
+    zgKeyPresent: !!env.ZG_PRIVATE_KEY?.trim(),
   };
-}
-
-/** The model and its price, or why the service cannot run. */
-export function serviceSetup(env: ComputeEnv, service: ComputeService): { ok: true; model: string; price: ModelPrice } | { ok: false; error: string } {
-  const model = env.models[service];
-  if (!model) return { ok: false, error: `${service} is not configured: no model is set` };
-  const price = env.priceOverrides[service] ?? CATALOG[model] ?? null;
-  if (!price) return { ok: false, error: `${service} is not configured: no verified price for model ${model}` };
-  if (!env.keys[service] && !env.fake) return { ok: false, error: `${service} is not configured: no API key on this server` };
-  return { ok: true, model, price };
 }
 
 // ------------------------------------------------------------------------------ deps ---
@@ -125,6 +113,8 @@ export type Quote = {
   promptSha: string;
   prompt: string;
   nonce: string;
+  /** 0G's price revision the quote was made from (provider, unit prices, rate, time). */
+  revision: string;
   createdAt: number;
 };
 
@@ -133,8 +123,15 @@ export type ComputeResult = {
   service: ComputeService;
   model: string;
   text: string;
-  /** True when no model was called (COMPUTE_FAKE_UPSTREAM=1). The text says so too. */
+  /** True when no model was called (COMPUTE_FAKE_UPSTREAM=1, never in production). The text says so too. */
   fake: boolean;
+  /** True only when the provider's TEE signature over the answer checked out. */
+  verified: boolean;
+  /** What the signature covers: "output", "route" or "none" (a relayed model: unchecked). */
+  covers: string | null;
+  provider: string | null;
+  /** What the run cost on 0G, neuron, as the provider reported it; null when it reported none. */
+  costNeuron: string | null;
   resultHash: string;
   createdAt: number;
 };
@@ -155,7 +152,19 @@ export type RefundOutcome =
   /** Nothing was signed or recorded (a key or a read was missing). Safe to try again. */
   | { state: 'unavailable'; error: string };
 
-export type UpstreamCall = (a: { service: ComputeService; model: string; system: string; prompt: string; maxTokens: number; key: string | null; signal: AbortSignal; price: ModelPrice }) => Promise<{ text: string; fake: boolean }>;
+export type BackendPrice = { ok: true; maxCostNeuron: bigint; usdPerZg: number; revision: string } | { ok: false; reason: string };
+export type BackendRun =
+  | { ok: true; text: string; fake: boolean; verified: boolean; covers: string | null; provider: string | null; costNeuron: bigint | null }
+  | { ok: false; code: string; message: string };
+
+/** What the gateway needs from 0G: the adapter (`@rein/zg-compute`) or the labelled fake. */
+export interface ComputeBackendLike {
+  model(service: ComputeService): string;
+  priceOf(service: ComputeService): Promise<BackendPrice>;
+  /** The ledger's available balance, neuron; null when unread. */
+  ledgerNeuron(): Promise<bigint | null>;
+  run(service: ComputeService, prompt: string, o: { purchaseId: string; signal: AbortSignal }): Promise<BackendRun>;
+}
 
 export interface Deps {
   store: Store;
@@ -170,7 +179,8 @@ export interface Deps {
   paymentPda: (spender: string, intent: string) => string;
   /** The Payment account and its owner; null when absent; 'error' when the read failed. */
   readPayment: (address: string) => Promise<PaymentView | null | 'error'>;
-  upstream: UpstreamCall;
+  /** The 0G backend, or why there is none (no ZG_PRIVATE_KEY): the service then answers 503. */
+  backend: () => Promise<ComputeBackendLike | { error: string }>;
   refund: (q: Quote, reason: string) => Promise<RefundOutcome>;
   /** Durable record (Postgres). Best effort: never blocks a result. */
   record?: (row: { intent: string; team: string; spender: string; service: string; amount: bigint; status: string; resultHash?: string | null; refundSig?: string | null }) => Promise<void>;
@@ -192,19 +202,40 @@ const fmt = (units: bigint) => {
 
 // ------------------------------------------------------------------------------ quote ---
 
-export async function quote(d: Deps, input: { team: string; authority: string; service: ComputeService; prompt: string; maxTokens: number }): Promise<Reply> {
+async function backendOf(d: Deps): Promise<ComputeBackendLike | { error: string }> {
+  try {
+    return await d.backend();
+  } catch {
+    return { error: 'Could not reach the 0G compute network.' };
+  }
+}
+
+/** A live price for one service: its registry entry, 0G's worst case now, and the ledger floor. */
+async function livePrice(d: Deps, service: ComputeService) {
+  const [svc, gatewayToken] = await Promise.all([d.readService(service), d.gatewayToken()]);
+  if (svc === 'error' || gatewayToken === null) return { ok: false as const, status: 503, error: 'Could not read the service registry. Try again.' };
+  if (!svc) return { ok: false as const, status: 503, error: `${service} is not registered on chain.` };
+  if (!svc.active) return { ok: false as const, status: 503, error: `${service} is suspended in the registry.` };
+  if (svc.payeeToken !== gatewayToken) return { ok: false as const, status: 503, error: `${service} pays an account this gateway does not hold; refusing to quote.` };
+  const b = await backendOf(d);
+  if ('error' in b) return { ok: false as const, status: 503, error: `${service} is not configured: ${b.error}` };
+  const [price, ledger] = await Promise.all([b.priceOf(service), b.ledgerNeuron()]);
+  if (!price.ok) return { ok: false as const, status: 503, error: price.reason };
+  // Hard cap: the 0G ledger, with a floor so the last runs never fail for want of funds.
+  if (ledger === null) return { ok: false as const, status: 503, error: 'Could not read the 0G compute balance. Try again.' };
+  if (neuronToMicroUsd(ledger, price.usdPerZg) < d.env.ledgerFloor) return { ok: false as const, status: 503, error: 'The compute balance is below its floor; no new runs until it is topped up.' };
+  const { amount, worst } = priceOf(price.maxCostNeuron, price.usdPerZg);
+  return { ok: true as const, svc, model: b.model(service), amount, worst, revision: price.revision };
+}
+
+export async function quote(d: Deps, input: { team: string; authority: string; service: ComputeService; prompt: string }): Promise<Reply> {
   if (await halted(d)) return reply(503, { error: 'Compute is switched off on this server.' });
   if (!d.env.gatewaySecret) return reply(503, { error: 'Compute is not configured on this server (no gateway secret).' });
-  const setup = serviceSetup(d.env, input.service);
-  if (!setup.ok) return reply(503, { error: setup.error });
+  const maxTokens = SERVICE_TABLE[input.service].maxOutputTokens;
 
-  const [svc, gatewayToken] = await Promise.all([d.readService(input.service), d.gatewayToken()]);
-  if (svc === 'error' || gatewayToken === null) return reply(503, { error: 'Could not read the service registry. Try again.' });
-  if (!svc) return reply(503, { error: `${input.service} is not registered on chain.` });
-  if (!svc.active) return reply(503, { error: `${input.service} is suspended in the registry.` });
-  if (svc.payeeToken !== gatewayToken) return reply(503, { error: `${input.service} pays an account this gateway does not hold; refusing to quote.` });
-
-  const { amount, worst } = priceOf(setup.price, input.prompt, input.maxTokens);
+  const live = await livePrice(d, input.service);
+  if (!live.ok) return reply(live.status, { error: live.error });
+  const { svc, amount, worst } = live;
   const nowMs = d.now();
   const day = utcDay(nowMs);
   const [spentRaw, runsRaw] = await Promise.all([d.store.get(`spend:${day}`), d.store.get(`runs:${input.team}:${day}`)]);
@@ -216,7 +247,7 @@ export async function quote(d: Deps, input: { team: string; authority: string; s
   const spender = d.spenderPda(input.team, input.authority);
   const promptSha = sha256Hex(input.prompt);
   const nonce = randomBytes(16).toString('hex');
-  const intent = intentFor(d.env.gatewaySecret, { team: input.team, spender, service: input.service, amount, promptSha, maxTokens: input.maxTokens, nonce });
+  const intent = intentFor(d.env.gatewaySecret, { team: input.team, spender, service: input.service, amount, promptSha, maxTokens, nonce });
   const q: Quote = {
     v: 1,
     intent,
@@ -226,23 +257,24 @@ export async function quote(d: Deps, input: { team: string; authority: string; s
     service: input.service,
     servicePda: svc.address,
     payeeToken: svc.payeeToken,
-    model: setup.model,
+    model: live.model,
     amount: amount.toString(),
     worst: worst.toString(),
-    maxTokens: input.maxTokens,
+    maxTokens,
     promptSha,
     prompt: input.prompt,
     nonce,
+    revision: live.revision,
     createdAt: nowMs,
   };
   if (!(await d.store.setNX(`quote:${intent}`, JSON.stringify(q), QUOTE_TTL_SEC))) return reply(409, { error: 'Quote collision; ask again.' });
   return reply(200, {
     intent,
     service: input.service,
-    model: setup.model,
+    model: live.model,
     amount: amount.toString(),
     amount_usdc: fmt(amount),
-    max_tokens: input.maxTokens,
+    max_tokens: maxTokens,
     spender,
     authority: input.authority,
     payee_token: svc.payeeToken,
@@ -250,6 +282,31 @@ export async function quote(d: Deps, input: { team: string; authority: string; s
     expires_at: new Date(nowMs + QUOTE_TTL_SEC * 1000).toISOString(),
     pay_with: { service_id: input.service, amount_base_units: amount.toString(), intent },
   });
+}
+
+/** Every registered compute service with its live price (or why it has none). For the claim lane's UI. */
+export async function catalog(d: Deps): Promise<Reply> {
+  const off = await halted(d);
+  const rows = [];
+  for (const [id, meta] of Object.entries(SERVICE_TABLE) as [ComputeService, (typeof SERVICE_TABLE)[ComputeService]][]) {
+    const svc = await d.readService(id);
+    if (svc === 'error') return reply(503, { error: 'Could not read the service registry. Try again.' });
+    if (!svc || !svc.active) continue; // not sold: never registered, or suspended
+    const live = off ? null : await livePrice(d, id);
+    rows.push({
+      id,
+      label: meta.label,
+      model: meta.model,
+      summary: meta.summary,
+      max_prompt_chars: meta.maxPromptChars,
+      max_tokens: meta.maxOutputTokens,
+      available: !!live?.ok,
+      price: live?.ok ? live.amount.toString() : null,
+      price_usdc: live?.ok ? fmt(live.amount) : null,
+      reason: off ? 'Compute is switched off on this server.' : live && !live.ok ? live.error : null,
+    });
+  }
+  return reply(200, { services: rows, fake_upstream: d.env.fake });
 }
 
 // -------------------------------------------------------------------------------- run ---
@@ -330,8 +387,9 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
 
   // Paid for exactly this quote. From here on, anything that stops the run refunds it.
   if (await halted(d)) return doRefund(d, q, 'compute was switched off before the run');
-  const setup = serviceSetup(d.env, q.service);
-  if (!setup.ok || setup.model !== q.model) return doRefund(d, q, setup.ok ? 'the model changed since the quote' : setup.error);
+  const backend = await backendOf(d);
+  if ('error' in backend) return doRefund(d, q, `compute is not configured: ${backend.error}`);
+  if (backend.model(q.service) !== q.model) return doRefund(d, q, 'the model changed since the quote');
 
   if (!(await d.store.setNX(`run:${intent}`, '1', RUN_LOCK_SEC))) return reply(409, { status: 'running', error: 'This run is already in progress. Ask for the result in a moment.' });
   const teamLock = `teamrun:${q.team}`;
@@ -358,18 +416,18 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
     }
 
     await d.record?.({ intent, team: q.team, spender: q.spender, service: q.service, amount: BigInt(q.amount), status: 'running' }).catch(() => {});
-    let out: { text: string; fake: boolean };
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), UPSTREAM_TIMEOUT_MS);
+    let out: BackendRun;
     try {
-      out = await d.upstream({ service: q.service, model: q.model, system: SYSTEM_PROMPT, prompt: q.prompt, maxTokens: q.maxTokens, key: d.env.keys[q.service], signal: ac.signal, price: setup.price });
+      out = await backend.run(q.service, q.prompt, { purchaseId: intent, signal: ac.signal });
     } catch (e) {
-      // The spend stays counted: the provider may have billed a partial call.
-      const why = ac.signal.aborted ? 'the model did not answer within 35 seconds' : `the model call failed (${String((e as Error)?.message ?? e).slice(0, 120)})`;
-      return await doRefund(d, q, why);
+      out = { ok: false, code: 'threw', message: String((e as Error)?.message ?? e).slice(0, 120) };
     } finally {
       clearTimeout(timer);
     }
+    // A failed run keeps its spend counted: 0G may have billed part of it.
+    if (!out.ok) return await doRefund(d, q, ac.signal.aborted ? 'the model did not answer in time' : `the run failed: ${out.message}`);
     if (!out.text.trim()) return await doRefund(d, q, 'the model returned no text');
 
     const result: ComputeResult = {
@@ -378,6 +436,10 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
       model: q.model,
       text: out.text,
       fake: out.fake,
+      verified: out.verified,
+      covers: out.covers,
+      provider: out.provider,
+      costNeuron: out.costNeuron === null ? null : out.costNeuron.toString(),
       resultHash: sha256Hex(out.text),
       createdAt: d.now(),
     };

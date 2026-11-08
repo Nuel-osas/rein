@@ -4,8 +4,10 @@ const config: NextConfig = {
   reactStrictMode: true,
   // Next 16 writes an AGENTS.md for coding agents on every dev start; the repo does not need it.
   agentRules: false,
-  // The agent package ships TypeScript source; Next compiles it with the app.
-  transpilePackages: ["@rein/agent"],
+  // The agent and 0G packages ship TypeScript source; Next compiles them with the app.
+  transpilePackages: ["@rein/agent", "@rein/zg-compute"],
+  // The 0G SDK and ethers load at runtime from node_modules (the SDK through its CommonJS build).
+  serverExternalPackages: ["@0gfoundation/0g-compute-ts-sdk", "ethers"],
   async headers() {
     return [
       {

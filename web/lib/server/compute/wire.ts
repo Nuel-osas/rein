@@ -1,5 +1,5 @@
-// Real dependencies for the compute gateway: chain reads, the gateway key, the refund, the model
-// calls and the durable record. Import only from route handlers.
+// Real dependencies for the compute gateway: chain reads, the gateway key, the refund, the 0G
+// backend and the durable record. Import only from route handlers.
 
 import { createTransferCheckedInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { PublicKey, Transaction } from '@solana/web3.js';
@@ -10,7 +10,7 @@ import { serverKey } from '@/lib/server/keys';
 import { broadcast, serverConnection } from '@/lib/server/send';
 import { ensureComputeRuns, store, type Store } from '@/lib/server/store';
 import { readComputeEnv, REFUND_TTL_SEC, type ComputeService, type Deps, type Quote, type RefundOutcome } from './core';
-import { realUpstream } from './upstream';
+import { fakeBackend, zgBackend } from './backend';
 
 let mintCache: { mint: string; at: number } | null = null;
 async function mint(): Promise<string | null> {
@@ -131,7 +131,13 @@ export function computeDeps(): Deps | null {
     spenderPda: (team, authority) => pda.spender(new PublicKey(team), new PublicKey(authority)).toBase58(),
     paymentPda: (spender, intent) => pda.payment(new PublicKey(spender), intent).toBase58(),
     readPayment,
-    upstream: realUpstream(env.fake),
+    backend: async () => {
+      if (env.fake) return fakeBackend();
+      const key = process.env.ZG_PRIVATE_KEY?.trim();
+      if (!key) return { error: 'no 0G wallet key on this server' };
+      const maxLedger = Number(process.env.ZG_MAX_LEDGER_ZG ?? '10');
+      return zgBackend(key, Number.isFinite(maxLedger) && maxLedger > 0 ? maxLedger : 10);
+    },
     refund: makeRefund(kv),
     record: makeRecord(kv),
   };
