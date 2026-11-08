@@ -22,6 +22,12 @@ export type ServiceMeta = {
   maxOutputTokens: number;
   /** List price shown in the registry, base units (0.01). Not a limit and not the quote. */
   listPrice: bigint;
+  /** The 0G Router (0G Private Computer) model id, as https://router-api.0g.ai/v1/models lists it. */
+  routerModel?: string;
+  /** Router trust mode: private = TeeML providers only (never falls back). */
+  trust?: 'private' | 'verified' | 'standard';
+  /** Ask a thinking model for low reasoning effort, so the 1,024-token cap is spent on the answer. */
+  lowReasoning?: boolean;
 };
 
 export const SERVICE_TABLE: Record<ComputeService, ServiceMeta> = {
@@ -33,5 +39,8 @@ export const SERVICE_TABLE: Record<ComputeService, ServiceMeta> = {
     maxPromptChars: 4_000,
     maxOutputTokens: 1_024,
     listPrice: 10_000n,
+    routerModel: '0gm-1.0-35b-a3b',
+    trust: 'private',
+    lowReasoning: true,
   },
 };

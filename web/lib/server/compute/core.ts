@@ -91,7 +91,7 @@ export function readComputeEnv(env: Record<string, string | undefined> = process
     // A malformed floor is treated as huge, so quotes stop rather than run the ledger dry.
     ledgerFloor: floorRaw && !/^\d{1,6}(?:\.\d{1,6})?$/.test(floorRaw) ? 10n ** 15n : usd(floorRaw, '0.25'),
     gatewaySecret: secret && secret.length >= 32 ? secret : null,
-    zgKeyPresent: !!env.ZG_PRIVATE_KEY?.trim(),
+    zgKeyPresent: !!(env.ZG_ROUTER_API_KEY?.trim() || env.ZG_PRIVATE_KEY?.trim()),
   };
 }
 
@@ -163,6 +163,9 @@ export interface ComputeBackendLike {
   priceOf(service: ComputeService): Promise<BackendPrice>;
   /** The ledger's available balance, neuron; null when unread. */
   ledgerNeuron(): Promise<bigint | null>;
+  /** True when the backend cannot read its balance by design (the 0G Router without a management key):
+   *  the floor check is skipped, an empty balance fails the run, and the run is refunded. */
+  ledgerOptional?: boolean;
   run(service: ComputeService, prompt: string, o: { purchaseId: string; signal: AbortSignal }): Promise<BackendRun>;
 }
 
@@ -223,8 +226,8 @@ async function livePrice(d: Deps, service: ComputeService) {
   const [price, ledger] = await Promise.all([b.priceOf(service), b.ledgerNeuron()]);
   if (!price.ok) return { ok: false as const, status: 503, error: price.reason };
   // Hard cap: the 0G ledger, with a floor so the last runs never fail for want of funds.
-  if (ledger === null) return { ok: false as const, status: 503, error: 'Could not read the 0G compute balance. Try again.' };
-  if (neuronToMicroUsd(ledger, price.usdPerZg) < d.env.ledgerFloor) return { ok: false as const, status: 503, error: 'The compute balance is below its floor; no new runs until it is topped up.' };
+  if (ledger === null && !b.ledgerOptional) return { ok: false as const, status: 503, error: 'Could not read the 0G compute balance. Try again.' };
+  if (ledger !== null && neuronToMicroUsd(ledger, price.usdPerZg) < d.env.ledgerFloor) return { ok: false as const, status: 503, error: 'The compute balance is below its floor; no new runs until it is topped up.' };
   const { amount, worst } = priceOf(price.maxCostNeuron, price.usdPerZg);
   return { ok: true as const, svc, model: b.model(service), amount, worst, revision: price.revision };
 }
