@@ -22,8 +22,8 @@ Rein is the Solana version of Bursar, our NEAR build of the same rules. See
 
 | | |
 |---|---|
-| Live app | LIVE_URL |
-| Demo team (no wallet needed) | LIVE_URL/app/DEMO_TEAM |
+| Live app | https://rein-navy.vercel.app |
+| Demo team (no wallet needed) | https://rein-navy.vercel.app/app/EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5 |
 | Program (devnet) | [`F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe`](https://explorer.solana.com/address/F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe?cluster=devnet) |
 | On-chain evidence | [`docs/EVIDENCE.md`](docs/EVIDENCE.md) |
 

@@ -31,17 +31,17 @@ Built in the hackathon window: the Anchor program, 13 tests, a Next.js console, 
 
 ## Technologies
 
-Solana, Anchor 0.31, Rust, SPL Token, Solana devnet, @coral-xyz/anchor, @solana/web3.js, Solana Wallet Adapter, TypeScript, Next.js, React, Groq API (MODEL_NAME), Vercel
+Solana, Anchor 0.31, Rust, SPL Token, Solana devnet, @coral-xyz/anchor, @solana/web3.js, Solana Wallet Adapter, TypeScript, Next.js, React, Groq API (openai/gpt-oss-120b), Vercel
 
 ## Links
 
 | Field | Value |
 |---|---|
-| GitHub | https://github.com/Nuel-osas/rein (must be public or shared with judges before submitting) |
-| Live demo | LIVE_URL |
+| GitHub | https://github.com/Nuel-osas/rein (private by choice; judges rely on the live app, video and on-chain evidence) |
+| Live demo | https://rein-navy.vercel.app/demo |
 | Demo video | VIDEO_URL |
-| extra_links: Demo team, no wallet needed | LIVE_URL/app/DEMO_TEAM |
-| extra_links: On-chain evidence | https://github.com/Nuel-osas/rein/blob/main/docs/EVIDENCE.md |
+| extra_links: Demo team, no wallet needed | https://rein-navy.vercel.app/app/EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5 |
+| extra_links: On-chain evidence | (paste the devnet transaction links from docs/EVIDENCE.md, since the repo is private) |
 | extra_links: Program on Solana Explorer | https://explorer.solana.com/address/F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe?cluster=devnet |
 
 ## AI coding tools (ai_tools)
@@ -75,7 +75,7 @@ claude-code, coding:anthropic/claude-opus-5.5
 - [ ] Devnet deploy, seed, `pnpm evidence` written to docs/EVIDENCE.md
 - [ ] Web app on Vercel with env vars, demo team loads cold
 - [ ] Agent runs from the live site
-- [ ] README links filled (LIVE_URL, DEMO_TEAM, MODEL_NAME)
+- [ ] README links filled (https://rein-navy.vercel.app, DEMO_TEAM, MODEL_NAME)
 - [ ] Demo video recorded and uploaded
-- [ ] Repo visibility decided (judges need to open it)
+- [x] Repo visibility: stays private (user decision)
 - [ ] Submitted by 16:00 WAT; project link recorded here
