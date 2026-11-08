@@ -1,3 +1,20 @@
+# In Rein
+
+This package is `@rein/zg-compute`, ported from Nuntio's `packages/zg-compute` (71Labs/nuntio)
+with its author's agreement. Everything below the "In Rein" section is Nuntio's original text,
+kept as written: package names such as `@nuntio/commerce` refer to the vendored copy in
+[src/commerce/](src/commerce) (operations, closed models, the `ComputeBackend` seam and input
+checks), and doc paths such as the agent-commerce plan live in Nuntio's repository, not this one.
+
+| How Rein uses it | Where |
+|---|---|
+| Loaded lazily, once per process, by `zgBackend` with the gateway's 0G wallet key and `maxLedgerZg` | [web/lib/server/compute/backend.ts#L34](../web/lib/server/compute/backend.ts#L34) |
+| Chosen when `ZG_PRIVATE_KEY` is set and no `ZG_ROUTER_API_KEY` is; with a Router key the gateway uses 0G Private Computer instead, which does not use this package | [web/lib/server/compute/wire.ts#L131](../web/lib/server/compute/wire.ts#L131), [web/lib/server/compute/router.ts#L53](../web/lib/server/compute/router.ts#L53) |
+| Rein sells one operation: registry service `ai-chat`, operation `chat`, 0G model `0GM-1.0-35B-A3B` | [web/lib/server/compute/catalog.ts#L34](../web/lib/server/compute/catalog.ts#L34) |
+| Gateway wallet, ledger and the first verified production run | [docs/CONSTANTS.md](../docs/CONSTANTS.md) |
+
+Tests: `pnpm test` (vitest). Re-run 2026-11-08: 10 test files, 186 tests, all pass, exit 0.
+
 # @nuntio/zg-compute
 
 The 0G Compute Network adapter for the commerce gateway (`docs/hackathon/AGENT-COMMERCE-PLAN.md`,
