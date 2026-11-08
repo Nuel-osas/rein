@@ -116,7 +116,8 @@ async function main() {
   if (balance < 200n * U) await mintTo(conn, admin, mint, vault, mintAuthority, 500n * U - balance);
   console.log(`team    ${team.toBase58()}  vault ${vault.toBase58()}  ${fmt((await getAccount(conn, vault)).amount)} USDC`);
 
-  // The research agent: 5 USDC per payment, 20 USDC a day, 10 payments a day, 30 days.
+  // The research agent: 5 USDC per payment, 20 USDC an hour, 10 payments an hour, 30 days. Hourly so
+  // judges running the demo through the day keep finding budget; over-limit runs still wait for the owner.
   // It may pay search, inference, market data and GPU time. Not the premium dataset.
   const now = Math.floor(Date.now() / 1000);
   const grants = [
@@ -124,7 +125,7 @@ async function main() {
       who: agent,
       kind: { agent: {} },
       label: 'Research agent',
-      policy: { allowance: 20n * U, periodSecs: DAY, cap: 5n * U, maxPayments: 10, expiresAt: now + 30 * DAY },
+      policy: { allowance: 20n * U, periodSecs: 3600, cap: 5n * U, maxPayments: 10, expiresAt: now + 30 * DAY },
       services: ['web-search', 'llm-inference', 'market-data', 'gpu-hour'],
     },
     {
