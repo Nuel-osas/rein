@@ -116,7 +116,7 @@ export function Compute() {
         <div className={rein.sectionHead}>
           <h2 className={rein.sectionTitle} id="purchases">Purchases</h2>
           <Link href={`${t.base}/spenders`} className={rein.sectionLink}>
-            {agents === null ? "Agents →" : `${agents.length} ${agents.length === 1 ? "agent" : "agents"} on this team →`}
+            {agents === null ? "Team →" : `${agents.length} ${agents.length === 1 ? "agent" : "agents"} on this team →`}
           </Link>
         </div>
         <div className={`${list.card} ${styles.purchases}`}>
