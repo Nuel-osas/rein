@@ -14,7 +14,9 @@ its author's agreement, and led by Ruru (Veltri Labs).
   - over a limit, the owner decides
   - an approval waives a budget, never a stop
   - a failed read is unknown, never zero
-- **The web app's look and layout** from Bursar's web app (black, white and yellow, ASCII drawings).
+- **The web app's screens, components and visual design**, adapted from Nuntio's web app
+  (`71Labs/nuntio`, `apps/web`) with its author's agreement. Names, logos and copy are Rein's, and
+  everything behind the screens (wallet, chain reads, transactions, server routes) is new Solana code.
 
 ## What was written for Solana, during the hackathon
 
