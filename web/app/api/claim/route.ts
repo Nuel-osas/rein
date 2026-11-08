@@ -23,6 +23,16 @@ export const maxDuration = 60;
 
 const fail = (error: string, status = 400) => Response.json({ ok: false, error }, { status });
 
+/** The registry's mint, cached for a minute (it never changes on a cluster); null when unread. */
+let mintCache: { mint: string; at: number } | null = null;
+async function registryMint(): Promise<string | null> {
+  if (mintCache && Date.now() - mintCache.at < 60_000) return mintCache.mint;
+  const config = await readConfig(serverConnection());
+  if (!config) return null;
+  mintCache = { mint: config.mint, at: Date.now() };
+  return config.mint;
+}
+
 /** The signed-in user and the embedded wallet that owns `team`, or a refusal. */
 async function owner(req: Request, team: string): Promise<{ userId: string; wallet: string } | Response> {
   if (!privyConfigured()) return fail('Sign-in is not configured on this server.', 503);
@@ -41,8 +51,8 @@ async function owner(req: Request, team: string): Promise<{ userId: string; wall
 export async function GET(req: Request) {
   if (!allow('claim-get', req, 60, 60_000)) return tooMany();
   const team = parseAddress(new URL(req.url).searchParams.get('team'));
-  const config = await readConfig(serverConnection());
-  const pool = config ? poolToken(config.mint) : null;
+  const mint = await registryMint();
+  const pool = mint ? poolToken(mint) : null;
   const balance = pool ? await poolBalance(pool.token) : null;
   const s = store();
   const base = {
