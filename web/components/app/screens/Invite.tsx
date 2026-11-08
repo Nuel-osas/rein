@@ -13,6 +13,7 @@ import {Brand} from "@/components/Brand";
 import {short} from "@/lib/chain";
 import {decodeInvite, encodeInvite, inviteLink, readPasted, replyLink} from "@/lib/invite";
 import {LABEL_MAX, checkLabel} from "@/lib/rein";
+import {forgetReturnTo, rememberReturnTo} from "@/lib/return-to";
 import {useTeam} from "@/lib/team";
 import {useWallet} from "@/lib/wallet";
 import {Button, ButtonLink} from "../Button";
@@ -157,6 +158,11 @@ function Accept({team, label}: {team: string; label: string}) {
   const [name, setName] = useState(label);
   const [copied, setCopied] = useState<"yes" | "no" | null>(null);
   const id = useId();
+
+  // Back on the invite, signed in: the way back from sign-in has done its job (Nuntio's JoinTeam).
+  useEffect(() => {
+    if (w.authenticated) forgetReturnTo();
+  }, [w.authenticated]);
   const teamName = t.team?.name ?? null;
   const called = teamName ?? `team ${short(team, 4)}`;
 
@@ -187,7 +193,15 @@ function Accept({team, label}: {team: string; label: string}) {
         </p>
         {w.error ? <p className={styles.problem} role="alert">{w.error}</p> : null}
         <div className={styles.actions}>
-          <Button variant="primary" busy={!w.ready} onClick={w.signIn}>
+          <Button
+            variant="primary"
+            busy={!w.ready}
+            onClick={() => {
+              // Google sign-in leaves this page: /auth/callback brings the person back here.
+              rememberReturnTo(window.location.pathname);
+              w.signIn();
+            }}
+          >
             Sign in with Google
           </Button>
         </div>
@@ -276,7 +290,8 @@ function Accept({team, label}: {team: string; label: string}) {
 
 /* --- Join a team ------------------------------------------------------------------------------ */
 
-export function JoinByLink() {
+/** `back`: the way out under the form. Your teams on /app/teams/join; Home on /teams/join, like Nuntio's. */
+export function JoinByLink({back = {href: "/app", label: "Back to your teams"}}: {back?: {href: string; label: string}} = {}) {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -286,11 +301,11 @@ export function JoinByLink() {
     e.preventDefault();
     const read = readPasted(value);
     if (!read) {
-      setError("That is not a Rein invite link. It looks like …/app/invite/ followed by letters and numbers.");
+      setError("That is not a Rein invite link. It looks like …/invite/ followed by letters and numbers.");
       return;
     }
     setError(null);
-    router.push(read.kind === "invite" ? `/app/invite/${read.token}` : read.path);
+    router.push(read.kind === "invite" ? `/invite/${read.token}` : read.path);
   }
 
   return (
@@ -328,7 +343,7 @@ export function JoinByLink() {
             className={styles.input}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="https://…/app/invite/…"
+            placeholder="https://…/invite/…"
             spellCheck={false}
             autoComplete="off"
             aria-invalid={error ? true : undefined}
@@ -339,8 +354,8 @@ export function JoinByLink() {
           <Button type="submit" variant="primary">
             Open the invite
           </Button>
-          <Link href="/app" className={styles.link}>
-            Back to your teams
+          <Link href={back.href} className={styles.link}>
+            {back.label}
           </Link>
         </div>
       </form>
