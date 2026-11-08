@@ -14,6 +14,8 @@ const SOURCES = {
   demoAgent: { env: 'REIN_DEMO_AGENT_SECRET', file: 'demo-agent.json' },
   /** The claim pool's token-account owner (scripts/pool-setup.ts). */
   pool: { env: 'REIN_POOL_SECRET', file: 'pool.json' },
+  /** Owns the compute gateway's test-USDC account (the claude-run / codex-run payee) and signs refunds. */
+  gateway: { env: 'REIN_GATEWAY_SECRET', file: 'gateway.json' },
 } as const;
 
 export type KeyName = keyof typeof SOURCES;
