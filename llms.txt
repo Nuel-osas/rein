@@ -58,3 +58,10 @@ Status: devnet only, test token, no license yet (all rights reserved by the auth
 - [CONSTANTS](docs/CONSTANTS.md): every address and how it was verified
 - [EVIDENCE](docs/EVIDENCE.md): devnet transactions
 - [AGENTS](AGENTS.md): how to work in this repo
+
+## Screenshots
+
+Real captures of the live app (2026-11-08), embedded in README.md under "See it": [docs/images/](docs/images/)
+- Demo flow: [overspend filed](docs/images/demo-overspend-pending.jpg), [approved and settled](docs/images/demo-approved-settled.jpg), [prompt injection refused](docs/images/demo-injection-refused.jpg)
+- App: [home](docs/images/home.jpg), [team and policies](docs/images/team-policies.jpg), [activity](docs/images/activity.jpg), [compute](docs/images/compute.jpg), [tour](docs/images/get-started-tour.jpg), [sign-in](docs/images/sign-in.jpg)
+- Demo video: https://youtu.be/ut9FW1qgL8A

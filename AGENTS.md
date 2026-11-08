@@ -36,6 +36,7 @@ authorizes it. Over a limit, the payment waits for the owner's approval.
 | `scripts/` | Seed, evidence, compute setup, pool setup, docs checker |
 | `tests/rein.ts` | Program tests (13) |
 | `docs/` | Constants, evidence, design, provenance, submission kit |
+| `docs/images/` | Screenshots of the live app (2026-11-08): demo flow, Home, Team, Activity, Compute, tour, sign-in, phone |
 
 ## Commands
 

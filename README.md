@@ -16,6 +16,11 @@ Solana devnet only. Built for MLH's [Solana Hackathon](https://www.mlh.com/event
 | Every address, and how it was verified | [docs/CONSTANTS.md](docs/CONSTANTS.md) |
 | Every claim, with a devnet transaction | [docs/EVIDENCE.md](docs/EVIDENCE.md) |
 | For AI readers | [llms.txt](llms.txt), [AGENTS.md](AGENTS.md) |
+| Demo video (73 s) | https://youtu.be/ut9FW1qgL8A |
+
+![Rein landing page: spending rules for teams and their AI agents, on Solana devnet](docs/images/landing.jpg)
+
+[![Watch the 73-second demo: an agent pays inside its policy, an over-cap payment waits for Approve, a prompt injection is refused on chain](https://img.youtube.com/vi/ut9FW1qgL8A/maxresdefault.jpg)](https://youtu.be/ut9FW1qgL8A)
 
 ## In 30 seconds
 
@@ -55,6 +60,37 @@ With a Google account (the full product):
 
 The signed-in flow (steps 5 to 7) has not yet been run end to end by a person after the last
 deploy; the team is checking it. See [Status and limits](#status-and-limits).
+
+## See it
+
+Screenshots of the live app on 2026-11-08, taken in a fresh browser against devnet. Every number
+on them is read from chain; the demo flow below was run for real while capturing.
+
+**The demo flow** (`/demo`, no sign-in):
+
+| 1. The agent overspends: the program files it and holds the money | 2. One tap on Approve: it settles in one transaction |
+|---|---|
+| ![Waiting for the owner: a 12 test USDC payment to premium-dataset, filed because it is over the per-payment cap and not on the agent's list, with Approve and Decline](docs/images/demo-overspend-pending.jpg) | ![Approved and settled: 12.00 landed with premium-dataset 1.37 s after the click, with a transaction link; nothing is waiting any more](docs/images/demo-approved-settled.jpg) |
+
+| 3. A prompt injection cannot name a wallet: refused on chain |
+|---|
+| ![The agent paid 0.40 for web-search; the injected 50 USDC payment to the made-up service wallet-9xqe was refused on chain with a mined failed transaction](docs/images/demo-injection-refused.jpg) |
+
+**The app** (the public view of the demo team, `/app/<team>`):
+
+| Home | Team: people, agents and their policies |
+|---|---|
+| ![Home: vault balance in devnet test USDC, team summary, what needs the owner, and how the team is held on chain](docs/images/home.jpg) | ![Team: the Research agent (20 per hour, 5 per payment) and Ada (100 per week, 25 per payment) with live remaining budgets](docs/images/team-policies.jpg) |
+
+| Activity: every payment with its outcome | Compute: claim 0.30 test USDC and let the agent buy 0G AI runs |
+|---|---|
+| ![Activity: payments to web-search, premium-dataset and ai-chat with Paid, Waiting and Approved settled states](docs/images/activity.jpg) | ![Compute: the 0.30 claim card, the agent's budget, and the prompt box that asks the agent to buy a verified 0G run](docs/images/compute.jpg) |
+
+| Get started: a first-visit tour on Home | Google sign-in, with a Solana wallet and no SOL needed |
+|---|---|
+| ![The Get started tour, step 1 of 7, spotlighting the vault: money only leaves through a payment, your approval, or your withdraw](docs/images/get-started-tour.jpg) | ![Sign-in: Welcome to Rein, Continue with Google; a sponsor pays every network fee](docs/images/sign-in.jpg) |
+
+<img src="docs/images/mobile-home.jpg" alt="Home on a phone, 390 px wide, with the bottom navigation bar" width="260">
 
 ## Proof, on chain
 
