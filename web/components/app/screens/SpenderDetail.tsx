@@ -72,7 +72,7 @@ export function SpenderDetail({by, id}: {by: "address" | "authority"; id: string
 
   async function act(key: string, label: string, ix: () => Parameters<typeof send>[0], done: string) {
     setBusy(key);
-    setStatus({tone: "wait", text: `${label}. Confirm in your wallet.`});
+    setStatus({tone: "wait", text: `${label}…`});
     try {
       setStatus(sentStatus(await send(ix()), done));
     } catch (e) {

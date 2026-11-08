@@ -9,6 +9,7 @@ import {PageHeader} from "../PageHeader";
 import {ContentLoading} from "../ui";
 import {Explorer, Fact, StatusLine, sentStatus, type Status} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
+import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
 export function Settings() {
@@ -23,7 +24,7 @@ export function Settings() {
     if (!team || !publicKey) return;
     setBusy(true);
     const next = !team.paused;
-    setStatus({tone: "wait", text: `${next ? "Pausing" : "Resuming"} the team. Confirm in your wallet.`});
+    setStatus({tone: "wait", text: `${next ? "Pausing" : "Resuming"} the team…`});
     try {
       setStatus(sentStatus(await send([ixs.setPaused({owner: publicKey, paused: next})]), next ? "The team is paused. Nothing can move." : "The team is running again."));
     } catch (e) {
@@ -62,7 +63,7 @@ export function Settings() {
               {team?.paused ? "Resume the team" : "Pause the team"}
             </Button>
           ) : (
-            <p className={styles.panelNote}>Only the owner can pause or resume the team.</p>
+            t.wallet ? <p className={styles.panelNote}>Only the owner can pause or resume the team.</p> : <SignInPrompt action="pause the team" note="Only the owner can." />
           )}
         </div>
       </div>

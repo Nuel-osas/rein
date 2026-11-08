@@ -1,15 +1,22 @@
 // The fee sponsor. A wallet signs its part of a Rein transaction with the sponsor as fee payer;
 // this route checks it, co-signs as fee payer and sends it, so people and agents never hold SOL.
-// It refuses anything but Rein's user instructions (and compute-budget settings), and the sponsor
-// key may appear only as the fee payer and as the `payer` of pay, create_team or add_spender.
+// It refuses anything but Rein's user instructions (and compute-budget settings), plus one
+// create-if-missing of the signer's own test-USDC account for a withdraw. The sponsor key may appear
+// only as the fee payer, as the `payer` of pay, create_team or add_spender, and as the payer of that
+// token account.
+//
+// Rate limits: a request with a verified Privy access token is limited per Privy user; one without
+// a token per IP, as before; one with a token that fails verification is refused.
 
+import { ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { ComputeBudgetProgram, Transaction } from '@solana/web3.js';
 import { utils } from '@coral-xyz/anchor';
 import { PROGRAM_ID } from '@/lib/chain';
-import { instructionName } from '@/lib/rein';
+import { instructionName, readConfig } from '@/lib/rein';
 import { serverKey } from '@/lib/server/keys';
-import { allow, tooMany } from '@/lib/server/limit';
-import { broadcast } from '@/lib/server/send';
+import { allow, allowKey, tooMany } from '@/lib/server/limit';
+import { privySession } from '@/lib/server/privy';
+import { broadcast, serverConnection } from '@/lib/server/send';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,6 +33,7 @@ const ALLOWED = new Set([
   'set_spender_status',
   'revoke',
   'set_paused',
+  'withdraw',
 ]);
 /** Where the sponsor may sit: account 0 (`payer`) of these, and nowhere else. */
 const PAYER_AT_ZERO = new Set(['pay', 'create_team', 'add_spender']);
@@ -41,8 +49,21 @@ export async function GET() {
   return Response.json({ address: sponsor.publicKey.toBase58() });
 }
 
+/** The registry's mint, cached for a minute: the only token whose account the sponsor will open. */
+let mintCache: { mint: string; at: number } | null = null;
+async function registryMint(): Promise<string | null> {
+  if (mintCache && Date.now() - mintCache.at < 60_000) return mintCache.mint;
+  const config = await readConfig(serverConnection());
+  if (!config) return null;
+  mintCache = { mint: config.mint, at: Date.now() };
+  return config.mint;
+}
+
 export async function POST(req: Request) {
-  if (!allow('sponsor', req, 20, 60_000)) return tooMany();
+  const session = await privySession(req);
+  if (session.kind === 'invalid') return fail('Your session has expired. Sign in again.', 401);
+  const within = session.kind === 'user' ? allowKey('sponsor', `user:${session.userId}`, 30, 60_000) : allow('sponsor', req, 20, 60_000);
+  if (!within) return tooMany();
   const sponsor = serverKey('sponsor');
   if (!sponsor) return fail('no sponsor on this server', 503);
 
@@ -62,7 +83,9 @@ export async function POST(req: Request) {
   if (!tx.feePayer || !tx.feePayer.equals(sponsor.publicKey)) return fail('the sponsor must be the fee payer');
   if (tx.instructions.length === 0 || tx.instructions.length > MAX_IXS) return fail('1 to 6 instructions');
 
+  const signers = new Set(tx.signatures.map((x) => x.publicKey.toBase58()));
   let reinCount = 0;
+  let ataCount = 0;
   for (const ix of tx.instructions) {
     if (ix.programId.equals(ComputeBudgetProgram.programId)) {
       const tag = ix.data[0];
@@ -74,6 +97,19 @@ export async function POST(req: Request) {
         return fail('only compute unit limit and price are allowed');
       }
       if (ix.keys.length !== 0) return fail('compute budget takes no accounts');
+      continue;
+    }
+    if (ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID)) {
+      // CreateIdempotent of the signer's own account for the registry's token, at most once.
+      // Accounts: payer, the token account, its owner, the mint, system program, token program.
+      if (ix.data.length !== 1 || ix.data[0] !== 1 || ix.keys.length !== 6) return fail('only creating your own token account is sponsored');
+      if (++ataCount > 1) return fail('one token account at a time');
+      const owner = ix.keys[2].pubkey;
+      if (owner.equals(sponsor.publicKey) || !signers.has(owner.toBase58())) return fail('the token account must be your own');
+      const mint = await registryMint();
+      if (!mint) return fail('Could not read the Rein config from chain. Nothing was sent.', 502);
+      if (ix.keys[3].pubkey.toBase58() !== mint) return fail('only the registry token is sponsored');
+      for (let i = 1; i < ix.keys.length; i++) if (ix.keys[i].pubkey.equals(sponsor.publicKey)) return fail('the sponsor may only pay for the token account');
       continue;
     }
     if (!ix.programId.equals(PROGRAM_ID)) return fail(`program ${ix.programId.toBase58()} is not allowed`);

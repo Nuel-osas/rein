@@ -7,9 +7,8 @@ import {checkLabel, ixs, pda, readConfig, readTeam, type Config} from "@/lib/rei
 import {errorText, useWallet} from "@/lib/wallet";
 import {Button} from "../Button";
 import {PageHeader} from "../PageHeader";
-import {EmptyState} from "../ui";
 import {StatusLine, sentStatus, type Status} from "../rein/bits";
-import {WalletButton} from "../WalletButton";
+import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
 export function CreateTeam() {
@@ -24,7 +23,13 @@ export function CreateTeam() {
     readConfig(connection()).then(setConfig);
   }, []);
 
-  if (!publicKey) return <EmptyState as="h1" title="Connect a wallet to create a team" body="Your wallet becomes the team's owner: the only key that can change policies, approve payments or withdraw." action={<WalletButton />} />;
+  if (!publicKey)
+    return (
+      <div className={styles.section}>
+        <PageHeader kind="teams" title="Create a team" description="Your Solana wallet becomes the team's owner: the only key that can change policies, approve payments or withdraw." />
+        <SignInPrompt action="create a team" note="Privy gives you a Solana wallet when you sign in with Google." />
+      </div>
+    );
   const problem = checkLabel(name.trim());
 
   async function create() {
@@ -33,10 +38,10 @@ export function CreateTeam() {
     try {
       const at = pda.team(publicKey).toBase58();
       if (await readTeam(connection(), at)) {
-        setStatus({tone: "bad", text: "This wallet already owns a team. One team per owner."});
+        setStatus({tone: "bad", text: "Your wallet already owns a team. One team per owner."});
         return;
       }
-      setStatus({tone: "wait", text: `Creating ${name.trim()}. Confirm in your wallet.`});
+      setStatus({tone: "wait", text: `Creating ${name.trim()}…`});
       const sent = await send([ixs.createTeam({payer, owner: publicKey, mint: config.mint, name: name.trim()})]);
       setStatus(sentStatus(sent, `${name.trim()} is live, with a vault only the program can move.`));
       if (sent.status === "confirmed") router.push(`/app/${at}`);
@@ -54,7 +59,7 @@ export function CreateTeam() {
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Team name</span>
           <input className={styles.input} value={name} maxLength={32} onChange={(e) => setName(e.target.value)} placeholder="Acme Research" />
-          <span className={styles.fieldHint}>{sponsor ? "The sponsor pays the rent and the fee; you need no SOL." : "Your wallet pays the rent and the fee (about 0.004 SOL on devnet)."}</span>
+          <span className={styles.fieldHint}>{sponsor ? "The sponsor pays the rent and the fee; you need no SOL." : "No sponsor is running here, so your wallet would have to pay the rent and fee (about 0.004 SOL)."}</span>
         </label>
         {config === null ? <p className={styles.problems}>Could not read the Rein config from chain, so the token is unknown. Try again in a moment.</p> : null}
         <div className={styles.actions}>

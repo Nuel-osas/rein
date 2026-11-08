@@ -17,7 +17,7 @@ import {PageHeader} from "../PageHeader";
 import {ContentLoading, EmptyState} from "../ui";
 import {StatusLine, sentStatus, type Status} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
-import {WalletButton} from "../WalletButton";
+import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
 type Draft = {label: string; allowance: string; periodSecs: number; cap: string; maxPayments: string; days: string; services: string[]};
@@ -69,8 +69,8 @@ export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "e
   const checked = useMemo(() => (draft ? toPolicy(draft, Math.floor(Date.now() / 1000)) : {problems: [], policy: null}), [draft]);
 
   if (t.at === 0) return <ContentLoading label="Reading the team from chain…" rows={2} />;
-  if (!t.wallet) return <EmptyState as="h1" title="Connect the owner wallet" body="Only the team owner can grant or change a policy." action={<WalletButton />} />;
-  if (!t.isOwner) return <EmptyState as="h1" title="Only the owner can do this" body="The connected wallet does not own this team, so the program would refuse the change." />;
+  if (!t.wallet) return <div className={styles.section}><PageHeader kind="spenders" title={mode === "edit" ? "Edit policy" : kind === "agent" ? "Add an agent" : "Add a person"} description="Only the team owner can grant or change a policy." /><SignInPrompt action={mode === "edit" ? "edit this policy" : "add a spender"} /></div>;
+  if (!t.isOwner) return <EmptyState as="h1" title="Only the owner can do this" body="Your signed-in wallet does not own this team, so the program would refuse the change." />;
   if (mode === "edit" && !editing) return <EmptyState as="h1" title="No such spender" body="The link does not match a Spender account of this team." />;
   if (!draft) return null;
   const set = (next: Draft) => setD(next);
@@ -106,7 +106,7 @@ export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "e
           setStatus({tone: "bad", text: "That key is already a spender on this team. Edit its policy instead."});
           return;
         }
-        setStatus({tone: "wait", text: `Granting ${draft.label.trim()} a policy. Confirm in your wallet.`});
+        setStatus({tone: "wait", text: `Granting ${draft.label.trim()} a policy…`});
         const sent = await send([ixs.addSpender({payer, owner: publicKey, authority: new PublicKey(auth), kind: agent ? "agent" : "person", label: draft.label.trim(), policy, services: draft.services})]);
         setStatus(sentStatus(sent, `${draft.label.trim()} can now pay under this policy.`));
         if (sent.status === "confirmed") {
@@ -114,7 +114,7 @@ export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "e
           if (!secret) router.push(agent ? `${t.base}/agents/${auth}` : `${t.base}/spenders`);
         }
       } else {
-        setStatus({tone: "wait", text: `Updating ${editing!.label}. Confirm in your wallet.`});
+        setStatus({tone: "wait", text: `Updating ${editing!.label}…`});
         const sent = await send([ixs.setPolicy({owner: publicKey, spender: editing!.address, policy}), ixs.setServices({owner: publicKey, spender: editing!.address, services: draft.services})]);
         setStatus(sentStatus(sent, `${editing!.label}'s policy is updated. What it spent this period still counts.`));
         if (sent.status === "confirmed") {
@@ -138,7 +138,7 @@ export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "e
         description={
           agent
             ? "An agent is a keypair that holds no money. It signs pay against its own Spender account, and the program checks this policy every time."
-            : "A teammate pays from their own wallet, under this policy. Only you can change it."
+            : "A teammate pays from their own Rein (Privy) wallet, under this policy. Only you can change it."
         }
       />
       {secret ? (
@@ -159,7 +159,7 @@ export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "e
       <div className={styles.form}>
         {mode === "add" ? (
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>{agent ? "The agent's public key" : "Their wallet address"}</span>
+            <span className={styles.fieldLabel}>{agent ? "The agent's public key" : "Their Solana wallet address"}</span>
             <input className={styles.input} value={authority} onChange={(e) => setAuthority(e.target.value.trim())} placeholder="base58 public key" spellCheck={false} />
             <span className={styles.fieldHint}>
               {agent ? (
@@ -171,7 +171,7 @@ export function SpenderForm({mode, kind = "agent", spenderId}: {mode: "add" | "e
                   . The secret never leaves your machine.
                 </>
               ) : (
-                "They sign their own payments; the vault pays."
+                "Their address is in their account menu after they sign in. They sign their own payments; the vault pays."
               )}
             </span>
           </label>

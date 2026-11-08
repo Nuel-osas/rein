@@ -1,8 +1,8 @@
 "use client";
 
 // The app's frame: a sidebar above 64rem (brand, the one primary row, the places, the team group,
-// settings and the wallet), a top bar and a bottom bar below it. Every destination is under one
-// team, /app/<team>/…, so a link to the demo team opens the whole app for anyone, wallet or not.
+// settings and the account), a top bar and a bottom bar below it. Every destination is under one
+// team, /app/<team>/…, so a link to the demo team opens the whole app for anyone, signed in or not.
 
 import Link from "next/link";
 import {usePathname} from "next/navigation";
@@ -63,7 +63,7 @@ export function AppFrame({team, children}: {team: string | null; children: React
   const t = useTeam(team);
   const now = useNow();
   const waiting = t.payments ? t.payments.filter((p) => isLive(p, now)).length : null;
-  const {address, disconnect} = useWallet();
+  const {address, authenticated, label: who, disconnect} = useWallet();
   const home = base ?? "/app";
 
   return (
@@ -125,18 +125,18 @@ export function AppFrame({team, children}: {team: string | null; children: React
               </Link>
             ) : null}
             <div className={styles.sidebarFoot}>
-              {address ? (
+              {authenticated ? (
                 <>
-                  <span className={styles.accountLink} title={address}>
+                  <span className={styles.accountLink} title={address ?? undefined}>
                     <span className={styles.accountAvatar} aria-hidden="true">
-                      {address.slice(0, 2).toUpperCase()}
+                      {(who ?? address ?? "?").slice(0, 2).toUpperCase()}
                     </span>
                     <span className={styles.identity}>
-                      <span className={styles.identityName}>{short(address, 4)}</span>
-                      <span className={styles.identityNote}>{t.team?.owner === address ? "Owner" : "Connected wallet"}</span>
+                      <span className={styles.identityName}>{who ?? short(address, 4)}</span>
+                      <span className={styles.identityNote}>{address ? `${short(address, 4)}${t.team?.owner === address ? " · owner" : ""}` : "Creating wallet…"}</span>
                     </span>
                   </span>
-                  <button type="button" className={styles.signOut} onClick={() => void disconnect()} aria-label="Disconnect wallet" title="Disconnect wallet">
+                  <button type="button" className={styles.signOut} onClick={() => void disconnect()} aria-label="Sign out" title="Sign out">
                     <IconSignOut size="nav" />
                   </button>
                 </>

@@ -21,6 +21,7 @@ const LINKS = [
   {href: "/#trust", label: "Security"},
   {href: "/demo", label: "Live demo"},
   {href: "/#faq", label: "FAQ"},
+  {href: "/signin", label: "Sign in"},
 ] as const;
 
 type Tone = "dark" | "light";

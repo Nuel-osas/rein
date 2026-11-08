@@ -13,11 +13,12 @@ import {PageHeader} from "../PageHeader";
 import {ContentLoading} from "../ui";
 import {Explorer, StatusLine, sentStatus, type Status} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
+import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
 export function MoneyScreen() {
   const t = useTeamPage();
-  const {publicKey, sendOwnFee} = useWallet();
+  const {publicKey, payer, send} = useWallet();
   const [fund, setFund] = useState("100");
   const [out, setOut] = useState("");
   const [status, setStatus] = useState<Status>(null);
@@ -47,12 +48,12 @@ export function MoneyScreen() {
   async function withdraw() {
     if (!team || !publicKey || outUnits === null || outUnits <= 0n) return;
     setBusy("out");
-    setStatus({tone: "wait", text: `Withdrawing ${usdc(outUnits)} to your wallet. Confirm in your wallet.`});
+    setStatus({tone: "wait", text: `Withdrawing ${usdc(outUnits)} to your wallet…`});
     try {
       const mint = new PublicKey(team.mint);
       const to = pda.vault(mint, publicKey);
-      const sent = await sendOwnFee([
-        createAssociatedTokenAccountIdempotentInstruction(publicKey, to, publicKey, mint),
+      const sent = await send([
+        createAssociatedTokenAccountIdempotentInstruction(payer ?? publicKey, to, publicKey, mint),
         ixs.withdraw({owner: publicKey, vault: team.vault, to: to.toBase58(), amount: outUnits}),
       ]);
       setStatus(sentStatus(sent, `${usdc(outUnits)} is in your wallet's USDC account.`));
@@ -91,11 +92,12 @@ export function MoneyScreen() {
           </div>
         </div>
       </div>
+      {!t.wallet ? <SignInPrompt action="withdraw" note="Only the team owner can." /> : null}
       {t.isOwner ? (
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <h2 className={styles.panelTitle}>Withdraw</h2>
-            <p className={styles.panelNote}>To your own USDC account. There is no destination field to get wrong. Your wallet pays this fee.</p>
+            <p className={styles.panelNote}>To your own USDC account. There is no destination field to get wrong. The sponsor pays the fee and, the first time, the rent of your USDC account.</p>
           </div>
           <div className={styles.form}>
             <label className={styles.field}>

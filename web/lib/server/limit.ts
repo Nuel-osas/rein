@@ -12,12 +12,17 @@ export function clientIp(req: Request): string {
 
 /** true when the caller is within `max` calls per `windowMs` for this route. */
 export function allow(route: string, req: Request, max: number, windowMs: number): boolean {
+  return allowKey(route, `ip:${clientIp(req)}`, max, windowMs);
+}
+
+/** The same window, keyed by anything: an IP, or a signed-in user's id. */
+export function allowKey(route: string, key: string, max: number, windowMs: number): boolean {
   let b = buckets.get(route);
   if (!b) {
     b = new Map();
     buckets.set(route, b);
   }
-  const ip = clientIp(req);
+  const ip = key;
   const now = Date.now();
   const w = b.get(ip);
   if (!w || now - w.start >= windowMs) {
