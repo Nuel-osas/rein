@@ -9,7 +9,7 @@
 const KEY = "rein:return-to";
 const SIGN_IN = /^\/(onboarding|signin|auth)(\/|\?|$)/;
 const SAFE = /^\/(?![/\\])[A-Za-z0-9\-._~/?=&%+,:@]{0,511}$/;
-const INVITE = /^\/(app\/)?invite\/[A-Za-z0-9_-]+\/?$/;
+const INVITE = /^\/invite\/[A-Za-z0-9_-]+\/?$/;
 
 /** The path itself when it is a safe place on this site to return to; null otherwise. */
 export function safeReturnTo(path: string | null | undefined): string | null {
