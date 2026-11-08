@@ -1,0 +1,220 @@
+/* The first-visit tour, in the app's ledger style: square corners, one hairline per edge, the
+   light accent for the trace and the outline, the dark primary for the one button that moves on.
+   Every token carries a fallback so the overlay reads the same wherever it renders. */
+
+.tour {
+  --tour-accent: var(--color-accent-text, #a78bfa);
+  --tour-dim: rgba(4, 3, 8, 0.8);
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+/* No target on screen for this step: the backdrop does the dimming itself. */
+.backdrop[data-plain] {
+  background: var(--tour-dim);
+}
+
+/* The hole in the dimmed page: a huge spread shadow around the target's box, outlined dashed. */
+.spot {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed var(--tour-accent);
+  box-shadow: 0 0 0 9999px var(--tour-dim);
+  pointer-events: none;
+}
+
+.line {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.trace,
+.head {
+  fill: none;
+  stroke: var(--tour-accent);
+  stroke-width: 1.5;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+.datum {
+  fill: var(--tour-accent);
+}
+
+.card {
+  position: absolute;
+  box-sizing: border-box;
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.125rem 0.875rem;
+  overflow-y: auto;
+  background: var(--color-surface, #131118);
+  box-shadow:
+    inset 0 2px 0 var(--tour-accent),
+    0 0 0 1px var(--app-line-strong, #3a3346),
+    0 16px 40px -12px rgba(0, 0, 0, 0.8);
+  color: var(--color-text-primary, #ffffff);
+  opacity: 0;
+}
+
+/* Shown once its height is known, so it never flashes at a guessed position. Opacity, not
+   visibility: the card must stay focusable while it is being measured. */
+.card[data-ready] {
+  opacity: 1;
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.count {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary, #8a8496);
+  font-variant-numeric: tabular-nums;
+}
+
+.skip {
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary, #b8b3c4);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.title {
+  margin: 0.125rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary, #ffffff);
+}
+
+.body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary, #b8b3c4);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 0.375rem;
+}
+
+.dots {
+  display: flex;
+  flex: 1;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.dot {
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  background: var(--app-line-strong, #3a3346);
+}
+
+.dot[data-on] {
+  inline-size: 1.25rem;
+  background: var(--tour-accent);
+}
+
+.back,
+.next {
+  min-block-size: 2.25rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: var(--radius-control, 0);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.back {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--app-control-edge, #3a3346);
+  color: var(--color-text-primary, #ffffff);
+}
+
+.next {
+  background: var(--color-accent-solid, #5b21b6);
+  color: var(--color-text-on-accent, #ffffff);
+}
+
+.skip:focus-visible,
+.back:focus-visible,
+.next:focus-visible {
+  outline: 2px solid var(--color-border-focus, #a78bfa);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .skip:hover {
+    color: var(--color-text-primary, #ffffff);
+  }
+  .back:hover {
+    background: var(--app-sidebar-hover, #1c1924);
+  }
+  .next:hover {
+    background: var(--color-accent-hover, #4c1d95);
+  }
+}
+
+/* Motion only for those who have not asked for less: the spotlight and the card glide between
+   steps, and the trace draws itself from the card to the target. */
+@media (prefers-reduced-motion: no-preference) {
+  .spot,
+  .card {
+    transition:
+      left 0.24s ease-out,
+      top 0.24s ease-out,
+      width 0.24s ease-out,
+      height 0.24s ease-out;
+  }
+  .trace {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: tour-draw 0.32s 0.12s ease-out forwards;
+  }
+  .head,
+  .datum {
+    opacity: 0;
+    animation: tour-fade 0.16s 0.4s ease-out forwards;
+  }
+}
+
+@keyframes tour-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes tour-fade {
+  to {
+    opacity: 1;
+  }
+}
