@@ -1,12 +1,12 @@
 [package]
-name = "bursar-solana"
+name = "rein"
 version = "0.1.0"
-description = "Bursar on Solana: spending rules for teams and their AI agents"
+description = "Rein: spending rules for teams and their AI agents, on Solana"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "bursar_solana"
+name = "rein"
 
 [features]
 default = []

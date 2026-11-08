@@ -1,14 +1,20 @@
-{
+/**
+ * Program IDL in camelCase format in order to be used in JS/TS.
+ *
+ * Note that this is only a type helper and is not the actual IDL. The original
+ * IDL can be found at `target/idl/rein.json`.
+ */
+export type Rein = {
   "address": "F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe",
   "metadata": {
-    "name": "bursar_solana",
+    "name": "rein",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Bursar on Solana: spending rules for teams and their AI agents"
+    "description": "Rein: spending rules for teams and their AI agents, on Solana"
   },
   "instructions": [
     {
-      "name": "add_spender",
+      "name": "addSpender",
       "docs": [
         "Grants a person or an agent a policy. A revoked spender can be granted again, with a new",
         "generation, so nothing it filed before the revoke can settle."
@@ -86,7 +92,7 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -99,7 +105,7 @@
           "name": "kind",
           "type": {
             "defined": {
-              "name": "Kind"
+              "name": "kind"
             }
           }
         },
@@ -111,7 +117,7 @@
           "name": "policy",
           "type": {
             "defined": {
-              "name": "Policy"
+              "name": "policy"
             }
           }
         },
@@ -187,7 +193,7 @@
           ]
         },
         {
-          "name": "payee_token",
+          "name": "payeeToken",
           "writable": true
         },
         {
@@ -195,7 +201,7 @@
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
@@ -235,7 +241,7 @@
       "args": []
     },
     {
-      "name": "create_team",
+      "name": "createTeam",
       "discriminator": [
         122,
         161,
@@ -395,15 +401,15 @@
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -465,7 +471,7 @@
       "args": []
     },
     {
-      "name": "init_config",
+      "name": "initConfig",
       "docs": [
         "One registry per deployment: who may list services, and which token teams hold."
       ],
@@ -508,7 +514,7 @@
           "name": "mint"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -609,7 +615,7 @@
               {
                 "kind": "account",
                 "path": "service.id",
-                "account": "Service"
+                "account": "service"
               }
             ]
           }
@@ -622,7 +628,7 @@
           ]
         },
         {
-          "name": "payee_token",
+          "name": "payeeToken",
           "docs": [
             "Must be the payee the registry names. A made-up recipient cannot be passed."
           ],
@@ -657,11 +663,11 @@
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -681,7 +687,7 @@
       ]
     },
     {
-      "name": "register_service",
+      "name": "registerService",
       "docs": [
         "Lists a service a team can pay. `price` is the list price shown to agents; it is not a limit."
       ],
@@ -748,10 +754,10 @@
           }
         },
         {
-          "name": "payee_token"
+          "name": "payeeToken"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -837,7 +843,7 @@
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "Spender"
+                "account": "spender"
               }
             ]
           }
@@ -846,7 +852,7 @@
       "args": []
     },
     {
-      "name": "set_paused",
+      "name": "setPaused",
       "discriminator": [
         91,
         60,
@@ -895,7 +901,7 @@
       ]
     },
     {
-      "name": "set_policy",
+      "name": "setPolicy",
       "discriminator": [
         40,
         133,
@@ -961,7 +967,7 @@
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "Spender"
+                "account": "spender"
               }
             ]
           }
@@ -972,14 +978,14 @@
           "name": "policy",
           "type": {
             "defined": {
-              "name": "Policy"
+              "name": "policy"
             }
           }
         }
       ]
     },
     {
-      "name": "set_service_active",
+      "name": "setServiceActive",
       "docs": [
         "Suspends or restores a service. A suspended service cannot be paid or settled."
       ],
@@ -1039,7 +1045,7 @@
               {
                 "kind": "account",
                 "path": "service.id",
-                "account": "Service"
+                "account": "service"
               }
             ]
           }
@@ -1053,7 +1059,7 @@
       ]
     },
     {
-      "name": "set_services",
+      "name": "setServices",
       "discriminator": [
         179,
         40,
@@ -1119,7 +1125,7 @@
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "Spender"
+                "account": "spender"
               }
             ]
           }
@@ -1135,7 +1141,7 @@
       ]
     },
     {
-      "name": "set_spender_status",
+      "name": "setSpenderStatus",
       "docs": [
         "Pauses or resumes a spender. Revoking is its own call because it cannot be undone."
       ],
@@ -1204,7 +1210,7 @@
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "Spender"
+                "account": "spender"
               }
             ]
           }
@@ -1272,7 +1278,7 @@
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
@@ -1286,7 +1292,7 @@
   ],
   "accounts": [
     {
-      "name": "Config",
+      "name": "config",
       "discriminator": [
         155,
         12,
@@ -1299,7 +1305,7 @@
       ]
     },
     {
-      "name": "Payment",
+      "name": "payment",
       "discriminator": [
         227,
         231,
@@ -1312,7 +1318,7 @@
       ]
     },
     {
-      "name": "Service",
+      "name": "service",
       "discriminator": [
         144,
         62,
@@ -1325,7 +1331,7 @@
       ]
     },
     {
-      "name": "Spender",
+      "name": "spender",
       "discriminator": [
         157,
         194,
@@ -1338,7 +1344,7 @@
       ]
     },
     {
-      "name": "Team",
+      "name": "team",
       "discriminator": [
         140,
         218,
@@ -1354,93 +1360,93 @@
   "errors": [
     {
       "code": 6000,
-      "name": "TeamPaused",
+      "name": "teamPaused",
       "msg": "the team is paused"
     },
     {
       "code": 6001,
-      "name": "NotActive",
+      "name": "notActive",
       "msg": "spender is not active"
     },
     {
       "code": 6002,
-      "name": "Expired",
+      "name": "expired",
       "msg": "spender policy has expired"
     },
     {
       "code": 6003,
-      "name": "ServiceSuspended",
+      "name": "serviceSuspended",
       "msg": "the service is suspended"
     },
     {
       "code": 6004,
-      "name": "WrongPayee",
+      "name": "wrongPayee",
       "msg": "the payee is not the one the registry names"
     },
     {
       "code": 6005,
-      "name": "NotPending",
+      "name": "notPending",
       "msg": "payment is not pending"
     },
     {
       "code": 6006,
-      "name": "RequestExpired",
+      "name": "requestExpired",
       "msg": "the pending payment has expired"
     },
     {
       "code": 6007,
-      "name": "NotOwnerOrFiler",
+      "name": "notOwnerOrFiler",
       "msg": "only the owner or the filer can cancel"
     },
     {
       "code": 6008,
-      "name": "AlreadySpender",
+      "name": "alreadySpender",
       "msg": "already a spender: change its policy instead"
     },
     {
       "code": 6009,
-      "name": "KindChanged",
+      "name": "kindChanged",
       "msg": "a spender keeps its kind"
     },
     {
       "code": 6010,
-      "name": "ZeroAmount",
+      "name": "zeroAmount",
       "msg": "amount must be above zero"
     },
     {
       "code": 6011,
-      "name": "MemoTooLong",
+      "name": "memoTooLong",
       "msg": "a memo is at most 64 bytes"
     },
     {
       "code": 6012,
-      "name": "BadIntent",
+      "name": "badIntent",
       "msg": "an intent is 1 to 32 characters of a-z, A-Z, 0-9, - and _"
     },
     {
       "code": 6013,
-      "name": "BadServiceId",
+      "name": "badServiceId",
       "msg": "a service id is 1 to 32 characters of a-z, 0-9 and -"
     },
     {
       "code": 6014,
-      "name": "BadLabel",
+      "name": "badLabel",
       "msg": "a label is 1 to 32 characters"
     },
     {
       "code": 6015,
-      "name": "BadPolicy",
+      "name": "badPolicy",
       "msg": "allowance and cap above zero, cap within allowance, period at least 60 s, at least 1 payment, expiry in the future"
     },
     {
       "code": 6016,
-      "name": "TooManyServices",
+      "name": "tooManyServices",
       "msg": "at most 8 services per spender"
     }
   ],
   "types": [
     {
-      "name": "Config",
+      "name": "config",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1464,21 +1470,21 @@
       }
     },
     {
-      "name": "Kind",
+      "name": "kind",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Person"
+            "name": "person"
           },
           {
-            "name": "Agent"
+            "name": "agent"
           }
         ]
       }
     },
     {
-      "name": "Payment",
+      "name": "payment",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1504,7 +1510,7 @@
             "name": "kind",
             "type": {
               "defined": {
-                "name": "Kind"
+                "name": "kind"
               }
             }
           },
@@ -1513,7 +1519,7 @@
             "type": "pubkey"
           },
           {
-            "name": "payee_token",
+            "name": "payeeToken",
             "docs": [
               "The payee the registry named when the payment was filed. Only this account can be paid."
             ],
@@ -1543,12 +1549,12 @@
             "name": "status",
             "type": {
               "defined": {
-                "name": "PaymentStatus"
+                "name": "paymentStatus"
               }
             }
           },
           {
-            "name": "created_at",
+            "name": "createdAt",
             "type": "i64"
           },
           {
@@ -1559,7 +1565,7 @@
             "type": "i64"
           },
           {
-            "name": "decided_at",
+            "name": "decidedAt",
             "type": "i64"
           },
           {
@@ -1577,33 +1583,33 @@
       }
     },
     {
-      "name": "PaymentStatus",
+      "name": "paymentStatus",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Paid"
+            "name": "paid"
           },
           {
-            "name": "Pending"
+            "name": "pending"
           },
           {
-            "name": "Settled"
+            "name": "settled"
           },
           {
-            "name": "Declined"
+            "name": "declined"
           },
           {
-            "name": "Cancelled"
+            "name": "cancelled"
           },
           {
-            "name": "Refused"
+            "name": "refused"
           }
         ]
       }
     },
     {
-      "name": "Policy",
+      "name": "policy",
       "docs": [
         "Amounts are token base units (USDC has 6 decimals). Times are unix seconds."
       ],
@@ -1618,7 +1624,7 @@
             "type": "u64"
           },
           {
-            "name": "period_secs",
+            "name": "periodSecs",
             "type": "u32"
           },
           {
@@ -1629,14 +1635,14 @@
             "type": "u64"
           },
           {
-            "name": "max_payments",
+            "name": "maxPayments",
             "docs": [
               "The most payments in one period."
             ],
             "type": "u32"
           },
           {
-            "name": "expires_at",
+            "name": "expiresAt",
             "docs": [
               "The policy refuses from this instant on."
             ],
@@ -1646,7 +1652,7 @@
       }
     },
     {
-      "name": "Service",
+      "name": "service",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1663,7 +1669,7 @@
             "type": "pubkey"
           },
           {
-            "name": "payee_token",
+            "name": "payeeToken",
             "type": "pubkey"
           },
           {
@@ -1682,7 +1688,7 @@
       }
     },
     {
-      "name": "Spender",
+      "name": "spender",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1698,7 +1704,7 @@
             "name": "kind",
             "type": {
               "defined": {
-                "name": "Kind"
+                "name": "kind"
               }
             }
           },
@@ -1710,7 +1716,7 @@
             "name": "status",
             "type": {
               "defined": {
-                "name": "Status"
+                "name": "status"
               }
             }
           },
@@ -1722,7 +1728,7 @@
             "name": "policy",
             "type": {
               "defined": {
-                "name": "Policy"
+                "name": "policy"
               }
             }
           },
@@ -1733,7 +1739,7 @@
             }
           },
           {
-            "name": "period_start",
+            "name": "periodStart",
             "type": "i64"
           },
           {
@@ -1745,7 +1751,7 @@
             "type": "u32"
           },
           {
-            "name": "added_at",
+            "name": "addedAt",
             "type": "i64"
           },
           {
@@ -1756,24 +1762,24 @@
       }
     },
     {
-      "name": "Status",
+      "name": "status",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Active"
+            "name": "active"
           },
           {
-            "name": "Paused"
+            "name": "paused"
           },
           {
-            "name": "Revoked"
+            "name": "revoked"
           }
         ]
       }
     },
     {
-      "name": "Team",
+      "name": "team",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1806,15 +1812,15 @@
             "type": "u64"
           },
           {
-            "name": "paid_count",
+            "name": "paidCount",
             "type": "u64"
           },
           {
-            "name": "paid_total",
+            "name": "paidTotal",
             "type": "u64"
           },
           {
-            "name": "created_at",
+            "name": "createdAt",
             "type": "i64"
           },
           {
@@ -1825,4 +1831,4 @@
       }
     }
   ]
-}
+};

@@ -1,4 +1,4 @@
-//! Bursar on Solana: spending rules for teams and their AI agents.
+//! Rein: spending rules for teams and their AI agents, on Solana.
 //!
 //! A team keeps USDC in a vault owned by its PDA. Every person and every agent on the team pays
 //! under a policy this program enforces. `pay` takes a registered service, never an address.
@@ -27,7 +27,7 @@ pub const OVER_ALLOWANCE: u8 = 4;
 pub const OVER_COUNT: u8 = 8;
 
 #[program]
-pub mod bursar_solana {
+pub mod rein {
     use super::*;
 
     // ------------------------------------------------------------------ registry ---
@@ -95,7 +95,7 @@ pub mod bursar_solana {
 
     /// Moves money out of the vault to an account the owner names. Only the owner can.
     pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
-        require!(amount > 0, BursarError::ZeroAmount);
+        require!(amount > 0, ReinError::ZeroAmount);
         let team = &ctx.accounts.team;
         transfer_from_vault(
             team,
@@ -127,8 +127,8 @@ pub mod bursar_solana {
             ctx.accounts.team.spenders += 1;
             0
         } else {
-            require!(sp.status == Status::Revoked, BursarError::AlreadySpender);
-            require!(sp.kind == kind, BursarError::KindChanged);
+            require!(sp.status == Status::Revoked, ReinError::AlreadySpender);
+            require!(sp.kind == kind, ReinError::KindChanged);
             sp.generation + 1
         };
         sp.team = ctx.accounts.team.key();
@@ -150,7 +150,7 @@ pub mod bursar_solana {
     pub fn set_policy(ctx: Context<OwnerSpender>, policy: Policy) -> Result<()> {
         check_policy(&policy, Clock::get()?.unix_timestamp)?;
         let sp = &mut ctx.accounts.spender;
-        require!(sp.status != Status::Revoked, BursarError::NotActive);
+        require!(sp.status != Status::Revoked, ReinError::NotActive);
         sp.policy = policy;
         Ok(())
     }
@@ -158,7 +158,7 @@ pub mod bursar_solana {
     pub fn set_services(ctx: Context<OwnerSpender>, services: Vec<Pubkey>) -> Result<()> {
         let services = clean_services(services)?;
         let sp = &mut ctx.accounts.spender;
-        require!(sp.status != Status::Revoked, BursarError::NotActive);
+        require!(sp.status != Status::Revoked, ReinError::NotActive);
         sp.services = services;
         Ok(())
     }
@@ -166,7 +166,7 @@ pub mod bursar_solana {
     /// Pauses or resumes a spender. Revoking is its own call because it cannot be undone.
     pub fn set_spender_status(ctx: Context<OwnerSpender>, active: bool) -> Result<()> {
         let sp = &mut ctx.accounts.spender;
-        require!(sp.status != Status::Revoked, BursarError::NotActive);
+        require!(sp.status != Status::Revoked, ReinError::NotActive);
         sp.status = if active { Status::Active } else { Status::Paused };
         Ok(())
     }
@@ -186,16 +186,16 @@ pub mod bursar_solana {
     pub fn pay(ctx: Context<Pay>, intent: String, amount: u64, memo: String) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
         check_intent(&intent)?;
-        require!(memo.len() <= MEMO_MAX, BursarError::MemoTooLong);
-        require!(amount > 0, BursarError::ZeroAmount);
+        require!(memo.len() <= MEMO_MAX, ReinError::MemoTooLong);
+        require!(amount > 0, ReinError::ZeroAmount);
 
         let team = &mut ctx.accounts.team;
         let sp = &mut ctx.accounts.spender;
         let service = &ctx.accounts.service;
-        require!(!team.paused, BursarError::TeamPaused);
-        require!(sp.status == Status::Active, BursarError::NotActive);
-        require!(now < sp.policy.expires_at, BursarError::Expired);
-        require!(service.active, BursarError::ServiceSuspended);
+        require!(!team.paused, ReinError::TeamPaused);
+        require!(sp.status == Status::Active, ReinError::NotActive);
+        require!(now < sp.policy.expires_at, ReinError::Expired);
+        require!(service.active, ReinError::ServiceSuspended);
 
         roll(sp, now);
         let reasons = over_limits(sp, &service.key(), amount);
@@ -232,11 +232,11 @@ pub mod bursar_solana {
                 &ctx.accounts.token_program,
                 amount,
             )?;
-            msg!("bursar: paid {} to {}", amount, service.id);
+            msg!("rein: paid {} to {}", amount, service.id);
         } else {
             p.status = PaymentStatus::Pending;
             p.deadline = now + PENDING_TTL_SECS;
-            msg!("bursar: filed {} for {} reasons={}", amount, service.id, reasons);
+            msg!("rein: filed {} for {} reasons={}", amount, service.id, reasons);
         }
         Ok(())
     }
@@ -249,9 +249,9 @@ pub mod bursar_solana {
         let sp = &mut ctx.accounts.spender;
         let service = &ctx.accounts.service;
         let p = &mut ctx.accounts.payment;
-        require!(!team.paused, BursarError::TeamPaused);
-        require!(p.status == PaymentStatus::Pending, BursarError::NotPending);
-        require!(now < p.deadline, BursarError::RequestExpired);
+        require!(!team.paused, ReinError::TeamPaused);
+        require!(p.status == PaymentStatus::Pending, ReinError::NotPending);
+        require!(now < p.deadline, ReinError::RequestExpired);
 
         p.decided_at = now;
         let stopped = sp.status != Status::Active
@@ -261,7 +261,7 @@ pub mod bursar_solana {
             || service.payee_token != p.payee_token;
         if stopped {
             p.status = PaymentStatus::Refused;
-            msg!("bursar: refused at approval");
+            msg!("rein: refused at approval");
             return Ok(());
         }
 
@@ -280,13 +280,13 @@ pub mod bursar_solana {
             &ctx.accounts.token_program,
             amount,
         )?;
-        msg!("bursar: approved and settled {}", amount);
+        msg!("rein: approved and settled {}", amount);
         Ok(())
     }
 
     pub fn decline(ctx: Context<Decline>) -> Result<()> {
         let p = &mut ctx.accounts.payment;
-        require!(p.status == PaymentStatus::Pending, BursarError::NotPending);
+        require!(p.status == PaymentStatus::Pending, ReinError::NotPending);
         p.status = PaymentStatus::Declined;
         p.decided_at = Clock::get()?.unix_timestamp;
         Ok(())
@@ -299,9 +299,9 @@ pub mod bursar_solana {
         let p = &mut ctx.accounts.payment;
         require!(
             signer == team.owner || signer == p.authority,
-            BursarError::NotOwnerOrFiler
+            ReinError::NotOwnerOrFiler
         );
-        require!(p.status == PaymentStatus::Pending, BursarError::NotPending);
+        require!(p.status == PaymentStatus::Pending, ReinError::NotPending);
         p.status = PaymentStatus::Cancelled;
         p.decided_at = Clock::get()?.unix_timestamp;
         Ok(())
@@ -339,7 +339,7 @@ fn check_service_id(id: &str) -> Result<()> {
             && id
                 .bytes()
                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-'),
-        BursarError::BadServiceId
+        ReinError::BadServiceId
     );
     Ok(())
 }
@@ -351,7 +351,7 @@ fn check_intent(intent: &str) -> Result<()> {
             && intent
                 .bytes()
                 .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'),
-        BursarError::BadIntent
+        ReinError::BadIntent
     );
     Ok(())
 }
@@ -359,22 +359,22 @@ fn check_intent(intent: &str) -> Result<()> {
 fn check_label(label: &str) -> Result<()> {
     require!(
         !label.is_empty() && label.len() <= LABEL_MAX,
-        BursarError::BadLabel
+        ReinError::BadLabel
     );
     Ok(())
 }
 
 fn check_policy(p: &Policy, now: i64) -> Result<()> {
-    require!(p.allowance > 0, BursarError::BadPolicy);
-    require!(p.cap > 0 && p.cap <= p.allowance, BursarError::BadPolicy);
-    require!(p.period_secs >= MIN_PERIOD_SECS, BursarError::BadPolicy);
-    require!(p.max_payments >= 1, BursarError::BadPolicy);
-    require!(p.expires_at > now, BursarError::BadPolicy);
+    require!(p.allowance > 0, ReinError::BadPolicy);
+    require!(p.cap > 0 && p.cap <= p.allowance, ReinError::BadPolicy);
+    require!(p.period_secs >= MIN_PERIOD_SECS, ReinError::BadPolicy);
+    require!(p.max_payments >= 1, ReinError::BadPolicy);
+    require!(p.expires_at > now, ReinError::BadPolicy);
     Ok(())
 }
 
 fn clean_services(services: Vec<Pubkey>) -> Result<Vec<Pubkey>> {
-    require!(services.len() <= MAX_SERVICES, BursarError::TooManyServices);
+    require!(services.len() <= MAX_SERVICES, ReinError::TooManyServices);
     let mut out: Vec<Pubkey> = Vec::with_capacity(services.len());
     for s in services {
         if !out.contains(&s) {
@@ -692,7 +692,7 @@ pub struct Pay<'info> {
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
     /// Must be the payee the registry names. A made-up recipient cannot be passed.
-    #[account(mut, address = service.payee_token @ BursarError::WrongPayee)]
+    #[account(mut, address = service.payee_token @ ReinError::WrongPayee)]
     pub payee_token: Account<'info, TokenAccount>,
     #[account(
         init,
@@ -723,7 +723,7 @@ pub struct Approve<'info> {
     pub service: Account<'info, Service>,
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
-    #[account(mut, address = payment.payee_token @ BursarError::WrongPayee)]
+    #[account(mut, address = payment.payee_token @ ReinError::WrongPayee)]
     pub payee_token: Account<'info, TokenAccount>,
     #[account(mut, has_one = team)]
     pub payment: Account<'info, Payment>,
@@ -750,7 +750,7 @@ pub struct Cancel<'info> {
 // -------------------------------------------------------------------------- errors ---
 
 #[error_code]
-pub enum BursarError {
+pub enum ReinError {
     #[msg("the team is paused")]
     TeamPaused,
     #[msg("spender is not active")]

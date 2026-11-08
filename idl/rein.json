@@ -1,20 +1,14 @@
-/**
- * Program IDL in camelCase format in order to be used in JS/TS.
- *
- * Note that this is only a type helper and is not the actual IDL. The original
- * IDL can be found at `target/idl/bursar_solana.json`.
- */
-export type BursarSolana = {
+{
   "address": "F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe",
   "metadata": {
-    "name": "bursarSolana",
+    "name": "rein",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Bursar on Solana: spending rules for teams and their AI agents"
+    "description": "Rein: spending rules for teams and their AI agents, on Solana"
   },
   "instructions": [
     {
-      "name": "addSpender",
+      "name": "add_spender",
       "docs": [
         "Grants a person or an agent a policy. A revoked spender can be granted again, with a new",
         "generation, so nothing it filed before the revoke can settle."
@@ -92,7 +86,7 @@ export type BursarSolana = {
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -105,7 +99,7 @@ export type BursarSolana = {
           "name": "kind",
           "type": {
             "defined": {
-              "name": "kind"
+              "name": "Kind"
             }
           }
         },
@@ -117,7 +111,7 @@ export type BursarSolana = {
           "name": "policy",
           "type": {
             "defined": {
-              "name": "policy"
+              "name": "Policy"
             }
           }
         },
@@ -193,7 +187,7 @@ export type BursarSolana = {
           ]
         },
         {
-          "name": "payeeToken",
+          "name": "payee_token",
           "writable": true
         },
         {
@@ -201,7 +195,7 @@ export type BursarSolana = {
           "writable": true
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
@@ -241,7 +235,7 @@ export type BursarSolana = {
       "args": []
     },
     {
-      "name": "createTeam",
+      "name": "create_team",
       "discriminator": [
         122,
         161,
@@ -401,15 +395,15 @@ export type BursarSolana = {
           }
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "associatedTokenProgram",
+          "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -471,7 +465,7 @@ export type BursarSolana = {
       "args": []
     },
     {
-      "name": "initConfig",
+      "name": "init_config",
       "docs": [
         "One registry per deployment: who may list services, and which token teams hold."
       ],
@@ -514,7 +508,7 @@ export type BursarSolana = {
           "name": "mint"
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -615,7 +609,7 @@ export type BursarSolana = {
               {
                 "kind": "account",
                 "path": "service.id",
-                "account": "service"
+                "account": "Service"
               }
             ]
           }
@@ -628,7 +622,7 @@ export type BursarSolana = {
           ]
         },
         {
-          "name": "payeeToken",
+          "name": "payee_token",
           "docs": [
             "Must be the payee the registry names. A made-up recipient cannot be passed."
           ],
@@ -663,11 +657,11 @@ export type BursarSolana = {
           }
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -687,7 +681,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "registerService",
+      "name": "register_service",
       "docs": [
         "Lists a service a team can pay. `price` is the list price shown to agents; it is not a limit."
       ],
@@ -754,10 +748,10 @@ export type BursarSolana = {
           }
         },
         {
-          "name": "payeeToken"
+          "name": "payee_token"
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -843,7 +837,7 @@ export type BursarSolana = {
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "spender"
+                "account": "Spender"
               }
             ]
           }
@@ -852,7 +846,7 @@ export type BursarSolana = {
       "args": []
     },
     {
-      "name": "setPaused",
+      "name": "set_paused",
       "discriminator": [
         91,
         60,
@@ -901,7 +895,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "setPolicy",
+      "name": "set_policy",
       "discriminator": [
         40,
         133,
@@ -967,7 +961,7 @@ export type BursarSolana = {
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "spender"
+                "account": "Spender"
               }
             ]
           }
@@ -978,14 +972,14 @@ export type BursarSolana = {
           "name": "policy",
           "type": {
             "defined": {
-              "name": "policy"
+              "name": "Policy"
             }
           }
         }
       ]
     },
     {
-      "name": "setServiceActive",
+      "name": "set_service_active",
       "docs": [
         "Suspends or restores a service. A suspended service cannot be paid or settled."
       ],
@@ -1045,7 +1039,7 @@ export type BursarSolana = {
               {
                 "kind": "account",
                 "path": "service.id",
-                "account": "service"
+                "account": "Service"
               }
             ]
           }
@@ -1059,7 +1053,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "setServices",
+      "name": "set_services",
       "discriminator": [
         179,
         40,
@@ -1125,7 +1119,7 @@ export type BursarSolana = {
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "spender"
+                "account": "Spender"
               }
             ]
           }
@@ -1141,7 +1135,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "setSpenderStatus",
+      "name": "set_spender_status",
       "docs": [
         "Pauses or resumes a spender. Revoking is its own call because it cannot be undone."
       ],
@@ -1210,7 +1204,7 @@ export type BursarSolana = {
               {
                 "kind": "account",
                 "path": "spender.authority",
-                "account": "spender"
+                "account": "Spender"
               }
             ]
           }
@@ -1278,7 +1272,7 @@ export type BursarSolana = {
           "writable": true
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
@@ -1292,7 +1286,7 @@ export type BursarSolana = {
   ],
   "accounts": [
     {
-      "name": "config",
+      "name": "Config",
       "discriminator": [
         155,
         12,
@@ -1305,7 +1299,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "payment",
+      "name": "Payment",
       "discriminator": [
         227,
         231,
@@ -1318,7 +1312,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "service",
+      "name": "Service",
       "discriminator": [
         144,
         62,
@@ -1331,7 +1325,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "spender",
+      "name": "Spender",
       "discriminator": [
         157,
         194,
@@ -1344,7 +1338,7 @@ export type BursarSolana = {
       ]
     },
     {
-      "name": "team",
+      "name": "Team",
       "discriminator": [
         140,
         218,
@@ -1360,93 +1354,93 @@ export type BursarSolana = {
   "errors": [
     {
       "code": 6000,
-      "name": "teamPaused",
+      "name": "TeamPaused",
       "msg": "the team is paused"
     },
     {
       "code": 6001,
-      "name": "notActive",
+      "name": "NotActive",
       "msg": "spender is not active"
     },
     {
       "code": 6002,
-      "name": "expired",
+      "name": "Expired",
       "msg": "spender policy has expired"
     },
     {
       "code": 6003,
-      "name": "serviceSuspended",
+      "name": "ServiceSuspended",
       "msg": "the service is suspended"
     },
     {
       "code": 6004,
-      "name": "wrongPayee",
+      "name": "WrongPayee",
       "msg": "the payee is not the one the registry names"
     },
     {
       "code": 6005,
-      "name": "notPending",
+      "name": "NotPending",
       "msg": "payment is not pending"
     },
     {
       "code": 6006,
-      "name": "requestExpired",
+      "name": "RequestExpired",
       "msg": "the pending payment has expired"
     },
     {
       "code": 6007,
-      "name": "notOwnerOrFiler",
+      "name": "NotOwnerOrFiler",
       "msg": "only the owner or the filer can cancel"
     },
     {
       "code": 6008,
-      "name": "alreadySpender",
+      "name": "AlreadySpender",
       "msg": "already a spender: change its policy instead"
     },
     {
       "code": 6009,
-      "name": "kindChanged",
+      "name": "KindChanged",
       "msg": "a spender keeps its kind"
     },
     {
       "code": 6010,
-      "name": "zeroAmount",
+      "name": "ZeroAmount",
       "msg": "amount must be above zero"
     },
     {
       "code": 6011,
-      "name": "memoTooLong",
+      "name": "MemoTooLong",
       "msg": "a memo is at most 64 bytes"
     },
     {
       "code": 6012,
-      "name": "badIntent",
+      "name": "BadIntent",
       "msg": "an intent is 1 to 32 characters of a-z, A-Z, 0-9, - and _"
     },
     {
       "code": 6013,
-      "name": "badServiceId",
+      "name": "BadServiceId",
       "msg": "a service id is 1 to 32 characters of a-z, 0-9 and -"
     },
     {
       "code": 6014,
-      "name": "badLabel",
+      "name": "BadLabel",
       "msg": "a label is 1 to 32 characters"
     },
     {
       "code": 6015,
-      "name": "badPolicy",
+      "name": "BadPolicy",
       "msg": "allowance and cap above zero, cap within allowance, period at least 60 s, at least 1 payment, expiry in the future"
     },
     {
       "code": 6016,
-      "name": "tooManyServices",
+      "name": "TooManyServices",
       "msg": "at most 8 services per spender"
     }
   ],
   "types": [
     {
-      "name": "config",
+      "name": "Config",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1470,21 +1464,21 @@ export type BursarSolana = {
       }
     },
     {
-      "name": "kind",
+      "name": "Kind",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "person"
+            "name": "Person"
           },
           {
-            "name": "agent"
+            "name": "Agent"
           }
         ]
       }
     },
     {
-      "name": "payment",
+      "name": "Payment",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1510,7 +1504,7 @@ export type BursarSolana = {
             "name": "kind",
             "type": {
               "defined": {
-                "name": "kind"
+                "name": "Kind"
               }
             }
           },
@@ -1519,7 +1513,7 @@ export type BursarSolana = {
             "type": "pubkey"
           },
           {
-            "name": "payeeToken",
+            "name": "payee_token",
             "docs": [
               "The payee the registry named when the payment was filed. Only this account can be paid."
             ],
@@ -1549,12 +1543,12 @@ export type BursarSolana = {
             "name": "status",
             "type": {
               "defined": {
-                "name": "paymentStatus"
+                "name": "PaymentStatus"
               }
             }
           },
           {
-            "name": "createdAt",
+            "name": "created_at",
             "type": "i64"
           },
           {
@@ -1565,7 +1559,7 @@ export type BursarSolana = {
             "type": "i64"
           },
           {
-            "name": "decidedAt",
+            "name": "decided_at",
             "type": "i64"
           },
           {
@@ -1583,33 +1577,33 @@ export type BursarSolana = {
       }
     },
     {
-      "name": "paymentStatus",
+      "name": "PaymentStatus",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "paid"
+            "name": "Paid"
           },
           {
-            "name": "pending"
+            "name": "Pending"
           },
           {
-            "name": "settled"
+            "name": "Settled"
           },
           {
-            "name": "declined"
+            "name": "Declined"
           },
           {
-            "name": "cancelled"
+            "name": "Cancelled"
           },
           {
-            "name": "refused"
+            "name": "Refused"
           }
         ]
       }
     },
     {
-      "name": "policy",
+      "name": "Policy",
       "docs": [
         "Amounts are token base units (USDC has 6 decimals). Times are unix seconds."
       ],
@@ -1624,7 +1618,7 @@ export type BursarSolana = {
             "type": "u64"
           },
           {
-            "name": "periodSecs",
+            "name": "period_secs",
             "type": "u32"
           },
           {
@@ -1635,14 +1629,14 @@ export type BursarSolana = {
             "type": "u64"
           },
           {
-            "name": "maxPayments",
+            "name": "max_payments",
             "docs": [
               "The most payments in one period."
             ],
             "type": "u32"
           },
           {
-            "name": "expiresAt",
+            "name": "expires_at",
             "docs": [
               "The policy refuses from this instant on."
             ],
@@ -1652,7 +1646,7 @@ export type BursarSolana = {
       }
     },
     {
-      "name": "service",
+      "name": "Service",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1669,7 +1663,7 @@ export type BursarSolana = {
             "type": "pubkey"
           },
           {
-            "name": "payeeToken",
+            "name": "payee_token",
             "type": "pubkey"
           },
           {
@@ -1688,7 +1682,7 @@ export type BursarSolana = {
       }
     },
     {
-      "name": "spender",
+      "name": "Spender",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1704,7 +1698,7 @@ export type BursarSolana = {
             "name": "kind",
             "type": {
               "defined": {
-                "name": "kind"
+                "name": "Kind"
               }
             }
           },
@@ -1716,7 +1710,7 @@ export type BursarSolana = {
             "name": "status",
             "type": {
               "defined": {
-                "name": "status"
+                "name": "Status"
               }
             }
           },
@@ -1728,7 +1722,7 @@ export type BursarSolana = {
             "name": "policy",
             "type": {
               "defined": {
-                "name": "policy"
+                "name": "Policy"
               }
             }
           },
@@ -1739,7 +1733,7 @@ export type BursarSolana = {
             }
           },
           {
-            "name": "periodStart",
+            "name": "period_start",
             "type": "i64"
           },
           {
@@ -1751,7 +1745,7 @@ export type BursarSolana = {
             "type": "u32"
           },
           {
-            "name": "addedAt",
+            "name": "added_at",
             "type": "i64"
           },
           {
@@ -1762,24 +1756,24 @@ export type BursarSolana = {
       }
     },
     {
-      "name": "status",
+      "name": "Status",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "active"
+            "name": "Active"
           },
           {
-            "name": "paused"
+            "name": "Paused"
           },
           {
-            "name": "revoked"
+            "name": "Revoked"
           }
         ]
       }
     },
     {
-      "name": "team",
+      "name": "Team",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1812,15 +1806,15 @@ export type BursarSolana = {
             "type": "u64"
           },
           {
-            "name": "paidCount",
+            "name": "paid_count",
             "type": "u64"
           },
           {
-            "name": "paidTotal",
+            "name": "paid_total",
             "type": "u64"
           },
           {
-            "name": "createdAt",
+            "name": "created_at",
             "type": "i64"
           },
           {
@@ -1831,4 +1825,4 @@ export type BursarSolana = {
       }
     }
   ]
-};
+}
