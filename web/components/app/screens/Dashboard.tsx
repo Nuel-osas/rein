@@ -1,25 +1,26 @@
 "use client";
 
+// Home: what the team holds and who can spend it, and nothing that another page already shows in
+// full. The vault balance, a short summary that links to Team, Approvals and Activity, the $0.30
+// claim card for the owner, what is waiting for the owner, and how the team is held on chain.
+// Every amount is devnet test USDC; a failed read shows as a dash, never as zero.
+
 import Link from "next/link";
 import {PublicKey} from "@solana/web3.js";
-import {PROGRAM_ID, ago, short, usdc} from "@/lib/chain";
-import {isLive, pda, remainingOf, rolled} from "@/lib/rein";
-import {AgentPanel} from "../agent-panel";
+import {PROGRAM_ID, short, usdc} from "@/lib/chain";
+import {isLive, pda} from "@/lib/rein";
 import {Money} from "../Money";
 import {PageHeader} from "../PageHeader";
-import {Avatar, ContentLoading, EmptyState, Meter} from "../ui";
-import list from "../ListView.module.css";
+import {ContentLoading, EmptyState} from "../ui";
 import page from "../pages/dashboard.module.css";
-import {Explorer, PaymentPill, initials, serviceName, spenderName} from "../rein/bits";
+import {Explorer} from "../rein/bits";
 import {ApprovalsList} from "../rein/ApprovalsList";
 import {ClaimCard} from "../rein/ClaimCard";
 import {useTeamPage} from "../rein/context";
 import styles from "../rein/rein.module.css";
 
-function countWords(list: {kind: string}[]) {
-  const people = list.filter((s) => s.kind === "person").length;
-  const agents = list.filter((s) => s.kind === "agent").length;
-  return `${people} ${people === 1 ? "person" : "people"} · ${agents} ${agents === 1 ? "agent" : "agents"}`;
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
 }
 
 export function Dashboard() {
@@ -31,6 +32,9 @@ export function Dashboard() {
 
   const waiting = (t.payments ?? []).filter((p) => isLive(p, t.now));
   const held = waiting.reduce((a, p) => a + p.amount, 0n);
+  const active = t.spenders ? t.spenders.filter((s) => s.status !== "revoked") : null;
+  const people = active ? active.filter((s) => s.kind === "person").length : 0;
+  const agents = active ? active.filter((s) => s.kind === "agent").length : 0;
   const role = t.isOwner ? "owner" : t.me ? "spender" : t.wallet ? "viewer" : "viewer, signed out";
   let derivedOk: boolean | null = null;
   let vaultOk: boolean | null = null;
@@ -64,29 +68,34 @@ export function Dashboard() {
       ) : null}
       {info?.paused ? <p className={styles.notice}><b>The team is paused.</b> No payment or settlement can move money until the owner resumes it.</p> : null}
 
-      <div className={styles.figures}>
-        <div className={styles.figure} data-strong="">
+      <div className={page.top}>
+        <div className={`${styles.figure} ${page.vault}`} data-strong="">
           <span className={styles.figureLabel}>In the vault</span>
           <Money value={t.balance} size="title" label="Vault balance" />
-          <span className={styles.figureNote}>Test USDC held by the team PDA</span>
-        </div>
-        <div className={styles.figure}>
-          <span className={styles.figureLabel}>Paid so far</span>
-          <span className={styles.figureValue}>{info ? usdc(info.paidTotal) : "—"}</span>
-          <span className={styles.figureNote}>{info ? `${info.paidCount.toString()} payments settled` : ""}</span>
-        </div>
-        <div className={styles.figure}>
-          <span className={styles.figureLabel}>Waiting for the owner</span>
-          <span className={styles.figureValue}>{t.payments ? String(waiting.length) : "—"}</span>
-          <span className={styles.figureNote}>{waiting.length ? `${usdc(held)} held on chain` : "Nothing held"}</span>
-        </div>
-        <div className={styles.figure}>
-          <span className={styles.figureLabel}>Spenders</span>
-          <span className={styles.figureValue}>{t.spenders ? String(t.spenders.filter((s) => s.status !== "revoked").length) : "—"}</span>
           <span className={styles.figureNote}>
-            {t.spenders ? countWords(t.spenders.filter((s) => s.status !== "revoked")) : ""}
+            Devnet test USDC held by the team account, not real money.{info ? <> <Explorer id={info.vault}>Vault</Explorer></> : null}
           </span>
         </div>
+        <section className={`${styles.figure} ${page.summary}`} aria-labelledby="summary">
+          <h2 className={styles.figureLabel} id="summary">The team</h2>
+          <ul className={page.lines}>
+            <li>
+              <Link href={`${t.base}/spenders`}>
+                {active ? `${plural(people, "person", "people")} and ${plural(agents, "agent", "agents")} can pay` : "Could not read who can pay"}
+              </Link>
+            </li>
+            <li>
+              <Link href={`${t.base}/approvals`}>
+                {t.payments ? (waiting.length ? `${plural(waiting.length, "payment", "payments")} waiting for the owner, ${usdc(held)} test USDC held` : "Nothing waiting for the owner") : "Could not read waiting payments"}
+              </Link>
+            </li>
+            <li>
+              <Link href={`${t.base}/activity`}>
+                {info ? `${plural(Number(info.paidCount), "payment", "payments")} settled, ${usdc(info.paidTotal)} test USDC paid` : "Could not read payments"}
+              </Link>
+            </li>
+          </ul>
+        </section>
       </div>
 
       {t.isOwner ? <ClaimCard teamAddress={t.address} onClaimed={refresh} /> : null}
@@ -96,90 +105,7 @@ export function Dashboard() {
           <h2 className={styles.sectionTitle} id="needs-you">Needs you</h2>
           <Link href={`${t.base}/approvals`} className={styles.sectionLink}>All approvals →</Link>
         </div>
-        <ApprovalsList team={info} payments={t.payments} spenders={t.spenders} services={t.services} isOwner={t.isOwner} demo={t.demo} now={t.now} onChange={refresh} limit={4} base={t.base} />
-      </section>
-
-      <section className={styles.section} aria-label="Agent">
-        <AgentPanel teamAddress={t.address} onActivity={refresh} />
-      </section>
-
-      <section className={styles.section} aria-labelledby="budgets">
-        <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle} id="budgets">Budgets right now</h2>
-          <Link href={`${t.base}/spenders`} className={styles.sectionLink}>Spenders →</Link>
-        </div>
-        <div className={list.card} style={{["--cols" as string]: "minmax(12rem,1.2fr) minmax(14rem,1.6fr) minmax(7rem,.6fr)"}}>
-          <div className={list.head} aria-hidden="true">
-            <span>Name</span>
-            <span>Used this period</span>
-            <span className={list.headNumeric}>Can pay now</span>
-          </div>
-          {t.spenders === null ? <div className={list.empty}><p>Could not read spenders.</p></div> : null}
-          {t.spenders?.length === 0 ? <div className={list.empty}><p>No spenders yet. The owner adds people and agents under Spenders.</p></div> : null}
-          <ul className={list.rows} aria-label="Budgets">
-            {t.spenders
-              ?.filter((s) => s.status !== "revoked")
-              .map((s) => {
-                const r = rolled(s, t.now);
-                return (
-                  <li key={s.address}>
-                    <Link href={s.kind === "agent" ? `${t.base}/agents/${s.authority}` : `${t.base}/spenders/${s.address}`} className={list.row}>
-                      <span className={list.who}>
-                        <Avatar initials={initials(s.label)} kind={s.kind} small />
-                        <span className={list.cell}>
-                          <span className={list.main}>{s.label}</span>
-                          <span className={list.sub}>{s.kind === "agent" ? "Agent" : "Person"}{s.status !== "active" ? ` · ${s.status}` : ""}</span>
-                        </span>
-                      </span>
-                      <span className={list.cell}>
-                        <span className={list.text}>
-                          {usdc(r.spent)} <span className={styles.muted}>of {usdc(s.policy.allowance)}</span>
-                        </span>
-                        <Meter spent={r.spent} allowance={s.policy.allowance} />
-                        <span className={list.sub}>
-                          {r.count}/{s.policy.maxPayments} payments · cap {usdc(s.policy.cap)}
-                        </span>
-                      </span>
-                      <span className={`${list.cell} ${list.numeric}`}>
-                        <span className={list.text}>{usdc(remainingOf(s, t.now, !!info?.paused))}</span>
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-          </ul>
-        </div>
-      </section>
-
-      <section className={styles.section} aria-labelledby="recent">
-        <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle} id="recent">Recent</h2>
-          <Link href={`${t.base}/activity`} className={styles.sectionLink}>All activity →</Link>
-        </div>
-        <div className={list.card} style={{["--cols" as string]: "minmax(12rem,1.4fr) minmax(9rem,.8fr) minmax(7rem,.6fr)"}}>
-          {t.payments === null ? <div className={list.empty}><p>Could not read payments.</p></div> : null}
-          {t.payments?.length === 0 ? <div className={list.empty}><p>No payments yet. Each one appears here the moment its transaction lands.</p></div> : null}
-          <ul className={list.rows} aria-label="Recent payments">
-            {t.payments?.slice(0, 6).map((p) => (
-              <li key={p.address}>
-                <Link href={`${t.base}/activity/${p.address}`} className={list.row}>
-                  <span className={list.cell}>
-                    <span className={list.main}>
-                      {spenderName(p.spender, t.spenders)} → {serviceName(p.service, t.services)}
-                    </span>
-                    <span className={list.sub}>#{p.number.toString()} · {ago(p.decidedAt || p.createdAt, t.now * 1000)}</span>
-                  </span>
-                  <span className={list.cell}>
-                    <PaymentPill p={p} now={t.now} />
-                  </span>
-                  <span className={`${list.cell} ${list.numeric}`}>
-                    <span className={list.text}>{usdc(p.amount)}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ApprovalsList team={info} payments={t.payments} spenders={t.spenders} services={t.services} isOwner={t.isOwner} demo={t.demo} now={t.now} onChange={refresh} limit={3} base={t.base} />
       </section>
 
       <section className={styles.section} aria-labelledby="held">
