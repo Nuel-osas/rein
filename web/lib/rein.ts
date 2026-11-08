@@ -516,6 +516,7 @@ export function instructionName(data: Uint8Array): string | null {
 /** Maps a program error in a log or message to its text from the IDL. */
 export function programErrorText(e: unknown): string | null {
   const s = String((e as { message?: string })?.message ?? e);
+  if (/already in use/.test(s)) return 'this payment intent was already used: one intent pays once';
   const errors = (idlJson as { errors?: { code: number; name: string; msg?: string }[] }).errors ?? [];
   const hex = s.match(/custom program error: 0x([0-9a-f]+)/i);
   const code = hex ? parseInt(hex[1], 16) : null;

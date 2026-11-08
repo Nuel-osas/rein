@@ -36,7 +36,8 @@ export function serverKey(name: KeyName): Keypair | null {
   if (fromEnv && fromEnv.trim()) {
     kp = parse(fromEnv);
   } else if (process.env.NODE_ENV !== 'production' || process.env.REIN_ALLOW_KEY_FILES === '1') {
-    const path = join(process.env.REIN_KEYS_DIR || join(homedir(), '.config', 'rein'), file);
+    // Outside the project, read at runtime only; the ignore keeps the bundler from tracing the whole repo.
+    const path = join(/*turbopackIgnore: true*/ process.env.REIN_KEYS_DIR || join(homedir(), '.config', 'rein'), file);
     if (existsSync(path)) {
       try {
         kp = parse(readFileSync(path, 'utf8'));
