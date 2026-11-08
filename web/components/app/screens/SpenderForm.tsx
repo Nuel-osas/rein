@@ -193,7 +193,7 @@ export function SpenderForm({mode, kind = "agent", spenderId, prefill}: {mode: "
         </label>
         <div className={styles.row3}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Allowance (USDC)</span>
+            <span className={styles.fieldLabel}>Allowance (test USDC)</span>
             <input className={styles.input} inputMode="decimal" value={draft.allowance} onChange={(e) => set({...draft, allowance: e.target.value})} />
           </label>
           <label className={styles.field}>

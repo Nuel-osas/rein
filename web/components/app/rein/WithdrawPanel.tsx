@@ -36,7 +36,7 @@ export function WithdrawPanel({t}: {t: TeamPage}) {
         createAssociatedTokenAccountIdempotentInstruction(payer ?? publicKey, to, publicKey, mint),
         ixs.withdraw({owner: publicKey, vault: team.vault, to: to.toBase58(), amount: outUnits}),
       ]);
-      setStatus(sentStatus(sent, `${usdc(outUnits)} is in your wallet's USDC account.`));
+      setStatus(sentStatus(sent, `${usdc(outUnits)} of test USDC is in your wallet's USDC account.`));
     } catch (e) {
       setStatus({tone: "bad", text: errorText(e)});
     } finally {
@@ -49,12 +49,12 @@ export function WithdrawPanel({t}: {t: TeamPage}) {
     <div className={styles.panel}>
       <div className={styles.panelHead}>
         <h2 className={styles.panelTitle}>Withdraw from the vault</h2>
-        <p className={styles.panelNote}>To your own USDC account. There is no destination field to get wrong. The sponsor pays the fee and, the first time, the rent of your USDC account.</p>
+        <p className={styles.panelNote}>Devnet test USDC, to your own USDC account. There is no destination field to get wrong. The sponsor pays the fee and, the first time, the rent of your USDC account.</p>
       </div>
       <Figure value={t.balance} size="title" label="Vault balance" />
       <div className={styles.form}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Amount (USDC)</span>
+          <span className={styles.fieldLabel}>Amount (devnet test USDC)</span>
           <input className={styles.input} inputMode="decimal" value={out} onChange={(e) => setOut(e.target.value)} placeholder="0.00" />
         </label>
         <div className={styles.actions}>
