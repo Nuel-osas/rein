@@ -189,7 +189,7 @@ sequenceDiagram
   participant V as Team vault
   S->>F: pay(service, amount, intent), signed by the spender
   F->>P: co-sign as fee payer, send
-  P->>P: team, spender, expiry, service active; over_limits = 0
+  P->>P: team, spender, expiry, service active, over_limits = 0
   P->>P: init Payment PDA (spender, intent), status Paid
   P->>V: transfer to registry payee (team PDA signs)
 ```
@@ -248,9 +248,9 @@ sequenceDiagram
   participant DB as Postgres + Redis
   participant S as Solana
   U->>C: POST {team}, Privy access token
-  C->>C: verify token; team = PDA of one of the user's Privy wallets
+  C->>C: verify token, team = PDA of one of the user's Privy wallets
   C->>S: read team and pool balance (unknown means refuse)
-  C->>DB: no earlier claim by user or wallet; under CLAIM_TOTAL_CAP
+  C->>DB: no earlier claim by user or wallet, under CLAIM_TOTAL_CAP
   C->>DB: SET NX locks, INSERT claim row with the signature
   C->>S: pool transfers 0.30 to the team vault, sponsor pays fee
   C-->>U: confirmed, or pending under the recorded signature
