@@ -73,7 +73,7 @@ export function OnboardingScreen({state, onLogin, onLogout, error, name, address
           </div>
         </div>
       </div>
-      <footer className={styles.footer}><span><i />{NETWORK_NAME}</span><Link href="/demo">See it work first <IconArrowRight /></Link></footer>
+      <footer className={styles.footer}><span><i />{NETWORK_NAME}</span><Link href="/security">Our safeguards <IconArrowRight /></Link></footer>
     </section>
   </main>;
 }
