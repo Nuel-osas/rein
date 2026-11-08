@@ -30,8 +30,11 @@ const SECTIONS = [
 
 /* The pages that are not the landing page. */
 const PAGES = [
+  {href: "/docs", label: "Read the docs"},
   {href: "/demo", label: "Try the live demo"},
-  {href: "/app", label: "Open the app"},
+  {href: "/security", label: "What stops a payment"},
+  {href: "/build", label: "What we built"},
+  {href: "/stats", label: "Rein in numbers"},
 ] as const;
 
 /**
@@ -120,6 +123,10 @@ export function SiteFooter() {
             Live on {NETWORK_NAME} with test USDC. Not real money. Not independently audited.
             <br />
             MLH Solana Hackathon <span className="figure">2026</span>
+          </p>
+          <p className={styles.legalLinks}>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
           </p>
           <p>
             © <span className="figure">2026</span> Veltri Labs.

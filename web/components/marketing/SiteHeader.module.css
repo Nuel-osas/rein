@@ -224,7 +224,9 @@
   }
 }
 
-@media (max-width: 64rem) {
+/* Eight tiles and the app button need about 1,100px beside the wordmark, so the menu takes over
+   below 72rem rather than letting the row run under the logo. */
+@media (max-width: 72rem) {
   .nav {
     display: none;
   }
