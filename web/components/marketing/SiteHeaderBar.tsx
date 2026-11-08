@@ -18,9 +18,11 @@ import styles from "./SiteHeader.module.css";
 const LINKS = [
   {href: "/#how-it-works", label: "How it works"},
   {href: "/#features", label: "Agents"},
-  {href: "/#trust", label: "Security"},
+  {href: "/security", label: "Security"},
   {href: "/demo", label: "Live demo"},
   {href: "/#faq", label: "FAQ"},
+  {href: "/docs", label: "Docs"},
+  {href: "/build", label: "Build"},
   {href: "/signin", label: "Sign in"},
 ] as const;
 

@@ -1,0 +1,1014 @@
+/* ===========================================================================
+   /stats, in the marketing site's drawing.
+
+   The tokens are the drawing's own (`(marketing)/page.module.css`, "THE
+   DRAWING"): margin and gutter of a three-column grid, ink, ice, the dotted
+   line colour, the one purple. Restated here as the page's roles, each with its
+   fallback, so a renamed marketing token cannot blank this page.
+
+   THE FRAME. Every box is a hairline with a small datum cross at each corner,
+   as a technical drawing marks the corners of a part. The crosses are one
+   pseudo-element per box (`.frame::before`), drawn as eight 1px bars.
+
+   MOTION. Only the figures count up (CountUp.tsx), and only where scripts run
+   and motion is allowed. Nothing else moves.
+   =========================================================================== */
+
+.stats {
+  --st-header: 4.5rem;
+  --st-ink: var(--sl-ink, #0a0a0b);
+  --st-ink-2: var(--sl-ink-2, #4a4553);
+  --st-accent: var(--sl-accent, #5b21b6);
+  --st-hair: var(--sl-hair, rgb(10 10 11 / 12%));
+  --st-hair-strong: rgb(10 10 11 / 22%);
+  --st-cross: rgb(10 10 11 / 58%);
+  --st-card: var(--sl-card-light, rgb(255 255 255 / 42%));
+  --st-card-strong: rgb(255 255 255 / 66%);
+  /* A quiet square control on the light ground, and its hover; ink's own reverse for text on ink. */
+  --st-control: rgb(10 10 11 / 7%);
+  --st-control-hover: rgb(10 10 11 / 12%);
+  --st-on-ink: var(--color-text-on-brand);
+  /* The hatching that marks our own load test apart from real use, as a drawing hatches a section. */
+  --st-hatch: rgb(10 10 11 / 20%);
+  /* The load-test panel's ground: nearly opaque, so the page's column guides stop at its edge
+     and its own columns (which do not sit on them) are the only lines inside it. */
+  --st-sheet: rgb(255 255 255 / 84%);
+  /* A pager control with nowhere to go: read as absent, not as pressable. */
+  --st-control-off: rgb(10 10 11 / 34%);
+  --st-h-dots: repeating-linear-gradient(90deg, var(--sl-dot, rgb(10 10 11 / 26%)) 0 1px, transparent 1px 4px);
+  --st-v-dots: repeating-linear-gradient(180deg, var(--sl-dot, rgb(10 10 11 / 26%)) 0 1px, transparent 1px 4px);
+  --st-margin: var(--sl-margin, clamp(16px, 1.95vw, 40px));
+  --st-gutter: var(--sl-gutter, clamp(16px, 1.95vw, 32px));
+  --st-mono: var(--font-mono, ui-monospace), ui-monospace, Menlo, monospace;
+  --st-display: var(--sl-display, ui-sans-serif), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  position: relative;
+  isolation: isolate;
+  /* Up under the floating header, so the ice starts at the top of the page, as the hero does. */
+  margin-block-start: calc(-1 * var(--st-header));
+  /* The foot is short: the footer's own fade opens with plenty of room. */
+  padding-block: calc(var(--st-header) + clamp(2.5rem, 6vw, 5rem)) clamp(2.5rem, 5vw, 4rem);
+  /* From the ice the light sections start on to the page's own white, where the footer's fade begins. */
+  background:
+    radial-gradient(60% 34% at 14% 6%, rgb(255 255 255 / 50%), transparent 70%),
+    linear-gradient(180deg, var(--sl-ice, #ffffff) 0%, var(--sl-ice-2, #ffffff) 42%, var(--sl-paper, #ffffff) 78%, var(--color-canvas, #ffffff) 100%);
+  color: var(--st-ink);
+  font-family: var(--st-display);
+}
+
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.inner {
+  position: relative;
+  padding-inline: var(--st-margin);
+}
+
+/* The column guides: the inner edges of the three columns, dotted, down the whole page. */
+.guides {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: var(--st-margin);
+  z-index: -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--st-gutter);
+  pointer-events: none;
+}
+
+.guides > span:nth-child(1) {
+  background: var(--st-v-dots) right top / 1px 100% no-repeat;
+}
+
+.guides > span:nth-child(2) {
+  background:
+    var(--st-v-dots) left top / 1px 100% no-repeat,
+    var(--st-v-dots) right top / 1px 100% no-repeat;
+}
+
+.guides > span:nth-child(3) {
+  background: var(--st-v-dots) left top / 1px 100% no-repeat;
+}
+
+/* The rule that opens the page, and its small purple square. */
+.rule {
+  position: relative;
+  block-size: 1px;
+  background: var(--st-h-dots);
+}
+
+.rule::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: -3px;
+  inline-size: 6px;
+  block-size: 6px;
+  background: var(--st-accent);
+}
+
+/* A bracketed monospace label: `[ TEAMS ]`. */
+.label {
+  margin: 0;
+  color: var(--st-ink);
+  font-family: var(--st-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bracket {
+  color: var(--st-accent);
+}
+
+.bracket:first-child {
+  margin-inline-end: 0.6ch;
+}
+
+.bracket:last-child {
+  margin-inline-start: 0.6ch;
+}
+
+/* --- The frame ------------------------------------------------------------------ */
+
+.frame {
+  position: relative;
+  border: 1px solid var(--st-hair-strong);
+}
+
+/* Four datum crosses, 9px, centred on the hairline at each corner. The pseudo-element sits 5px
+   outside the padding box, which puts its edges 4.5px from the centre of the 1px border. */
+.frame::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--st-cross), var(--st-cross)) left 0 top 4px / 9px 1px no-repeat,
+    linear-gradient(var(--st-cross), var(--st-cross)) left 4px top 0 / 1px 9px no-repeat,
+    linear-gradient(var(--st-cross), var(--st-cross)) right 0 top 4px / 9px 1px no-repeat,
+    linear-gradient(var(--st-cross), var(--st-cross)) right 4px top 0 / 1px 9px no-repeat,
+    linear-gradient(var(--st-cross), var(--st-cross)) left 0 bottom 4px / 9px 1px no-repeat,
+    linear-gradient(var(--st-cross), var(--st-cross)) left 4px bottom 0 / 1px 9px no-repeat,
+    linear-gradient(var(--st-cross), var(--st-cross)) right 0 bottom 4px / 9px 1px no-repeat,
+    linear-gradient(var(--st-cross), var(--st-cross)) right 4px bottom 0 / 1px 9px no-repeat;
+}
+
+/* --- Masthead -------------------------------------------------------------------- */
+
+.head {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--st-gutter);
+  align-items: end;
+  margin-block-start: 1.75rem;
+}
+
+.headTitle {
+  grid-column: 1 / 3;
+}
+
+.head h1 {
+  margin: 1.75rem 0 0;
+  font-size: clamp(44px, 5.6vw, 96px);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.lede {
+  display: grid;
+  gap: 1.25rem;
+  justify-items: start;
+  grid-column: 3;
+  max-inline-size: 30ch;
+  margin: 0;
+  color: var(--st-ink);
+  font-size: clamp(17px, 1.3vw, 19px);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.lede > p {
+  margin: 0;
+}
+
+/* --- Body --------------------------------------------------------------------------- */
+
+.body {
+  display: grid;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  margin-block-start: clamp(2.5rem, 5vw, 4rem);
+}
+
+/* The coverage line, any notice, and the tiles it describes: one group. */
+.figures {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding-block-start: 0.875rem;
+  background: var(--st-h-dots) left top / 100% 1px no-repeat;
+  color: var(--st-ink-2);
+  font-family: var(--st-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.metaBlock {
+  color: var(--st-ink);
+  text-transform: uppercase;
+}
+
+/* Said once, above the figures, whenever they are not the whole chain. */
+.notice {
+  max-inline-size: 72ch;
+  margin: 0;
+  padding: 14px 18px;
+  border-inline-start: 3px solid var(--st-accent);
+  background: var(--st-card-strong);
+  font-size: 16px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* --- The figures ------------------------------------------------------------------------ */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--st-gutter);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 17rem;
+  padding: clamp(18px, 1.8vw, 26px);
+  background: var(--st-card);
+}
+
+/* At the same height in every tile, whatever is under it, so a row of figures reads as a row. */
+.figure {
+  margin: clamp(2rem, 3.6vw, 3.5rem) 0 0;
+  color: var(--st-ink);
+  font-size: clamp(44px, 4.2vw, 72px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.figure[data-unknown] {
+  color: var(--st-ink-2);
+}
+
+.unknown {
+  margin: 0.75rem 0 0;
+  color: var(--st-ink);
+  font-size: 15px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+/* The sentences under a figure, at the foot of the tile. */
+.tileFoot {
+  margin-block-start: auto;
+  padding-block-start: 1.5rem;
+}
+
+.sub {
+  margin: 0 0 0.5rem;
+  color: var(--st-ink);
+  font-size: 15px;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 0;
+  max-inline-size: 40ch;
+  color: var(--st-ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+/* A fact about the network, set apart from our own figures. */
+.fact {
+  margin: 1rem 0 0;
+  padding-block-start: 0.75rem;
+  background: var(--st-h-dots) left top / 100% 1px no-repeat;
+  color: var(--st-ink-2);
+  font-family: var(--st-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+
+/* Nothing counts up until the script that counts it is running (CountUp.tsx). If it never comes,
+   the real figure appears anyway after 2.5 s. Scripts off, or reduced motion: always visible. */
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+  .count[data-count="pending"] {
+    opacity: 0;
+    animation: countFallback 0s linear 2.5s forwards;
+  }
+}
+
+@keyframes countFallback {
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- Held for an owner --------------------------------------------------------------------- */
+
+.held {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--st-gutter);
+  row-gap: 1.5rem;
+  padding: clamp(20px, 2.4vw, 36px);
+  background: var(--st-card-strong);
+}
+
+.heldLead {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.heldBody {
+  grid-column: 2 / 4;
+}
+
+.statement {
+  margin: 0;
+  max-inline-size: 22ch;
+  font-size: clamp(30px, 3.1vw, 50px);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.statement strong {
+  color: var(--st-accent);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The split, as one bar. Its numbers are in the legend: the bar is a picture of them. */
+.bar {
+  display: flex;
+  gap: 2px;
+  block-size: 12px;
+  margin-block-start: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.bar > span {
+  flex-basis: 0;
+  min-inline-size: 6px;
+}
+
+/* Told apart by fill AND texture, never colour alone: solid purple, an ink hatch, an empty box. */
+.bar > [data-part="approved"],
+.swatch[data-part="approved"] {
+  background: var(--st-accent);
+}
+
+.bar > [data-part="declined"],
+.swatch[data-part="declined"] {
+  background: repeating-linear-gradient(135deg, var(--st-ink) 0 1.5px, transparent 1.5px 5px);
+  box-shadow: inset 0 0 0 1px var(--st-ink);
+}
+
+.bar > [data-part="undecided"],
+.swatch[data-part="undecided"] {
+  box-shadow: inset 0 0 0 1px var(--st-cross);
+  background: var(--st-card);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.legend li {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+}
+
+.legend strong {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend small {
+  color: var(--st-ink-2);
+  font-size: 14px;
+}
+
+.swatch {
+  align-self: center;
+  inline-size: 12px;
+  block-size: 12px;
+}
+
+/* --- Latest payments ---------------------------------------------------------------------- */
+
+.latest {
+  display: grid;
+  gap: 1rem;
+}
+
+.empty {
+  margin: 0;
+  padding: 20px;
+  background: var(--st-card);
+  font-size: 16px;
+}
+
+.tableFrame {
+  background: var(--st-card-strong);
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+.table th,
+.table td {
+  padding: 14px clamp(12px, 1.4vw, 20px);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.table thead th {
+  padding-block: 12px;
+  color: var(--st-ink-2);
+  font-family: var(--st-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.table tbody tr {
+  background: var(--st-h-dots) left top / 100% 1px no-repeat;
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.service {
+  display: block;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.detail,
+.whenInline {
+  display: block;
+  margin-block-start: 2px;
+  color: var(--st-ink-2);
+  font-size: 14px;
+}
+
+.whenInline {
+  display: none;
+}
+
+.table .amount {
+  text-align: end;
+}
+
+.table td.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.table td.when {
+  color: var(--st-ink-2);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.table .link {
+  inline-size: 1%;
+  text-align: end;
+  white-space: nowrap;
+}
+
+.link a,
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 40px;
+  padding-inline: 12px;
+  background: var(--st-control);
+  color: var(--st-ink);
+  font-family: var(--st-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.control {
+  gap: 8px;
+  padding-inline: 14px;
+}
+
+.link svg,
+.control svg {
+  flex: none;
+  inline-size: 12px;
+  block-size: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.link a:focus-visible,
+.control:focus-visible,
+.method summary:focus-visible {
+  outline: 2px solid var(--st-accent);
+  outline-offset: 2px;
+}
+
+/* --- Foot ------------------------------------------------------------------------------------- */
+
+.foot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--st-gutter);
+  row-gap: 1.5rem;
+  padding-block-start: 1.25rem;
+  background: var(--st-h-dots) left top / 100% 1px no-repeat;
+}
+
+.coverage {
+  margin: 0;
+  color: var(--st-ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.method {
+  grid-column: 2 / 4;
+}
+
+.method summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 44px;
+  font-family: var(--st-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  list-style: none;
+  cursor: pointer;
+}
+
+.method summary::-webkit-details-marker {
+  display: none;
+}
+
+.method summary::before {
+  content: "+";
+  display: grid;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 24px;
+  background: var(--st-ink);
+  color: var(--st-on-ink);
+  font-size: 14px;
+}
+
+.method[open] summary::before {
+  content: "−";
+}
+
+.method dl {
+  display: grid;
+  gap: 1rem;
+  margin: 0.5rem 0 0;
+}
+
+.method dt {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.method dd {
+  margin: 0.25rem 0 0;
+  max-inline-size: 64ch;
+  color: var(--st-ink-2);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* --- Our own load test --------------------------------------------------------------------------
+   Apart from real use, and drawn so: a hatched band across its top edge (a drawing hatches a
+   section cut, to say "this is a different material"), its own bracket, and smaller figures than
+   the real-use tiles, which keep the page's emphasis. */
+
+.loadTest {
+  display: grid;
+  gap: 1.5rem;
+  padding: calc(clamp(20px, 2.4vw, 36px) + 12px) clamp(20px, 2.4vw, 36px) clamp(20px, 2.4vw, 36px);
+  background: var(--st-sheet);
+}
+
+.hatch {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  block-size: 12px;
+  border-block-end: 1px solid var(--st-hair-strong);
+  background: repeating-linear-gradient(135deg, var(--st-hatch) 0 1px, transparent 1px 6px);
+  pointer-events: none;
+}
+
+.ltHead {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--st-gutter);
+  row-gap: 1rem;
+  align-items: end;
+}
+
+.ltTitleBlock {
+  display: grid;
+  gap: 1rem;
+  grid-column: 1 / 3;
+}
+
+.ltTitle {
+  margin: 0;
+  font-size: clamp(28px, 2.8vw, 46px);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.ltLede {
+  grid-column: 3;
+  max-inline-size: 36ch;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.runLabel + .runLabel {
+  margin-inline-start: 1.5rem;
+}
+
+.ltGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem var(--st-gutter);
+  margin: 0;
+}
+
+/* One figure: its label on a dotted rule, the figure, then the line or two under it. */
+.ltCell {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding-block-start: 0.875rem;
+  background: var(--st-h-dots) left top / 100% 1px no-repeat;
+}
+
+.ltCell dd {
+  margin: 0;
+}
+
+.ltCell .ltFigure {
+  margin-block: 1rem 0.75rem;
+  color: var(--st-ink);
+  font-size: clamp(28px, 2.6vw, 44px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The block range is two long numbers: set smaller, and allowed to wrap between them. */
+.ltCell .ltFigure[data-size="small"] {
+  font-size: clamp(20px, 1.7vw, 28px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  white-space: normal;
+}
+
+.ltCell .ltFigure[data-unknown] {
+  color: var(--st-ink-2);
+}
+
+.ltCell .unknown {
+  margin: 0 0 0.5rem;
+}
+
+.ltMore {
+  margin: 0;
+}
+
+/* --- The load-test ledger ------------------------------------------------------------------------ */
+
+.ledgerHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+
+.ledgerCount {
+  margin: 0;
+  color: var(--st-ink-2);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A hundred rows to a page: denser than the six latest payments. */
+.ledgerTable th,
+.ledgerTable td {
+  padding-block: 10px;
+}
+
+.ledgerTable tbody tr {
+  font-size: 15px;
+}
+
+.ledgerTable .ledgerTime,
+.ledgerTable .ledgerTeam {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledgerTable td.ledgerTime,
+.ledgerTable td.ledgerMemo {
+  color: var(--st-ink-2);
+  font-size: 14px;
+}
+
+.ledgerTable td.ledgerMemo {
+  overflow-wrap: anywhere;
+}
+
+.ledgerTable td.amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.amountNote {
+  display: block;
+  color: var(--st-ink-2);
+  font-size: 12px;
+}
+
+/* The memo, and the team and time, under "What" once their columns are gone (see "Narrower"). */
+.inlineMemo,
+.inlineMeta {
+  display: none;
+  margin-block-start: 2px;
+  color: var(--st-ink-2);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+/* A hash is not a word: no capitals, no tracking, figures that line up down the column. */
+.link a.hashLink {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.pageOf {
+  margin: 0;
+  color: var(--st-ink-2);
+  font-family: var(--st-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.controlOff {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 40px;
+  padding-inline: 14px;
+  box-shadow: inset 0 0 0 1px var(--st-hair);
+  color: var(--st-control-off);
+  font-family: var(--st-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* --- While a cold server reads ------------------------------------------------------------------ */
+
+.placeholder {
+  display: block;
+  inline-size: 40%;
+  block-size: clamp(44px, 4.2vw, 72px);
+  margin-block-start: auto;
+  background: var(--st-h-dots) left 50% / 100% 1px no-repeat;
+}
+
+/* --- Interaction -------------------------------------------------------------------------------- */
+
+@media (hover: hover) {
+  .link a:hover,
+  .control:hover {
+    background: var(--st-control-hover);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .link a,
+  .control {
+    transition: background-color 160ms ease-out;
+  }
+}
+
+/* --- Narrower ------------------------------------------------------------------------------------ */
+
+@media (max-width: 64rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .held {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heldBody {
+    grid-column: 1;
+  }
+
+  .foot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .method {
+    grid-column: 1;
+  }
+
+  .ltHead {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ltTitleBlock,
+  .ltLede {
+    grid-column: 1;
+  }
+
+  .ltGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Nine figures in two columns: the last, the block range, takes the whole row. */
+  .ltCell[data-cell="blocks"] {
+    grid-column: 1 / -1;
+  }
+}
+
+/* The memo moves under "What" before the table runs out of room. */
+@media (max-width: 48rem) {
+  .ledgerTable .ledgerMemo {
+    display: none;
+  }
+
+  .inlineMemo {
+    display: block;
+  }
+}
+
+@media (max-width: 48rem) {
+  .guides {
+    display: none;
+  }
+
+  .head {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1.25rem;
+  }
+
+  .headTitle,
+  .lede {
+    grid-column: 1;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tile {
+    min-block-size: 0;
+  }
+
+  .figure {
+    margin-block-start: 1.25rem;
+  }
+}
+
+/* A phone: the time moves under the service, and the table keeps three columns. */
+@media (max-width: 36rem) {
+  .table .when {
+    display: none;
+  }
+
+  .whenInline {
+    display: block;
+  }
+
+  .table th,
+  .table td {
+    padding-inline: 10px;
+  }
+
+  /* The ledger keeps What, Amount and the link; team and time go under What. */
+  .ledgerTable .ledgerTime,
+  .ledgerTable .ledgerTeam {
+    display: none;
+  }
+
+  .inlineMeta {
+    display: block;
+  }
+
+  .ltGrid {
+    gap: 1.5rem var(--st-gutter);
+  }
+
+  .ltCell .ltFigure {
+    margin-block: 0.75rem 0.5rem;
+  }
+
+  .pageOf {
+    order: -1;
+    inline-size: 100%;
+  }
+}
+
+@media (pointer: coarse) {
+  .link a,
+  .control,
+  .controlOff {
+    min-block-size: 44px;
+  }
+}

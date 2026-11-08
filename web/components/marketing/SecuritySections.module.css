@@ -1,0 +1,409 @@
+/* ===========================================================================
+   The security page bands.
+
+   Everything here is a token. There is no hex, no fifth type size, no fourth
+   radius and no second light source, for the same reason the rest of the
+   marketing surface has none: this page argues that its claims are checkable,
+   and a page that quietly invents its own scale is already not the thing it
+   says it is.
+
+   The card ground is `--glass-surface` with `--glass-ring` and no
+   `backdrop-filter`, which is the house pattern on this surface. The blur is
+   reserved for the one or two panels that are genuinely layered over artwork;
+   spending it on nine cards would cost a scroll frame and buy nothing, because
+   the canvas behind them is flat.
+
+   EVERY COLOUR IS A SEMANTIC TOKEN. The page sits on Rein's dark scheme, and
+   each value below has an entry in both palettes, so nothing here goes light
+   if a band is ever rendered on the light root.
+   =========================================================================== */
+
+.layers,
+.limits {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* --- Band 1: the six checks ----------------------------------------------
+
+   A stack until there is room for three columns. The breakpoint is arithmetic:
+   at 64rem the shell is 1024px minus the gutter, so three columns and two 1rem
+   gaps leave roughly 300px a card, and 252px of measure inside the padding,
+   which is about 46 characters a line at 13px. Below that the same sum gives
+   about 30, and the claim lines start breaking after two words, so the stack is
+   the design rather than a fallback. Six checks make two rows of three.
+   ------------------------------------------------------------------------- */
+
+.layers {
+  display: grid;
+  gap: 1rem;
+}
+
+.layer {
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  /* Within the card. The 1rem grid gap between cards is well over twice this,
+     and the source block at the foot adds its own 0.875rem of padding on top,
+     so the two groups inside a card stay further apart than the lines within
+     either one. */
+  gap: 0.375rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-card);
+  background: var(--glass-surface);
+  box-shadow: var(--glass-ring);
+}
+
+.layer .layerIndex {
+  margin: 0 0 0.25rem;
+  color: var(--color-accent-text);
+}
+
+.layerName {
+  margin: 0;
+  font-size: var(--nt-text-body);
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* The line to remember. Body size, but primary ink and one weight up, so a
+   reader skimming three cards gets the three mechanisms without reading the
+   paragraph under each. Size is doing no work here; ink and weight are, which
+   keeps the page inside the scale it inherited. */
+.layerClaim {
+  margin: 0.125rem 0 0;
+  font-size: var(--text-small);
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-wrap: pretty;
+}
+
+.layerBody {
+  margin: 0.25rem 0 0;
+  max-inline-size: 68ch;
+  font-size: var(--text-small);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+/* Pushed to the foot of the card so the three source blocks line up across the
+   row and read as one band rather than as three loose tails. */
+.where {
+  /* `auto` rather than a fixed top margin, so a short card's rule still sits on
+     the baseline of the row. The grid gap guarantees separation when the card
+     is tall enough that `auto` resolves to nothing. */
+  margin: 0;
+  margin-block-start: auto;
+  padding-block-start: 0.875rem;
+  border-block-start: 1px solid var(--color-border-subtle);
+  /* A GRID, NOT A WRAPPING FLEX ROW. As a flex row the label sat inline beside
+     a short path and jumped above a long one, so the first card in this set
+     rendered its label on the same line as its path and the other two rendered
+     it on the line above. Same component, three cards, two layouts. The label
+     heads the list now, every time. */
+  display: grid;
+  justify-items: start;
+  gap: 0.375rem;
+}
+
+.whereLabel {
+  font-size: var(--text-meta);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+/* A path is not decoration and it is not a link. It is the thing you are meant
+   to go and open, so it gets the monospace face that says "type this" and no
+   underline, no accent ink and no pointer cursor, because nothing here navigates
+   anywhere and a path styled like a link is a promise the page cannot keep. */
+.path {
+  /* Local rather than global: the design system has a sans and a rounded face
+     and no monospace token, and inventing one for this page would put a fourth
+     family in the system by accident. Each entry carries its own fallback. */
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* Sized in `em` rather than in a token, because an address is set inside a
+   running sentence and a monospace face at the same pixel size as the sans
+   around it reads a size larger. It has to shrink with whatever it sits in. */
+.address {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* The sentence that ties the cards together. Centred under them, on the
+   canvas rather than in a card, because it is a remark about the set and not a
+   fourth member of it. */
+.note {
+  margin: 1.5rem auto 0;
+  /* A ceiling in characters rather than in rem, so the measure holds when the
+     body size changes with the viewport. 62 sits inside the 60 to 75 a reader
+     tracks comfortably. */
+  max-inline-size: 62ch;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: var(--nt-text-body);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+/* Optical rather than geometric. The glyph's stroke starts inside its box and
+   the text beside it carries half its leading above the cap, so a flush-aligned
+   14px mark reads high of the body line next to it. */
+.note svg {
+  margin-block-start: 0.4375rem;
+  color: var(--color-accent-text);
+}
+
+/* --- Band 2: what has been run -------------------------------------------
+
+   A description list, because that is what it is: a claim and the evidence for
+   it. Rows are separated by a rule rather than by cards, so seven findings read
+   as one record rather than as seven advertisements.
+   ------------------------------------------------------------------------- */
+
+.findings {
+  margin: 0 auto;
+  /* 64rem, up from 48. At 48rem this band was a 768px column of prose in the
+     middle of a 1440px page with 340px of dead canvas on either side, and six
+     findings of four lines each read as one wall. Widening alone would only
+     have made the wall wider, so the extra width buys a COLUMN instead: the
+     claims below now form a rail a reader can scan without reading. */
+  max-inline-size: 64rem;
+}
+
+.finding {
+  padding-block: 1.25rem;
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.finding:first-child {
+  border-block-start: 0;
+  padding-block-start: 0;
+}
+
+.finding:last-child {
+  padding-block-end: 0;
+}
+
+.findingTerm {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: var(--nt-text-body);
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.findingTerm svg {
+  margin-block-start: 0.3125rem;
+  color: var(--color-accent-text);
+}
+
+/* The glyph in the term is 14px wide with a 0.5rem gap, so the body indents by
+   exactly that much and the two hang off the same edge. */
+.findingBody {
+  margin: 0.375rem 0 0;
+  margin-inline-start: calc(var(--icon-nav) + 0.5rem);
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  /* A ceiling, not a width. The container above is wider than any paragraph
+     should be, and capping the prose rather than the column keeps the rules
+     between findings running the full measure. */
+  max-inline-size: 68ch;
+  font-size: var(--nt-text-body);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+/* Scoped to the prose span, so the source path below it keeps its own smaller
+   size rather than inheriting the inline-code rule. */
+.findingBody > span code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+/* --- Band 3: what is not true yet ----------------------------------------
+
+   Amber, and amber only. Not red, and no triangle: the items below are facts
+   about how far the project has got, not errors the reader has caused. The
+   glyph is carried as well as the hue, so the band still says "read this
+   carefully" on a printout and to a reader who cannot separate the two.
+   ------------------------------------------------------------------------- */
+
+.limits {
+  display: grid;
+  gap: 1rem;
+  max-inline-size: 64rem;
+  margin-inline: auto;
+}
+
+.limit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.5rem 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-card);
+  background: var(--color-blocked-surface);
+  box-shadow: var(--nt-ring-amber, 0 0 0 1px color-mix(in oklab, var(--color-blocked-text) 32%, transparent));
+}
+
+.limitMark {
+  /* The glyph's own stroke begins inside its box, so a flush-top 20px mark sits
+     high of the cap height of the heading beside it. */
+  margin-block-start: 0.125rem;
+  color: var(--color-blocked-text);
+}
+
+.limitName {
+  grid-column: 2;
+  margin: 0;
+  font-size: var(--nt-text-body);
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--color-blocked-text);
+  text-wrap: balance;
+}
+
+/* Ordinary body ink rather than the amber above it. The heading carries the
+   state; the paragraph is prose and has to read like every other paragraph on
+   the page, which a tinted ink on a tinted ground does not. Checked against
+   `--color-blocked-surface` rather than the canvas, because that is the surface
+   it actually sits on: 6.4:1 in the light scheme, 6.3:1 in the dark one. */
+.limitBody {
+  grid-column: 2;
+  margin: 0;
+  max-inline-size: 68ch;
+  font-size: var(--nt-text-body);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.limitBody code,
+.layerBody code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.closing {
+  margin: 2rem auto 0;
+  max-inline-size: 68ch;
+  font-size: var(--nt-text-body);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+/* --- Links ----------------------------------------------------------------
+
+   Named properties only, never `transition: all`. Hover sits behind a hover
+   query so a tap on a phone does not leave a link looking selected, and the
+   underline is present at rest rather than appearing on hover: a link that only
+   looks like one when a mouse is over it is invisible to everyone else.
+   ------------------------------------------------------------------------- */
+
+/* Inline in a sentence, which is the one case the target-size rule exempts:
+   padding a link out to 24px inside running text overlaps the line above it.
+   The focus ring comes from the global `:focus-visible` rule, so there is
+   nothing to restate here. */
+.link {
+  color: var(--color-accent-text);
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: auto;
+  text-underline-offset: 0.15em;
+  overflow-wrap: anywhere;
+  transition: color var(--duration-fast) ease-out;
+}
+
+/* The signature inside a link takes the link's ink rather than the quieter
+   address grey, so it reads as the thing to press. */
+.link .address {
+  color: inherit;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+/* For the explorer links: says where they go without printing it twice. */
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ===========================================================================
+   Three across, once three sentences fit.
+   =========================================================================== */
+
+@media (min-width: 64rem) {
+  .layers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Bands 2 and 3 become term-and-body rows rather than stacked paragraphs.
+
+     Same reasoning in both: the left column is a rail of claims a reader can
+     run down without reading a word of the prose beside it, which is the thing
+     a dense page most needs and the thing a centred 48rem column cannot give.
+     20rem holds the longest term here ("The owner's approval settled it in one
+     transaction") in two lines, and the prose keeps its own 68ch cap so
+     widening the row never widens a paragraph. */
+  .finding {
+    display: grid;
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    gap: 0 3rem;
+    align-items: start;
+  }
+
+  .findingBody {
+    margin-block-start: 0;
+    margin-inline-start: 0;
+  }
+
+  .limit {
+    grid-template-columns: auto minmax(0, 20rem) minmax(0, 1fr);
+  }
+
+  /* The gutter between the two text columns, taken as padding on the name
+     rather than as a wider `column-gap`, which would also push the glyph away
+     from the heading it belongs to. */
+  .limitName {
+    padding-inline-end: 2rem;
+  }
+
+  .limitBody {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
