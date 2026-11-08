@@ -6,6 +6,7 @@ import {APP_HREF, APP_ROUTES, DEMO_HREF} from "./routes";
 import {HERO_ORG_SUMMARY, HeroOrg} from "./HeroOrg";
 import {LandingGlass, LandingMotion, LandingVault, MotionToggle, RevealText} from "./LandingMotion";
 import styles from "./LandingPage.module.css";
+import {LiveFacts, LiveNews} from "./LiveFacts";
 
 /* ===========================================================================
    The landing page.
@@ -57,14 +58,7 @@ const ROWS = [
   },
 ] as const;
 
-/** One fact from the app per row, shown beside the row that is in view. Illustrative. */
-const FACTS = [
-  {label: "Research agent · AI agent", value: "$5.00 cap", note: "Holds no money"},
-  {label: "Team vault", value: "$500.00", note: "Test USDC"},
-  {label: "Pending", value: "$9.00", note: "Held on chain for the owner"},
-  {label: "gpu-hour", value: "Paid $3.00", note: "Settled in the same transaction"},
-  {label: "Settlement", value: "Under a second", note: "Fee paid by the sponsor"},
-] as const;
+
 
 const STATEMENT =
   "Agents can already hold money. What nobody could do was trust them with it. Rein moves that trust out of the prompt and into a Solana program: a key that holds nothing, rules checked on every payment, and a person who decides anything outside them.";
@@ -108,8 +102,7 @@ const WALK_INTRO =
 
 const WALK_FACTS = "Solana devnet · Test USDC · A separate fee payer, so spenders hold no SOL · Every figure read from chain";
 
-/** The hero's latest card: the live demo. */
-const NEWS = {href: DEMO_HREF, date: "2026-11-08", day: "Live now", title: "Approve an agent’s payment, no wallet needed"};
+
 
 const FAQ = [
   ["What is Rein?", "Rein gives teams and their AI agents spending rules on Solana. A team keeps test USDC in a vault owned by a program address, and every person and agent pays under a policy the program enforces."],
@@ -261,16 +254,11 @@ export function LandingPage() {
             <span>Built on</span> <b className={styles.chainMark}>Solana</b>
             <small>Devnet. Test USDC only.</small>
           </p>
-          <a className={styles.news} href={NEWS.href}>
-            <span className={styles.newsMeta}>
-              <span>Latest</span>
-              <time dateTime={NEWS.date}>{NEWS.day}</time>
-            </span>
-            <span className={styles.newsTitle}>{NEWS.title}</span>
+          <LiveNews className={styles.news} metaClass={styles.newsMeta} titleClass={styles.newsTitle}>
             <span className={styles.newsTile}>
               <ArrowGlyph />
             </span>
-          </a>
+          </LiveNews>
         </div>
       </section>
 
@@ -422,14 +410,7 @@ export function LandingPage() {
             <div className={styles.propVisual} aria-hidden="true">
               <div className={styles.factStack}>
                 <Drawing name="phone" className={styles.factDrawing} />
-                {FACTS.map((fact, i) => (
-                  <div key={fact.label} className={styles.fact} data-fact="" data-on="true" style={order(i)}>
-                    <small>{fact.label}</small>
-                    <strong>{fact.value}</strong>
-                    <span>{fact.note}</span>
-                  </div>
-                ))}
-                <span className={styles.factNote}>Example values from the app</span>
+                <LiveFacts factClass={styles.fact} noteClass={styles.factNote} />
               </div>
             </div>
           </div>
