@@ -137,3 +137,10 @@
 
   color-scheme: dark;
 }
+
+/* A dark region inside the light root: its own ink and ground, so text that only inherits colour
+   (headings, the wordmark) reads white on black instead of the root's near-black. */
+[data-theme="dark"] {
+  color: var(--color-text-primary);
+  background-color: var(--color-canvas);
+}
