@@ -51,21 +51,17 @@
    Instead the palette is keyed on an attribute and `app/layout.tsx` sets that
    attribute in the server-rendered HTML.
 
-   ONE SURFACE OPTS OUT, and it is the only one: onboarding's sign-in panel,
-   which is deliberately light beside its dark illustrated story. Everything
-   else — marketing and the authenticated app — is dark.
-
-   The workspace used to opt out too, which made the product three surfaces in
-   two schemes and meant a component crossing between them carried whichever
-   palette it was first written against. That is the source of the action-card
-   bug fixed earlier: tokens defined for one scheme, rendered in the other.
-
-   `:has()` responds to client navigation without a pre-paint script or a
-   duplicate palette. Global styles may remain loaded across Next routes.
+   NOTHING OPTS OUT. The sign-in panel used to stay light beside its dark
+   story, which left half the first screen white; it is dark end to end now,
+   so the panel, the frame and the story all read these tokens, and `:has()`
+   darkens the root under it too, so the overscroll gutter is not white. The workspace used to opt out too, which made the product
+   three surfaces in two schemes and meant a component crossing between them
+   carried whichever palette it was first written against.
 
    `:root:root` still doubles the specificity so this wins on weight rather than
    on stylesheet order, which a bundler is free to change. */
-:root:root[data-theme="dark"]:not(:has([data-onboarding])),
+:root:root[data-theme="dark"],
+:root:root:has([data-onboarding]),
 [data-theme="dark"],
 [data-onboarding-story] {
   --color-logo-mark: var(--color-logo-paper);

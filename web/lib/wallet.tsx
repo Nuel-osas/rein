@@ -13,6 +13,7 @@ import { useSignTransaction, useWallets } from '@privy-io/react-auth/solana';
 import { createSolanaRpc, createSolanaRpcSubscriptions } from '@solana/kit';
 import { PublicKey, Transaction, type TransactionInstruction } from '@solana/web3.js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { MARK_PATH } from '@/components/brand-mark';
 import { RPC_URL, connection } from './chain';
 import { programErrorText } from './rein';
 
@@ -242,6 +243,21 @@ function Signed({ children }: { children: React.ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+/**
+ * Rein's logo for the top of Privy's modal: the mark on its purple tile and the name in white, drawn
+ * as one SVG so it needs no hosted image. Privy replaces the element's `style`, so sizing lives in
+ * the viewBox and the width and height attributes.
+ */
+const PRIVY_LOGO = (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 56" width="140" height="56" role="img" aria-label="Rein">
+    <rect x="0" y="0" width="56" height="56" rx="10" fill="#5B21B6" />
+    <path transform="translate(9 9) scale(.38)" fill="#FFFFFF" fillRule="evenodd" d={MARK_PATH} />
+    <text x="72" y="40" fill="#FFFFFF" fontFamily="Inter, ui-sans-serif, system-ui, sans-serif" fontSize="34" fontWeight="500" letterSpacing="-1">
+      rein
+    </text>
+  </svg>
+);
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [origin, setOrigin] = useState<string | undefined>(undefined);
   useEffect(() => setOrigin(window.location.origin), []);
@@ -255,7 +271,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       appId={PRIVY_APP_ID}
       config={{
         loginMethods: ['google'],
-        appearance: { theme: 'dark', accentColor: '#5B21B6', walletChainType: 'solana-only', landingHeader: 'Sign in to Rein', showWalletLoginFirst: false },
+        appearance: {
+          // Privy's dark scheme, derived from Rein's surface so the modal is purple-black, not blue-black.
+          theme: '#131118',
+          accentColor: '#5B21B6',
+          logo: PRIVY_LOGO,
+          landingHeader: 'Sign in to Rein',
+          loginMessage: 'Spending rules for your team and its AI agents.',
+          walletChainType: 'solana-only',
+          showWalletLoginFirst: false,
+        },
         embeddedWallets: { solana: { createOnLogin: 'all-users' }, ethereum: { createOnLogin: 'off' }, showWalletUIs: false },
         solana: { rpcs },
         // Privy's return into Rein after Google, derived from the browser so production never points at localhost.
