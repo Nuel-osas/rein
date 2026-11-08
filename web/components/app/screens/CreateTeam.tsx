@@ -13,16 +13,17 @@ import {TeamSetup} from "../rein/TeamSetup";
 import styles from "../rein/rein.module.css";
 
 /**
- * /app/teams/new. A signed-in person with no team gets "Setting up your team" (one transaction, the
- * team and its Rein agent); if that cannot run, the manual form below is still there.
+ * /teams/new and /app/teams/new. A signed-in person with no team gets "Setting up your team" (one
+ * transaction, the team and its Rein agent); if that cannot run, the manual form below is still there.
+ * `openHref`: where the new team opens once confirmed. /dashboard by default.
  */
-export function CreateTeam() {
+export function CreateTeam({openHref}: {openHref?: string} = {}) {
   const {publicKey} = useWallet();
-  if (!publicKey) return <ManualCreateTeam />;
-  return <TeamSetup fallback={<ManualCreateTeam />} />;
+  if (!publicKey) return <ManualCreateTeam openHref={openHref} />;
+  return <TeamSetup next={openHref ?? "/dashboard"} fallback={<ManualCreateTeam openHref={openHref} />} />;
 }
 
-function ManualCreateTeam() {
+function ManualCreateTeam({openHref}: {openHref?: string} = {}) {
   const {publicKey, payer, send, sponsor} = useWallet();
   const router = useRouter();
   const [name, setName] = useState("");
@@ -55,7 +56,7 @@ function ManualCreateTeam() {
       setStatus({tone: "wait", text: `Creating ${name.trim()}…`});
       const sent = await send([ixs.createTeam({payer, owner: publicKey, mint: config.mint, name: name.trim()})]);
       setStatus(sentStatus(sent, `${name.trim()} is live, with a vault only the program can move.`));
-      if (sent.status === "confirmed") router.push(`/app/${at}`);
+      if (sent.status === "confirmed") router.push(openHref ?? `/app/${at}`);
     } catch (e) {
       setStatus({tone: "bad", text: errorText(e)});
     } finally {

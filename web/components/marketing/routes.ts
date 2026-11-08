@@ -1,5 +1,5 @@
-/** Where "Open the app" goes: the team chooser, which also opens the demo team. */
-export const APP_HREF = "/app";
+/** Where "Open the app" goes: Nuntio's way in, sign-in and then /dashboard. The demo team stays at /demo. */
+export const APP_HREF = "/onboarding";
 
 /** The public, no-wallet demo of the seeded team. */
 export const DEMO_HREF = "/demo";

@@ -117,7 +117,7 @@ export function ApprovalsList({
         const live = isLive(p, now);
         const left = Math.max(0, p.deadline - now);
         const reasons = reasonsOf(p.reasons);
-        const href = base ? `${base}/activity/${p.address}` : null;
+        const href = base !== undefined ? `${base}/activity/${p.address}` : null;
         return (
           <article key={p.address} className={styles.approval} data-done={live ? undefined : ""}>
             <div className={styles.approvalMain}>

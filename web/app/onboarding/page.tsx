@@ -5,9 +5,9 @@ import {WalletProvider} from "@/lib/wallet";
 export const metadata: Metadata = {title: "Get started | Rein"};
 
 /**
- * Rein's sign-in and onboarding, at the address people expect for "get started". It is the same
- * screen as /signin and /auth/callback, one component behind three doors, so the three cannot drift:
- * Google through Privy, then the person's team or the form to create one.
+ * Rein's sign-in and onboarding: Nuntio's one way in. It is the same screen as /auth/callback, one
+ * component behind two doors, so they cannot drift (/signin redirects here): Google through Privy,
+ * then the return-to path (?next=, or what an invite remembered) or /dashboard.
  *
  * A route that mounts Privy is never prerendered: the provider needs the browser and the app id.
  */

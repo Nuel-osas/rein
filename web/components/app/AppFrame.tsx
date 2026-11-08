@@ -1,8 +1,11 @@
 "use client";
 
 // The app's frame: a sidebar above 64rem (brand, the one primary row, the places, the team group,
-// settings and the account), a top bar and a bottom bar below it. Every destination is under one
-// team, /app/<team>/…, so a link to the demo team opens the whole app for anyone, signed in or not.
+// settings and the account), a top bar and a bottom bar below it. Two ways in, one frame:
+//   - public, /app/<team>/…: every link stays under that team, so a link to the demo team opens
+//     the whole app for anyone, signed in or not;
+//   - own (`own`), the signed-in person's own team at Nuntio's top-level routes: /dashboard,
+//     /spenders, /approvals and so on, behind the sign-in gate (OwnTeamGate).
 
 import Link from "next/link";
 import {usePathname} from "next/navigation";
@@ -27,12 +30,12 @@ type Section = {label: string | null; items: Item[]};
  * then the teams. Recipients are the service registry in Rein, so that row says Services. The global
  * rows carry a quiet "not yet": Rein has no fiat backend, and the pages say so.
  */
-function sectionsFor(base: string): Section[] {
+function sectionsFor(base: string, home: string): Section[] {
   return [
     {
       label: null,
       items: [
-        {href: base, label: "Home", short: "Home", icon: IconHome, exact: true},
+        {href: home, label: "Home", short: "Home", icon: IconHome, exact: true},
         {href: `${base}/approvals`, label: "Approvals", short: "Approvals", icon: IconApprovals, badge: true},
         {href: `${base}/activity`, label: "Activity", short: "Activity", icon: IconHistory},
         {href: `${base}/metrics`, label: "Metrics", short: "Metrics", icon: IconMetrics},
@@ -61,13 +64,15 @@ function sectionsFor(base: string): Section[] {
 }
 
 /** Below the groups, in team and no-team views alike: the ways to another team. */
-const TEAMS: Section = {
-  label: "Teams",
-  items: [
-    {href: "/app", label: "Your teams", short: "Teams", icon: IconSwitch, exact: true},
-    {href: "/app/teams/join", label: "Join a team", short: "Join", icon: IconUserAdd},
-  ],
-};
+function teamsSection(own: boolean): Section {
+  return {
+    label: "Teams",
+    items: [
+      {href: "/app", label: "Your teams", short: "Teams", icon: IconSwitch, exact: true},
+      {href: own ? "/teams/join" : "/app/teams/join", label: "Join a team", short: "Join", icon: IconUserAdd},
+    ],
+  };
+}
 
 function matches(pathname: string, item: Item): boolean {
   return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -84,31 +89,39 @@ function active(pathname: string, item: Item, current: string | null): boolean {
   return current !== null ? item.href === current : matches(pathname, item);
 }
 
-function labelFor(pathname: string, base: string | null): string {
-  if (!base) {
-    if (pathname.startsWith("/app/teams/new")) return "New team";
-    if (pathname.startsWith("/app/teams/join")) return "Join a team";
+function labelFor(pathname: string, base: string | null, home: string): string {
+  if (base === null) {
+    if (pathname.startsWith("/app/teams/new") || pathname.startsWith("/teams/new")) return "New team";
+    if (pathname.startsWith("/app/teams/join") || pathname.startsWith("/teams/join")) return "Join a team";
     return "Teams";
   }
+  if (pathname.startsWith("/teams/join")) return "Join a team";
   if (pathname.startsWith(`${base}/pay`)) return "New payment";
   if (pathname.startsWith(`${base}/settings`)) return "Settings";
   if (pathname.startsWith(`${base}/global/verify`)) return "Verify";
-  const sections = sectionsFor(base);
+  const sections = sectionsFor(base, home);
   const href = currentHref(pathname, sections);
   for (const s of sections) for (const i of s.items) if (i.href === href) return i.label;
   return "Home";
 }
 
-export function AppFrame({team, children}: {team: string | null; children: ReactNode}) {
-  const pathname = usePathname() ?? "/app";
-  const base = team ? `/app/${team}` : null;
-  const sections = base ? sectionsFor(base) : [];
+/**
+ * `team` null is the no-team view. `own` puts the frame on the top-level routes of the signed-in
+ * person's own team (links "" + /spenders, Home at /dashboard) instead of /app/<team>/….
+ */
+export function AppFrame({team, own = false, children}: {team: string | null; own?: boolean; children: ReactNode}) {
+  const pathname = usePathname() ?? (own ? "/dashboard" : "/app");
+  // "" is a real base (own team): test against null, never truthiness.
+  const base = team ? (own ? "" : `/app/${team}`) : null;
+  const home = team ? (own ? "/dashboard" : `/app/${team}`) : "/app";
+  const sections = base !== null ? sectionsFor(base, home) : [];
+  const TEAMS = teamsSection(own);
+  const newTeam = own ? "/teams/new" : "/app/teams/new";
   const current = currentHref(pathname, [...sections, TEAMS]);
   const t = useTeam(team);
   const now = useNow();
   const waiting = t.payments ? t.payments.filter((p) => isLive(p, now)).length : null;
   const {address, authenticated, label: who, disconnect} = useWallet();
-  const home = base ?? "/app";
 
   return (
     <div className={styles.shell} data-theme="dark" data-app="">
@@ -134,13 +147,13 @@ export function AppFrame({team, children}: {team: string | null; children: React
             <TestnetTag />
           </div>
 
-          {base ? (
+          {base !== null ? (
             <Link href={`${base}/pay`} className={styles.primaryRow} aria-current={pathname.startsWith(`${base}/pay`) ? "page" : undefined}>
               <IconAdd size="nav" />
               <span className={styles.navLabel}>New payment</span>
             </Link>
           ) : (
-            <Link href="/app/teams/new" className={styles.primaryRow} aria-current={pathname.startsWith("/app/teams/new") ? "page" : undefined}>
+            <Link href={newTeam} className={styles.primaryRow} aria-current={pathname.startsWith(newTeam) ? "page" : undefined}>
               <IconAdd size="nav" />
               <span className={styles.navLabel}>Create a team</span>
             </Link>
@@ -154,7 +167,7 @@ export function AppFrame({team, children}: {team: string | null; children: React
           </nav>
 
           <div className={styles.sidebarBase}>
-            {base ? (
+            {base !== null ? (
               <Link href={`${base}/settings`} className={styles.navLink} aria-current={pathname.startsWith(`${base}/settings`) ? "page" : undefined}>
                 <IconSettings size="nav" />
                 <span className={styles.navLabel}>Settings</span>
@@ -186,7 +199,7 @@ export function AppFrame({team, children}: {team: string | null; children: React
         <main id="main" className={styles.main}>
           <div className={styles.inner}>
             <div className={styles.crumbs}>
-              <span className={styles.crumb}>{labelFor(pathname, base)}</span>
+              <span className={styles.crumb}>{labelFor(pathname, base, home)}</span>
               <div className={`${styles.network} ${styles.networkNote}`}>
                 <span className={styles.networkDot} aria-hidden="true" />
                 <span>{NETWORK_NAME}: test USDC only, nothing here is real money.</span>
@@ -197,7 +210,7 @@ export function AppFrame({team, children}: {team: string | null; children: React
         </main>
       </div>
 
-      {base ? (
+      {base !== null ? (
         <nav className={styles.bottombar} aria-label="Sections">
           {[sections[0].items[0], sections[0].items[1], {href: `${base}/pay`, label: "Pay", short: "Pay", icon: IconAdd}, sections[0].items[2], {href: `${base}/spenders`, label: "Spenders", short: "Spenders", icon: IconSpenders}].map((item: Item) => {
             const Icon = item.icon;
