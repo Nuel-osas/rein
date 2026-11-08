@@ -52,7 +52,10 @@ export function useTeam(team: string | null, intervalMs = 2000) {
     if (!e.timer || intervalMs < e.interval) {
       if (e.timer) clearInterval(e.timer);
       e.interval = intervalMs;
-      e.timer = setInterval(() => refresh(team), intervalMs);
+      // A hidden tab stops polling; it catches up on the next tick after it is shown.
+      e.timer = setInterval(() => {
+        if (typeof document === 'undefined' || !document.hidden) void refresh(team);
+      }, intervalMs);
     }
     refresh(team);
     return () => {

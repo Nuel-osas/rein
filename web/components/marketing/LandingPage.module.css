@@ -956,7 +956,7 @@
 
 /* Live: the row in view is at full contrast, the others recede. */
 .propRows[data-live] .prop:not([data-active]) > * {
-  opacity: 0.32;
+  opacity: 0.62;
 }
 
 .propVisual {

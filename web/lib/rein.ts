@@ -293,19 +293,29 @@ export const emptyTeamState: TeamState = {
   at: 0,
 };
 
+/** The registry changes rarely, so the config and the service list are re-read once a minute. */
+const REGISTRY_TTL_MS = 60_000;
+let registry: { config: Config | null; services: Service[] | null; at: number } | null = null;
+
+async function readRegistry(conn: Connection): Promise<{ config: Config | null; services: Service[] | null }> {
+  if (registry && registry.config && registry.services && Date.now() - registry.at < REGISTRY_TTL_MS) return registry;
+  const [config, services] = await Promise.all([readConfig(conn), readServices(conn)]);
+  // A failed read is not cached, so the next poll asks again.
+  registry = { config, services, at: Date.now() };
+  return registry;
+}
+
 /** Everything the team view shows, in two round trips. Each part that fails is null (unknown). */
 export async function loadTeam(conn: Connection, address: string): Promise<TeamState> {
   const teamKey = new PublicKey(address);
-  const [teamInfo, config, services, spenderRows, paymentRows, slot] = await Promise.all([
+  const [teamInfo, reg, spenderRows, paymentRows] = await Promise.all([
     conn.getAccountInfo(teamKey, 'confirmed').then(
       (i) => ({ ok: true as const, info: i }),
       () => ({ ok: false as const, info: null }),
     ),
-    readConfig(conn),
-    readServices(conn),
+    readRegistry(conn),
     settle(listAccounts(conn, 'Spender', address)),
     settle(listAccounts(conn, 'Payment', address)),
-    settle(conn.getSlot('confirmed')),
   ]);
   const team = teamInfo.ok ? toTeam(address, teamInfo.info) : null;
   const missing = teamInfo.ok && team === null;
@@ -322,7 +332,7 @@ export async function loadTeam(conn: Connection, address: string): Promise<TeamS
         .filter((p): p is Payment => !!p && p.team === address)
         .sort((a, b) => (b.number > a.number ? 1 : b.number < a.number ? -1 : 0))
     : null;
-  return { team, missing, config, balance, spenders, payments, services, slot, at: Date.now() };
+  return { team, missing, config: reg.config, balance, spenders, payments, services: reg.services, slot: null, at: Date.now() };
 }
 
 // ------------------------------------------------------------------------------ the policy ---
