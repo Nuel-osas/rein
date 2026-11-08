@@ -1,0 +1,17 @@
+/* The gate's own waits: one status line on the app's canvas, before there is a team to frame. */
+.wait {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+  padding: 1.5rem;
+  background: var(--color-canvas, #0b0a0f);
+  color: var(--color-text-primary, #fff);
+}
+.box { display: grid; justify-items: center; gap: 1.25rem; text-align: center; }
+.brand { color: var(--color-text-primary, #fff); text-decoration: none; }
+.status { display: flex; align-items: center; gap: .75rem; color: var(--color-text-secondary, #b9b4c7); font-size: 14px; margin: 0; }
+.status > span { inline-size: 6px; block-size: 6px; background: currentColor; }
+@media (prefers-reduced-motion: no-preference) {
+  .status > span { animation: blink 1s steps(2, jump-none) infinite; }
+}
+@keyframes blink { 50% { opacity: .25; } }

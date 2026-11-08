@@ -61,7 +61,7 @@ export function decodeInvite(token: string | null | undefined): Invite | null {
 }
 
 export function inviteLink(origin: string, token: string): string {
-  return `${origin}/app/invite/${token}`;
+  return `${origin}/invite/${token}`;
 }
 
 /** The link the invitee sends back: the owner's add-a-person form, filled in. */
@@ -86,7 +86,8 @@ export function readPasted(input: string): {kind: 'invite'; token: string; invit
   } catch {
     // not a URL: a bare token, or a path
   }
-  const inv = path.match(/(?:^|\/)app\/invite\/([A-Za-z0-9_-]+)\/?$/);
+  // Nuntio's /invite/<token>, and the /app/invite/<token> links shared before it.
+  const inv = path.match(/(?:^|\/)(?:app\/)?invite\/([A-Za-z0-9_-]+)\/?$/);
   const token = inv ? inv[1] : /^[A-Za-z0-9_-]+$/.test(path) ? path : null;
   if (token) {
     const invite = decodeInvite(token);
