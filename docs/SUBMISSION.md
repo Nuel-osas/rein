@@ -41,7 +41,9 @@ Solana, Anchor 0.31, Rust, SPL Token, Solana devnet, @coral-xyz/anchor, @solana/
 | Live demo | https://rein-navy.vercel.app/demo |
 | Demo video | VIDEO_URL |
 | extra_links: Demo team, no wallet needed | https://rein-navy.vercel.app/app/EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5 |
-| extra_links: On-chain evidence | (paste the devnet transaction links from docs/EVIDENCE.md, since the repo is private) |
+| extra_links: Agent with 0 SOL pays inside its policy (devnet tx) | https://explorer.solana.com/tx/4Ygd81XkNoDzwUxJoNXKrdPT9PHpyPdKikM6uNsN2Tj49ScGCxricxwVqRNb7w4DXcLen2TACfbtWZ38psdTM6K6?cluster=devnet |
+| extra_links: Over-cap payment approved, settles in one tx (devnet tx) | https://explorer.solana.com/tx/3PTN2Q5CYHv8NGjfr4FvwX9GG8QSxbq8JvdC9Z4XiwNNY6LYTRptxniY7ETC1PBQ47jJREQ1L6Wxvfes7tLqvHNa?cluster=devnet |
+| extra_links: Prompt-injected payment refused on chain (devnet tx) | https://explorer.solana.com/tx/5veVH6qrhhjEyZdTyPAsZuDa9RDkNg6ozBedGnDAduxqtZ9WQ4AWsNxRrHQxbtEYeaM52734tcR8HwkbmwPRr1fA?cluster=devnet |
 | extra_links: Program on Solana Explorer | https://explorer.solana.com/address/F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe?cluster=devnet |
 
 ## AI coding tools (ai_tools)
@@ -72,10 +74,10 @@ claude-code, coding:anthropic/claude-opus-5.5
 
 ## Checklist
 
-- [ ] Devnet deploy, seed, `pnpm evidence` written to docs/EVIDENCE.md
-- [ ] Web app on Vercel with env vars, demo team loads cold
-- [ ] Agent runs from the live site
-- [ ] README links filled (https://rein-navy.vercel.app, DEMO_TEAM, MODEL_NAME)
+- [x] Devnet deploy, seed, `pnpm evidence` written to docs/EVIDENCE.md
+- [x] Web app on Vercel with env vars, demo team loads cold
+- [x] Agent runs from the live site (overspend filed 12 USDC, approve settled it, vault 500 to 488)
+- [x] README links filled
 - [ ] Demo video recorded and uploaded
 - [x] Repo visibility: stays private (user decision)
 - [ ] Submitted by 16:00 WAT; project link recorded here
