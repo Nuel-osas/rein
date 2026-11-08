@@ -1,0 +1,98 @@
+/* The masthead for a non-landing page.
+
+   Deliberately shorter than the hero. The hero is `min(860px, 95svh)` and pins
+   its copy to the bottom of the frame, which works because nothing is above it
+   and everything below is the argument. A page reached by clicking a nav link
+   has already been chosen, so its job is to name itself and get out of the way.
+
+   The header is sticky, which means it OCCUPIES ITS OWN FLOW SPACE. This
+   padding therefore clears nothing: all of it is empty canvas above the
+   eyebrow. It read 9rem, which put 144px of nothing at the top of every
+   subpage while the gap between two sections further down was about 56px. The
+   masthead was the loosest spacing on the page and it is the first thing a
+   reader meets.
+
+   5rem is deliberately still the largest gap on the page, because a masthead
+   should breathe more than a section break. It is no longer three times it. */
+.intro {
+  position: relative;
+  isolation: isolate;
+  padding: 5rem var(--nt-gutter) 0;
+  scroll-margin-block-start: 5rem;
+}
+
+/* The same warm light as the hero, reduced from a beam to a glow.
+
+   A second diagonal beam on every page would turn a signature into wallpaper:
+   the first one reads as art direction, the fourth reads as a template. This
+   keeps the colour and the direction of the light without redrawing the gesture,
+   so the pages feel lit by the same source. */
+.glow {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 24rem;
+  pointer-events: none;
+  background: radial-gradient(
+    60% 100% at 50% 0%,
+    color-mix(in oklab, var(--nt-light) 13%, transparent) 0%,
+    color-mix(in oklab, var(--nt-ember) 7%, transparent) 42%,
+    transparent 72%
+  );
+}
+
+.copy {
+  inline-size: min(100%, 52rem);
+  margin-inline: auto;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+/* `--nt-text-title`, not `--nt-text-hero`. One step down from the landing page,
+   which is what makes this read as a page inside a site rather than as a second
+   front door. Tracking and weight match the hero exactly so the family is
+   obvious. */
+.title {
+  margin: 0;
+  font-size: var(--nt-text-title);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+  color: var(--color-text-primary);
+}
+
+/* The quieter half of the title, matching the hero's two-tone treatment where a
+   page wants a second clause. */
+.title span {
+  color: var(--color-text-secondary);
+}
+
+.lede {
+  max-inline-size: 46ch;
+  margin: 1.25rem auto 0;
+  font-size: var(--nt-text-body);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.extra {
+  margin-block-start: 1.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 48rem) {
+  .intro {
+    padding-block-start: 3rem;
+  }
+}

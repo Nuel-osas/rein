@@ -1,0 +1,15 @@
+/* ===========================================================================
+   The Home route's own layout, which is one rule. Everything else about the
+   screen lives with its components, in `components/app/home/`.
+
+   THIS FILE USED TO BE THE WHOLE DASHBOARD AGAIN: thirty-odd rules left behind
+   when the screen moved into its component's module, with `page.tsx` using
+   exactly one of them. Two copies of a surface with one instruction to keep
+   them in step is how a stale copy ships, so the screen's styles live in one
+   place only.
+   =========================================================================== */
+
+.page {
+  display: grid;
+  gap: var(--app-gap-group, 2.5rem);
+}

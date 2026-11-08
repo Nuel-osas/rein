@@ -1,0 +1,146 @@
+/* ===========================================================================
+   The dark scheme. One copy, for the whole product.
+
+   This block used to exist twice, byte for byte: once in
+   `components/app/theme.css` for the authenticated routes and once in
+   `app/(marketing)/theme-dark.css` for the landing page. Each carried a comment
+   saying the other had to be edited in the same commit. That is not a rule
+   anybody keeps — it is a note explaining, in advance, how the two will drift.
+   A colour added to one and forgotten in the other stays light in dark mode on
+   exactly half the product, which is the kind of bug nobody files because it
+   only shows up on the surface you were not looking at.
+
+   So it lives here, imported once by `app/layout.tsx` alongside `globals.css`,
+   and both route groups inherit it. The files it replaces kept their other
+   contents: `theme.css` still owns the app shell's metrics, and the marketing
+   file is gone entirely because the palette was all it held.
+
+   Why a plain stylesheet rather than part of `globals.css`:
+
+   1. `globals.css` declares the light palette inside Tailwind's `@theme`
+      block, which is a token-definition context rather than an ordinary rule.
+      A media query does not belong inside it.
+   2. These have to land on `:root`, because `globals.css` paints `html` with
+      `var(--color-canvas)`. Scoping the overrides to a wrapper element would
+      leave the overscroll gutter light behind a dark page, which reads as a
+      rendering fault rather than as a design.
+
+   `:root:root` doubles the specificity so this wins on weight rather than on
+   stylesheet order, which a bundler is free to change.
+
+   Every token name here mirrors one in `globals.css`. If the system adds a
+   colour, it needs the matching entry here or that colour stays light in dark
+   mode — but now there is one place to add it rather than two.
+
+   This is a designed palette, not an inversion. Deep pine is lifted to a mid
+   green so a solid control separates from the canvas, ink is off-white rather
+   than pure white, amber is warmed rather than darkened, and the elevation
+   shadows are rebuilt because an ambient shadow tuned for white paper is
+   invisible on a dark surface.
+   =========================================================================== */
+
+/* ONE DARK PALETTE, SELECTED BY THE RENDERED SURFACE.
+
+   This used to live inside `@media (prefers-color-scheme: dark)`, which made
+   the palette reachable only when the operating system asked for it. The
+   landing page is dark by decision rather than by preference, and the obvious
+   way to get that is a second copy of these values scoped to the marketing
+   route. That is the duplication this file was created to remove, so it is not
+   an option.
+
+   Instead the palette is keyed on an attribute and `app/layout.tsx` sets that
+   attribute in the server-rendered HTML.
+
+   ONE SURFACE OPTS OUT, and it is the only one: onboarding's sign-in panel,
+   which is deliberately light beside its dark illustrated story. Everything
+   else — marketing and the authenticated app — is dark.
+
+   The workspace used to opt out too, which made the product three surfaces in
+   two schemes and meant a component crossing between them carried whichever
+   palette it was first written against. That is the source of the action-card
+   bug fixed earlier: tokens defined for one scheme, rendered in the other.
+
+   `:has()` responds to client navigation without a pre-paint script or a
+   duplicate palette. Global styles may remain loaded across Next routes.
+
+   `:root:root` still doubles the specificity so this wins on weight rather than
+   on stylesheet order, which a bundler is free to change. */
+:root:root[data-theme="dark"]:not(:has([data-onboarding])),
+[data-theme="dark"],
+[data-onboarding-story] {
+  --color-logo-mark: var(--color-logo-paper);
+  --color-marketing-canvas: #0a0a0b;
+  --color-marketing-light: #ddd6fe;
+  --color-marketing-ember: #a78bfa;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b8b3c4;
+  --color-text-tertiary: #8a8496;
+  --color-text-on-accent: #ffffff;
+
+  --color-canvas: #0a0a0b;
+  --color-surface: #131118;
+  --color-surface-sunken: #0e0d12;
+  --color-skeleton: #24202c;
+
+  --color-inverse-surface: #1c1924;
+  --color-inverse-hover: #262130;
+  --color-text-on-inverse: #ffffff;
+
+  --glass-surface: rgba(255, 255, 255, 0.05);
+  --glass-blur: blur(20px) saturate(120%);
+  --glass-ring: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  /* Primary is dark purple with white ink; on black, text and focus use the light accent. */
+  --color-accent-solid: #5b21b6;
+  --color-accent-hover: #4c1d95;
+  --color-accent-text: #a78bfa;
+  --color-accent-soft: #2e1065;
+
+  --color-assistant-surface: #2e1065;
+  --color-assistant-ink: #ddd6fe;
+  --color-team-surface: #1c1924;
+  --color-team-ink: #ddd6fe;
+
+  /* Semantic colours stay apart from the brand: paid is green, held is amber, refused is red. */
+  --color-money-in: #5ebf9e;
+  --color-money-out: #e0a07a;
+  --color-settled-text: #6fd3ae;
+  --color-settled-surface: #11261f;
+  --color-blocked-text: #e6b667;
+  --color-blocked-surface: #2b2415;
+  --color-pending-text: #e6b667;
+  --color-pending-surface: #2b2415;
+  --color-danger-text: #f19a8a;
+  --color-danger-surface: #2f1a16;
+
+  --color-border-subtle: #2a2533;
+  --color-border-strong: #3a3346;
+  --color-border-focus: #a78bfa;
+
+  --shadow-raised:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.5),
+    0 2px 6px -2px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -16px rgba(0, 0, 0, 0.7);
+  --shadow-overlay: 0 2px 4px rgba(0, 0, 0, 0.5), 0 16px 40px -12px rgba(0, 0, 0, 0.8);
+
+  /* The app shell's ledger lines, on black. */
+  --app-line: #2a2533;
+  --app-line-strong: #3a3346;
+  --app-ring: 0 0 0 1px var(--app-line);
+  --app-ring-inset: inset 0 0 0 1px var(--app-line);
+  --app-canvas: #0a0a0b;
+  --app-sidebar-surface: #131118;
+  --app-sidebar-active: #2e1065;
+  --app-sidebar-hover: #1c1924;
+  --app-divider: #24202c;
+  --app-control-edge: var(--app-line-strong);
+
+  color-scheme: dark;
+}
+
+/* A dark region inside the light root: its own ink and ground, so text that only inherits colour
+   (headings, the wordmark) reads white on black instead of the root's near-black. */
+[data-theme="dark"] {
+  color: var(--color-text-primary);
+  background-color: var(--color-canvas);
+}

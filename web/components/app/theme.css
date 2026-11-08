@@ -1,0 +1,99 @@
+/* ===========================================================================
+   Metrics for the authenticated shell.
+
+   A plain stylesheet rather than a CSS Module because these land on `:root`,
+   and CSS Modules reject a rule that contains no local class. It is imported by
+   `app/(app)/layout.tsx`, so it ships with the authenticated routes only.
+
+   This file used to carry the dark palette as well, as a byte-for-byte copy of
+   the marketing surface's, under a comment instructing whoever edited one to
+   remember the other. That call has now been made the other way: the palette
+   lives once in `app/theme-dark.css`, imported by the root layout, and both
+   route groups inherit it. What is left here is only what is genuinely the
+   app shell's — the chrome metrics and the ring tokens.
+   =========================================================================== */
+
+:root {
+  /* --- Chrome metrics ---------------------------------------------------
+     Declared once so a page module can line up with the shell without
+     re-deriving the numbers. */
+  --app-gutter: clamp(1rem, 3.5vw, 2.5rem);
+  --app-measure: 82rem;
+
+  /* Intra-group spacing, then group spacing at more than twice it.
+
+     THREE STEPS, AND NOTHING BETWEEN THEM. 0.5 inside a block, 1 between
+     blocks in a row, 2.5 between groups. The reason 0.75 and 1.5 are absent is
+     that they were what the app actually used: the dashboard put 1.5 between
+     every section and 1 between the cards inside one, which is 1.5x, not 2x,
+     so a page of five sections read as one undifferentiated stack. If two
+     things want 0.75rem between them they are one block and want 0.5. */
+  --app-gap-tight: 0.5rem;
+  --app-gap: 1rem;
+  --app-gap-group: 2.5rem;
+
+  /* The inline padding EVERY card on an app screen uses.
+
+     A single token because the thing it buys is alignment, not size. The
+     balance panel was padded 2rem and the metric cards under it 1.5rem, so the
+     word "Available to spend" sat 8px to the right of "Waiting on you"
+     directly below it -- two left rails, 8px apart, down the middle of the
+     overview. Block padding may still differ per card; the inline rail may
+     not. */
+  --app-card-pad: 1.5rem;
+
+  --app-sidebar: 6.5rem;
+  --app-topbar: 3.5rem;
+  --app-bottombar: 4.25rem;
+
+  /* --- Ring ---------------------------------------------------------------
+     A hairline edge drawn as the first layer of a shadow stack rather than as
+     a `border`.
+
+     Two reasons, and only the second is about taste. A fully opaque border
+     flattens an element against its ground, which shows most on the tinted
+     surfaces in this app, where a solid line cuts the tint instead of bounding
+     it. And a ring is part of the shadow system, so the edge and the falloff
+     are one declaration under one light rather than two rules that can drift
+     apart.
+
+     `--app-ring` is outset and replaces a 1px border with no change to the
+     element's outer size. `--app-ring-inset` is for anything with a fixed
+     inline-size, where an outset ring would grow the shape by a pixel.
+
+     App-prefixed, not `--ring-*`: these are the authenticated shell's, not the
+     design system's, and the naming should say so. */
+  /* --- TRACED (10 Oct, the user: "squared buttons, trace lines") ----------------
+     Supersedes the 4 Oct facelift's "no strokes around boxes". The app is drawn like a precise
+     ledger: square corners everywhere, and every surface bounded by ONE hairline instead of a
+     soft shadow. The lines are the structure, so they are light (`--app-line`), and only the
+     edges of things you press are a step darker (`--app-control-edge`).
+
+     Three rules keep it from turning into a wireframe:
+     - one line per edge: a card's hairline is drawn by `--app-ring` (a 1px outset shadow, so it
+       never changes the box's size), never by a border plus a shadow;
+     - lines INSIDE a card (`--app-divider`) are lighter than a card's edge;
+     - no shadows at all: depth comes from the canvas, the white surface and the line.
+
+     The names stay (`--app-ring` and friends) so every call site switches at once. */
+  --radius-control: 0px;
+  --radius-card: 0px;
+  /* Status tags and meters: square ends, a 2px softening so a 6px meter does not look chipped. */
+  --radius-pill: 2px;
+  --app-line: #e4e0ea;
+  --app-line-strong: #d2ccdb;
+  --app-ring: 0 0 0 1px var(--app-line);
+  --app-ring-inset: inset 0 0 0 1px var(--app-line);
+  --shadow-card: none;
+  --shadow-raised: none;
+  /* The page behind the cards, a step below white. */
+  --app-canvas: #faf9fb;
+  --app-sidebar-surface: #f4f2f7;
+  /* The current row in the sidebar: a neutral tint, plus weight and `aria-current`. */
+  --app-sidebar-active: #e8e4ee;
+  --app-sidebar-hover: #eeebf2;
+  /* Rules INSIDE a card (between rows and sections), lighter than a card's edge. */
+  --app-divider: #ece9f1;
+  /* The edge of anything you press (buttons, inputs, selectable tiles). */
+  --app-control-edge: var(--app-line-strong);
+}

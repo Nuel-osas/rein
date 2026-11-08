@@ -1,0 +1,39 @@
+{
+  "name": "@rein/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 4291",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 4291",
+    "typecheck": "tsc --noEmit",
+    "idl:sync": "cp ../idl/rein.json lib/idl/rein.json",
+    "idl:check": "cmp ../idl/rein.json lib/idl/rein.json"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.31.1",
+    "@hugeicons/core-free-icons": "4.3.2",
+    "@hugeicons/react": "1.1.10",
+    "@solana/spl-token": "0.4.14",
+    "@solana/wallet-adapter-base": "0.9.27",
+    "@solana/wallet-adapter-react": "0.15.39",
+    "@solana/web3.js": "1.98.4",
+    "bn.js": "5.2.1",
+    "motion": "13.4.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/bn.js": "5.2.0",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

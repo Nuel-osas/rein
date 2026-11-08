@@ -1,0 +1,102 @@
+/* ===========================================================================
+   Spenders: one card, one row per person or agent.
+
+   The card, heads and rows are the shared list grammar (ListView.module.css);
+   this file only sets the columns and the phone layout. Every edge and corner
+   is a theme token.
+   =========================================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-gap-group, 2.5rem);
+}
+
+.link {
+  color: var(--color-accent-text, #5b21b6);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: auto;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-border-focus, #5b21b6);
+  outline-offset: 2px;
+}
+
+.table {
+  --cols: minmax(12rem, 1.2fr) minmax(14rem, 1.5fr) minmax(8rem, 0.7fr) minmax(7rem, 0.6fr);
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+}
+
+.of {
+  color: var(--color-text-secondary, #4a4553);
+}
+
+/* The bar under "left": slim, and no wider than a phrase, so it reads as part of the figure. */
+.meter {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 16rem;
+}
+
+.row .cellLeft {
+  align-items: stretch;
+}
+
+/* Only on a phone, where the cap shares a line with the bar and needs its word. */
+.capWord {
+  display: none;
+}
+
+/* A phone-width card: no heads, and each row is two short lines. Who and their
+   status, then what is left beside the per-payment cap. Unnamed on purpose:
+   the nearest size container is the list card. Scoped under `.table` so it outranks the shared
+   list's `.row` grid whatever order the two stylesheets load in: at equal weight the four desktop
+   columns won in production and pushed the cap and status out of the card. */
+@container (max-width: 39.99rem) {
+  .table > [aria-hidden="true"] {
+    display: none;
+  }
+
+  .table .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name status"
+      "left cap";
+    align-items: start;
+    gap: 0.75rem 1rem;
+  }
+
+  .cellName {
+    grid-area: name;
+  }
+
+  .row .cellStatus {
+    grid-area: status;
+    align-items: flex-end;
+  }
+
+  .cellLeft {
+    grid-area: left;
+  }
+
+  .cellCap {
+    grid-area: cap;
+  }
+
+  .capWord {
+    display: block;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}

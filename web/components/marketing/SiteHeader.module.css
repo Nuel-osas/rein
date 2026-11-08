@@ -1,0 +1,275 @@
+/* The site header: the mark on the left, a row of square translucent tiles on
+   the right, and the app as a two-part tile with the purple arrow.
+
+   It floats: no bar of its own, so the page runs up behind it. Each tile is a
+   translucent square of the surface it sits on, dark over the hero and the
+   dark sections and light over the light ones (`data-on`, set from the
+   section under the header). Once the page moves, a blur band at the top
+   keeps the page's text from colliding with the mark. */
+
+.header {
+  --tile: var(--sl-tile-light, rgb(150 136 176 / 26%));
+  --tile-hover: var(--sl-tile-light-hover, rgb(150 136 176 / 40%));
+  --tile-ink: var(--sl-ink, #0a0a0b);
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 30;
+  color: var(--tile-ink);
+  font-family: var(--sl-display, ui-sans-serif, system-ui, sans-serif);
+  --color-logo-mark: var(--color-logo-ink);
+}
+
+.header[data-on="dark"] {
+  --tile: var(--sl-tile-dark, rgb(19 17 24 / 58%));
+  --tile-hover: var(--sl-tile-dark-hover, rgb(42 37 51 / 72%));
+  --tile-ink: var(--color-text-on-brand);
+  --color-logo-mark: var(--color-logo-paper);
+}
+
+/* The blur band, once the page has moved: strongest at the top edge, gone by the foot. */
+.header::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -1.5rem;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  backdrop-filter: blur(10px);
+  mask-image: linear-gradient(180deg, #000 45%, transparent);
+}
+
+.header[data-scrolled="true"]::before {
+  opacity: 1;
+}
+
+.bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-block-size: 4.5rem;
+  padding-inline: var(--sl-margin, 1.5rem);
+}
+
+/* The logo, and on a testnet build the `[ TESTNET ]` tag beside it. */
+.brandRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-inline-size: 0;
+  margin-inline-end: auto;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  color: inherit;
+  font-size: 22px;
+  text-decoration: none;
+}
+
+/* Over the dark hero the accent purple is too deep to read; a lighter step of it. */
+.header[data-on="dark"] {
+  --testnet-tag-bracket: var(--sl-accent-on-dark, #a78bfa);
+}
+
+/* Testnet only: one quiet line under the bar, aligned with the logo. Out of flow, so the hero
+   still starts under the bar, and gone once the page moves so it never sits over the content. */
+.testnetNote {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline: var(--sl-margin, 1.5rem);
+  max-inline-size: 60ch;
+  margin-block-start: -0.5rem;
+  opacity: 0.86;
+}
+
+.header[data-scrolled="true"] .testnetNote,
+.header:has(.mobileMenu[open]) .testnetNote {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.nav {
+  display: flex;
+  gap: 2px;
+  margin-inline-end: 2px;
+}
+
+.tile,
+.appLabel,
+.appTile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 40px;
+  background: var(--tile);
+  backdrop-filter: blur(10px);
+}
+
+.tile {
+  padding-inline: 1rem;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.app {
+  display: inline-flex;
+  gap: 2px;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.appLabel {
+  padding-inline: 1rem;
+  white-space: nowrap;
+}
+
+.appTile {
+  inline-size: 40px;
+  background: var(--sl-accent, #5b21b6);
+  color: var(--color-text-on-accent);
+}
+
+.tile:focus-visible,
+.app:focus-visible,
+.wordmark:focus-visible,
+.mobileMenu summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* --- The menu, on a phone ----------------------------------------------------- */
+
+.mobileMenu {
+  display: none;
+}
+
+.mobileMenu summary {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 40px;
+  padding-inline: 1rem;
+  background: var(--tile);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  list-style: none;
+  cursor: pointer;
+}
+
+.mobileMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobileMenu nav {
+  position: absolute;
+  inset-inline: var(--sl-margin, 1rem);
+  inset-block-start: calc(100% - 0.75rem);
+  display: grid;
+  gap: 2px;
+}
+
+.mobileMenu nav .tile {
+  justify-content: flex-start;
+  min-block-size: 48px;
+  background: var(--tile-solid, rgb(240 237 246 / 96%));
+}
+
+.header[data-on="dark"] .mobileMenu nav .tile {
+  --tile-solid: rgb(10 10 11 / 94%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .header::before {
+    transition: opacity 240ms ease-out;
+  }
+  .testnetNote {
+    transition: opacity 200ms ease-out, visibility 200ms;
+  }
+  .tile,
+  .appLabel,
+  .appTile,
+  .mobileMenu summary {
+    transition: background-color 200ms ease-out;
+  }
+  .appTile svg {
+    transition: translate 200ms var(--ease-entrance);
+  }
+}
+
+@media (hover: hover) {
+  .tile:hover,
+  .app:hover .appLabel,
+  .mobileMenu summary:hover {
+    background: var(--tile-hover);
+  }
+  .app:hover .appTile {
+    background: var(--color-accent-hover, #4c1d95);
+  }
+  .app:hover .appTile svg {
+    translate: 3px 0;
+  }
+}
+
+@media (max-width: 64rem) {
+  .nav {
+    display: none;
+  }
+  .mobileMenu {
+    display: block;
+    margin-inline-end: 2px;
+  }
+}
+
+/* The app keeps its arrow; its label goes when the bar runs out of room. */
+@media (max-width: 26rem) {
+  .appLabel {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (pointer: coarse) {
+  .tile,
+  .appLabel,
+  .appTile,
+  .mobileMenu summary {
+    min-block-size: 44px;
+  }
+  .appTile {
+    inline-size: 44px;
+  }
+}
+
+/* Testnet marks: the tag and note on a wide screen, the one-line strip on a phone. */
+/* Scoped under the header so they outrank the strip's own display in any stylesheet order. */
+.header .testnetStrip {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .header .testnetStrip {
+    display: flex;
+  }
+  .header .testnetTag,
+  .header .testnetNote {
+    display: none;
+  }
+}

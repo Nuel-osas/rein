@@ -1,0 +1,1042 @@
+/* ===========================================================================
+   The hero's org chart (HeroOrg.tsx).
+
+   AT REST (the server HTML before its first frame, and reduced motion) it is
+   the complete chart: every node, trace and junction, the balance at its
+   start, and no pulses, highlights or tags.
+
+   MOTION. Once on load, inside `prefers-reduced-motion: no-preference`: the
+   traces draw on through their mask, then the nodes rise into place, top
+   down. From `--start`, everything runs on one `--cycle` of 12 seconds, so
+   every keyframe below is a moment of the same story (times in seconds):
+
+     0.2  Ronnie lights up              4.4  Marcus's pulse stops at the gate
+     0.4  a pulse leaves Ronnie         4.5  the gate and his trace turn amber,
+     1.6  it reaches Acme: Acme flashes,     "Over the $500 cap"
+          "Paid $5.00", balance -$5     4.9  the request runs up to the owner
+     3.5  Marcus lights up              6.7  "Approve?"   7.6  "Approved"
+     3.7  his pulse leaves              7.8  the answer runs back to the gate
+                                        9.1  the gate opens; the pulse goes on
+                                        9.7  Northwind flashes, "Paid $620.00",
+                                             balance -$620
+     11   the tags fade   11.6  the balance is reset
+
+   Only transform, opacity and stroke-dashoffset move. The dashes march and the
+   nodes breathe on their own slower cycles. Everything pauses off screen and
+   in a hidden tab (LandingPage.module.css, `data-visible`, `data-tab`).
+   =========================================================================== */
+
+.org {
+  /* A muted amber for anything held: never red, it is not an error. */
+  --org-warm: #d9ad70;
+  --org-warm-glow: rgb(217 173 112 / 38%);
+  --org-line: rgb(255 255 255 / 55%);
+  --org-node: rgb(13 10 20 / 74%);
+  --cycle: 12s;
+  --start: 2.6s;
+  position: absolute;
+  z-index: 0;
+  inset-block-start: calc(var(--site-header-block, 4.5rem) + clamp(1.75rem, 4vh, 3rem));
+  inset-inline-end: var(--sl-margin);
+  /* As wide as the right of the hero allows, and short enough to stay clear of its foot. */
+  inline-size: min(54%, 820px, calc((100svh - 16.5rem) * 760 / 600));
+  color: var(--color-text-on-brand);
+  pointer-events: none;
+}
+
+.wide {
+  display: block;
+}
+
+.chain {
+  display: none;
+}
+
+.note {
+  position: absolute;
+  inset-block-end: calc(100% + 6px);
+  inset-inline-start: 0;
+  color: rgb(255 255 255 / 66%);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.box {
+  position: relative;
+  inline-size: 100%;
+}
+
+/* The chain's own height, in its units (430) as pixels. */
+.box[data-layout="chain"] {
+  block-size: 430px;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+
+/* --- Traces ------------------------------------------------------------------- */
+
+.trace,
+.route,
+.lit,
+.warm {
+  vector-effect: non-scaling-stroke;
+}
+
+.trace {
+  stroke: var(--org-line);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+/* The way an exception goes to the owner: quieter than the chart's own lines. */
+.route {
+  stroke: rgb(255 255 255 / 30%);
+  stroke-width: 1;
+  stroke-dasharray: 1 4;
+}
+
+/* A trace while a payment passes along it. */
+.lit {
+  stroke: #ffffff;
+  stroke-width: 1.25;
+  opacity: 0;
+}
+
+/* A trace while a payment is held on it. */
+.warm {
+  stroke: var(--org-warm);
+  stroke-width: 1.25;
+  stroke-dasharray: 3 3;
+  opacity: 0;
+}
+
+.junction {
+  position: absolute;
+  inline-size: 5px;
+  block-size: 5px;
+  translate: -50% -50%;
+  background: rgb(255 255 255 / 80%);
+}
+
+/* The gate on Marcus's trace, where the policy is checked. */
+.gate {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  inline-size: 11px;
+  block-size: 11px;
+  translate: -50% -50%;
+  border: 1px solid rgb(255 255 255 / 78%);
+  background: var(--org-node);
+}
+
+.gate > i {
+  inline-size: 3px;
+  block-size: 3px;
+  background: #ffffff;
+}
+
+.gate::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--org-warm);
+  background: rgb(217 173 112 / 40%);
+  box-shadow: 0 0 12px var(--org-warm-glow);
+  opacity: 0;
+}
+
+/* --- Payments ----------------------------------------------------------------
+   Each pulse is a layer the size of the box, moved by percentages; its square sits on the
+   layer's corner, so the square lands on the waypoint. */
+
+.pulse {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.pulse > i {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 6px;
+  block-size: 6px;
+  translate: -50% -50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px rgb(255 255 255 / 14%),
+    0 0 14px 2px rgb(167 139 250 / 75%);
+}
+
+.pulse[data-pulse="ask"] > i {
+  background: var(--org-warm);
+  box-shadow:
+    0 0 0 3px rgb(217 173 112 / 18%),
+    0 0 14px 2px var(--org-warm-glow);
+}
+
+/* --- Nodes ---------------------------------------------------------------------- */
+
+.node {
+  position: absolute;
+  translate: -50% -50%;
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px 11px;
+  background: var(--org-node);
+  backdrop-filter: blur(10px);
+}
+
+/* Its edge, a hairline that breathes. */
+.node::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 52%);
+  pointer-events: none;
+}
+
+/* Its light, when something happens to it. */
+.node::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid #ffffff;
+  background: rgb(167 139 250 / 14%);
+  box-shadow: 0 0 24px rgb(167 139 250 / 36%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.node[data-role~="owner"]::after {
+  border-color: var(--org-warm);
+  background: rgb(217 173 112 / 12%);
+  box-shadow: 0 0 24px var(--org-warm-glow);
+}
+
+.kind {
+  color: rgb(255 255 255 / 62%);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.node[data-kind="agent"] .kind {
+  color: rgb(221 214 254 / 88%);
+}
+
+.title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title strong {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.meta {
+  color: rgb(255 255 255 / 74%);
+  font-size: 12px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The team balance: three values in one place, one shown at a time. */
+.balance {
+  display: grid;
+  justify-items: end;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance > span {
+  grid-area: 1 / 1;
+}
+
+.balance > [data-balance="1"],
+.balance > [data-balance="2"] {
+  opacity: 0;
+}
+
+/* --- Tags ------------------------------------------------------------------------
+   Small labels that appear when something happens. Unseen at rest. */
+
+.tag {
+  position: absolute;
+  translate: -50% 0;
+  padding: 4px 8px;
+  border: 1px solid rgb(255 255 255 / 62%);
+  background: rgb(13 10 20 / 82%);
+  color: var(--color-text-on-brand);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+}
+
+.tag b {
+  font-weight: 500;
+}
+
+.tag[data-tag="cap"] {
+  translate: 0 -50%;
+}
+
+.tag[data-tag="cap"],
+.tag[data-tag="ask"] {
+  border-color: var(--org-warm);
+  color: var(--org-warm);
+}
+
+/* The owner's two answers, in one place beside it (or inside it, on the chain). */
+.ownerTags {
+  position: absolute;
+  display: grid;
+  translate: 0 -50%;
+}
+
+.ownerTags[data-inside] {
+  inset-block-start: 50%;
+  inset-inline-end: 10px;
+  justify-items: end;
+}
+
+.ownerTags > .tag {
+  position: relative;
+  grid-area: 1 / 1;
+  translate: none;
+}
+
+/* ===========================================================================
+   Motion
+   =========================================================================== */
+
+@keyframes orgReveal {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes orgNodeIn {
+  from {
+    opacity: 0;
+    translate: -50% calc(-50% + 10px);
+  }
+}
+
+@keyframes orgFade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes orgMarch {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+@keyframes orgRouteMarch {
+  to {
+    stroke-dashoffset: 10;
+  }
+}
+
+@keyframes orgBreathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Nodes lit by their part in the story. */
+@keyframes litPayer {
+  0% {
+    opacity: 0;
+  }
+  2%,
+  14% {
+    opacity: 1;
+  }
+  19%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes litAsker {
+  0%,
+  28.5% {
+    opacity: 0;
+  }
+  30.5%,
+  80% {
+    opacity: 1;
+  }
+  84%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes litBoth {
+  0% {
+    opacity: 0;
+  }
+  2%,
+  14% {
+    opacity: 1;
+  }
+  19%,
+  28.5% {
+    opacity: 0;
+  }
+  30.5%,
+  80% {
+    opacity: 1;
+  }
+  84%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flashPaid {
+  0%,
+  13% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  24%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flashPaid2 {
+  0%,
+  80.3% {
+    opacity: 0;
+  }
+  81.3% {
+    opacity: 1;
+  }
+  91%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flashBoth {
+  0%,
+  13% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  24%,
+  80.3% {
+    opacity: 0;
+  }
+  81.3% {
+    opacity: 1;
+  }
+  91%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flashAccount {
+  0%,
+  13.4% {
+    opacity: 0;
+  }
+  14.4% {
+    opacity: 0.7;
+  }
+  21%,
+  80.4% {
+    opacity: 0;
+  }
+  81.4% {
+    opacity: 0.7;
+  }
+  88%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ownerAsked {
+  0%,
+  53.5% {
+    opacity: 0;
+  }
+  55%,
+  62% {
+    opacity: 1;
+  }
+  64.5%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The balance: $3,560.00, then less $5, then less the approved payment, then reset unseen
+   between two values that are both fading. */
+@keyframes balance0 {
+  0%,
+  13.5% {
+    opacity: 1;
+    transform: none;
+  }
+  15% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  96.5% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  98.5%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes balance1 {
+  0%,
+  13.6% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  15.5%,
+  80.4% {
+    opacity: 1;
+    transform: none;
+  }
+  81.9%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes balance2 {
+  0%,
+  80.6% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  82.4%,
+  95.5% {
+    opacity: 1;
+    transform: none;
+  }
+  97%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* Traces lit and held. */
+@keyframes litPay {
+  0%,
+  3% {
+    opacity: 0;
+  }
+  5%,
+  13.5% {
+    opacity: 1;
+  }
+  18%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes warmHeld {
+  0%,
+  36.5% {
+    opacity: 0;
+  }
+  38%,
+  74% {
+    opacity: 1;
+  }
+  76%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes warmRoute {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  42%,
+  62% {
+    opacity: 1;
+  }
+  64.5%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes litRelease {
+  0%,
+  75.8% {
+    opacity: 0;
+  }
+  77%,
+  81% {
+    opacity: 1;
+  }
+  86%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes gateWarm {
+  0%,
+  36.8% {
+    opacity: 0;
+  }
+  37.8%,
+  75% {
+    opacity: 1;
+  }
+  76.5%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes gateOpen {
+  0%,
+  75.8% {
+    transform: scale(1);
+  }
+  77% {
+    transform: scale(2.6);
+  }
+  80%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* The pulses. Stops on the two routes to and from the owner fall at the routes' corners. */
+@keyframes orgPay {
+  0% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  3% {
+    opacity: 1;
+    transform: translate(var(--x0), var(--y0));
+  }
+  13% {
+    opacity: 1;
+    transform: translate(var(--x1), var(--y1));
+  }
+  14%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--x1), var(--y1));
+  }
+}
+
+@keyframes orgHeld {
+  0%,
+  29% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  31% {
+    opacity: 1;
+    transform: translate(var(--x0), var(--y0));
+  }
+  37%,
+  40.5% {
+    opacity: 1;
+    transform: translate(var(--x1), var(--y1));
+  }
+  41.5%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--x1), var(--y1));
+  }
+}
+
+@keyframes orgAsk {
+  0%,
+  40% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  41% {
+    opacity: 1;
+    transform: translate(var(--x0), var(--y0));
+  }
+  43.6% {
+    transform: translate(var(--x1), var(--y1));
+  }
+  48.52% {
+    transform: translate(var(--x2), var(--y2));
+  }
+  53.56% {
+    transform: translate(var(--x3), var(--y3));
+  }
+  56% {
+    opacity: 1;
+    transform: translate(var(--x4), var(--y4));
+  }
+  56.6%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--x4), var(--y4));
+  }
+}
+
+@keyframes orgAnswer {
+  0%,
+  64% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  65% {
+    opacity: 1;
+    transform: translate(var(--x0), var(--y0));
+  }
+  70.48% {
+    transform: translate(var(--x1), var(--y1));
+  }
+  74.09% {
+    transform: translate(var(--x2), var(--y2));
+  }
+  75.98% {
+    transform: translate(var(--x3), var(--y3));
+  }
+  76% {
+    opacity: 1;
+    transform: translate(var(--x4), var(--y4));
+  }
+  76.4%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--x4), var(--y4));
+  }
+}
+
+@keyframes orgRelease {
+  0%,
+  75.9% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  76% {
+    opacity: 1;
+    transform: translate(var(--x0), var(--y0));
+  }
+  80.5% {
+    opacity: 1;
+    transform: translate(var(--x1), var(--y1));
+  }
+  81.2%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--x1), var(--y1));
+  }
+}
+
+/* Tags tick up into place, hold, and leave. */
+@keyframes tagPaid {
+  0%,
+  13.5% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  15.5%,
+  90.5% {
+    opacity: 1;
+    transform: none;
+  }
+  93%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes tagPaidShort {
+  0%,
+  13.5% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  15.5%,
+  25% {
+    opacity: 1;
+    transform: none;
+  }
+  27.5%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes tagPaid2 {
+  0%,
+  81% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  83%,
+  90.5% {
+    opacity: 1;
+    transform: none;
+  }
+  93%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes tagCap {
+  0%,
+  37.5% {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  39%,
+  74% {
+    opacity: 1;
+    transform: none;
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes tagAsk {
+  0%,
+  55% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  56.5%,
+  62% {
+    opacity: 1;
+    transform: none;
+  }
+  63%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes tagApproved {
+  0%,
+  62.5% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  64%,
+  90.5% {
+    opacity: 1;
+    transform: none;
+  }
+  93%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* --- Once, on load ------------------------------------------------------------- */
+  .reveal {
+    stroke-dasharray: 1 1;
+    animation: orgReveal 750ms cubic-bezier(0.65, 0, 0.35, 1) calc(200ms + var(--i, 0) * 170ms) both;
+  }
+  .node {
+    animation: orgNodeIn 700ms var(--ease-entrance) calc(450ms + var(--rank, 0) * 110ms) both;
+  }
+  .junction,
+  .gate {
+    animation: orgFade 500ms ease-out 1000ms both;
+  }
+  .note {
+    animation: orgFade 900ms ease-out 200ms both;
+  }
+
+  /* --- Always: the dashes march, the edges breathe ------------------------------------ */
+  .trace {
+    animation: orgMarch 3s linear var(--start) infinite;
+  }
+  .route {
+    animation: orgRouteMarch 4s linear var(--start) infinite;
+  }
+  .node::before {
+    animation: orgBreathe 6s ease-in-out calc(var(--start) + var(--rank, 0) * 700ms) infinite;
+  }
+
+  /* --- The story, on one cycle ----------------------------------------------------- */
+  .node[data-role~="payer"]::after {
+    animation: litPayer var(--cycle) ease-in-out var(--start) infinite;
+  }
+  .node[data-role~="asker"]::after {
+    animation: litAsker var(--cycle) ease-in-out var(--start) infinite;
+  }
+  .node[data-role~="payer"][data-role~="asker"]::after {
+    animation-name: litBoth;
+  }
+  .node[data-role~="paid"]::after {
+    animation: flashPaid var(--cycle) ease-out var(--start) infinite;
+  }
+  .node[data-role~="paid2"]::after {
+    animation: flashPaid2 var(--cycle) ease-out var(--start) infinite;
+  }
+  .node[data-role~="paid"][data-role~="paid2"]::after {
+    animation-name: flashBoth;
+  }
+  .node[data-role~="account"]::after {
+    animation: flashAccount var(--cycle) ease-out var(--start) infinite;
+  }
+  .node[data-role~="owner"]::after {
+    animation: ownerAsked var(--cycle) ease-in-out var(--start) infinite;
+  }
+
+  .balance > [data-balance="0"] {
+    animation: balance0 var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+  .balance > [data-balance="1"] {
+    animation: balance1 var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+  .balance > [data-balance="2"] {
+    animation: balance2 var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+
+  .lit[data-lit="pay"] {
+    animation: litPay var(--cycle) ease-in-out var(--start) infinite;
+  }
+  .lit[data-lit="release"] {
+    animation: litRelease var(--cycle) ease-in-out var(--start) infinite;
+  }
+  .warm[data-warm="held"] {
+    animation: warmHeld var(--cycle) ease-in-out var(--start) infinite;
+  }
+  .warm[data-warm="route"] {
+    animation: warmRoute var(--cycle) ease-in-out var(--start) infinite;
+  }
+  .gate::after {
+    animation: gateWarm var(--cycle) ease-in-out var(--start) infinite;
+  }
+  .gate > i {
+    animation: gateOpen var(--cycle) ease-out var(--start) infinite;
+  }
+
+  .pulse[data-pulse="pay"] {
+    animation: orgPay var(--cycle) cubic-bezier(0.45, 0, 0.25, 1) var(--start) infinite;
+  }
+  .pulse[data-pulse="held"] {
+    animation: orgHeld var(--cycle) cubic-bezier(0.3, 0, 0.2, 1) var(--start) infinite;
+  }
+  /* The long routes keep one pace, so they run linear between their corners. */
+  .pulse[data-pulse="ask"] {
+    animation: orgAsk var(--cycle) linear var(--start) infinite;
+  }
+  .pulse[data-pulse="answer"] {
+    animation: orgAnswer var(--cycle) linear var(--start) infinite;
+  }
+  .pulse[data-pulse="release"] {
+    animation: orgRelease var(--cycle) cubic-bezier(0.45, 0, 0.25, 1) var(--start) infinite;
+  }
+
+  .tag[data-tag="paid"] {
+    animation: tagPaid var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+  .box[data-layout="chain"] .tag[data-tag="paid"] {
+    animation-name: tagPaidShort;
+  }
+  .tag[data-tag="paid2"] {
+    animation: tagPaid2 var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+  .tag[data-tag="cap"] {
+    animation: tagCap var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+  .tag[data-tag="ask"] {
+    animation: tagAsk var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+  .tag[data-tag="approved"] {
+    animation: tagApproved var(--cycle) var(--ease-entrance) var(--start) infinite;
+  }
+}
+
+/* ===========================================================================
+   Narrower: below the headline instead of beside it, then a chain on a phone.
+   =========================================================================== */
+
+@media (max-width: 64rem) {
+  .org {
+    position: relative;
+    inset: auto;
+    inline-size: 100%;
+    max-inline-size: 760px;
+    margin-block-start: 2.5rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .org {
+    max-inline-size: none;
+  }
+  .wide {
+    display: none;
+  }
+  .chain {
+    display: block;
+  }
+}
