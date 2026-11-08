@@ -11,7 +11,8 @@ import {StatusLine, sentStatus, type Status} from "../rein/bits";
 import {SignInPrompt} from "../WalletButton";
 import styles from "../rein/rein.module.css";
 
-export function CreateTeam() {
+/** `openHref`: where the new team opens once confirmed. /app/<team> by default; /dashboard on /teams/new. */
+export function CreateTeam({openHref}: {openHref?: string} = {}) {
   const {publicKey, payer, send, sponsor} = useWallet();
   const router = useRouter();
   const [name, setName] = useState("");
@@ -44,7 +45,7 @@ export function CreateTeam() {
       setStatus({tone: "wait", text: `Creating ${name.trim()}…`});
       const sent = await send([ixs.createTeam({payer, owner: publicKey, mint: config.mint, name: name.trim()})]);
       setStatus(sentStatus(sent, `${name.trim()} is live, with a vault only the program can move.`));
-      if (sent.status === "confirmed") router.push(`/app/${at}`);
+      if (sent.status === "confirmed") router.push(openHref ?? `/app/${at}`);
     } catch (e) {
       setStatus({tone: "bad", text: errorText(e)});
     } finally {
