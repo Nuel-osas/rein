@@ -1,0 +1,54 @@
+.page { min-height: 100dvh; display: grid; grid-template-columns: 1fr 1fr; background: var(--color-surface); color: var(--color-text-primary); }
+.panel { display: flex; flex-direction: column; min-width: 0; padding: 2rem clamp(1.5rem,4vw,4rem); }
+.header { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
+.back,.footer a { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; text-decoration: none; color: var(--color-text-secondary); font-size: 13px; }
+.mobileBrand { display: none; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--color-text-tertiary); font-size: 12px; }
+.footer > span { display: flex; align-items: center; gap: .5rem; }
+.footer i { width: 5px; height: 5px; border-radius: 50%; background: var(--color-accent-solid); }
+/* --- The traced frame (10 Oct) ------------------------------------------------
+   One box, one hairline, square corners, and a small datum cross at each corner, the way a drawing
+   marks the corners of a part. The page is not themed by the app, so every value carries its own
+   fallback. */
+.panelContent { width: min(100%, 26rem); margin: auto; padding-block: 3rem; }
+.frame { --line: var(--app-line, #e4e0ea); --line-strong: var(--app-line-strong, #d2ccdb); position: relative; background: var(--color-surface, #fff); box-shadow: 0 0 0 1px var(--line); }
+.frame::before { content: ""; position: absolute; inset: -6px; pointer-events: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) 5px 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 0 5px / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 5px top 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 0 top 5px / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left 5px bottom 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left 0 bottom 5px / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 5px bottom 0 / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right 0 bottom 5px / 11px 1px no-repeat; }
+.frameHead { padding: 1.75rem 1.75rem 1.5rem; box-shadow: inset 0 -1px 0 var(--line); }
+.frameBody { padding: 1.5rem 1.75rem; }
+.frameFoot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1rem; padding: .875rem 1.75rem; box-shadow: inset 0 1px 0 var(--line); }
+.label { margin: 0 0 1.25rem; color: var(--color-text-secondary); font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.label::before { content: "[ "; }
+.label::after { content: " ]"; }
+.frameHead h1 { margin: 0 0 .5rem; font-size: 28px; font-weight: 500; line-height: 1.15; letter-spacing: -.035em; text-wrap: balance; }
+.description { margin: 0; color: var(--color-text-secondary); font-size: 15px; line-height: 1.5; text-wrap: pretty; overflow-wrap: anywhere; }
+.successMark { display: grid; place-items: center; inline-size: 2.5rem; block-size: 2.5rem; margin-block-end: 1rem; color: var(--color-accent-text, #5b21b6); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.methods { display: grid; gap: .5rem; }
+.primary, .google { display: grid; grid-template-columns: 1.25rem 1fr auto; align-items: center; gap: .75rem; inline-size: 100%; min-block-size: 3rem; padding: .75rem 1rem; border: 1px solid transparent; border-radius: 0; font: inherit; font-size: 15px; font-weight: 500; text-align: start; text-decoration: none; cursor: pointer; transition: background-color 120ms linear, border-color 120ms linear; }
+.primary > svg:last-child, .google > svg:last-child { inline-size: 14px; block-size: 14px; opacity: .7; }
+.primary > svg:first-child { inline-size: 18px; block-size: 18px; }
+.primary > span:first-child { grid-column: 1 / 3; }
+.primary { background: var(--color-accent-solid, #5b21b6); border-color: var(--color-accent-solid, #5b21b6); color: var(--color-text-on-accent); }
+.google { background: var(--color-surface, #fff); border-color: var(--line-strong); color: var(--color-text-primary, #0a0a0b); }
+.google img { justify-self: center; }
+.primary:focus-visible, .google:focus-visible, .switchAccount:focus-visible { outline: 2px solid var(--color-accent-text, #5b21b6); outline-offset: 2px; }
+.provider { display: inline-flex; align-items: center; gap: .375rem; margin: 0; color: var(--color-text-secondary); font-size: 12px; }
+.provider svg { inline-size: 14px; block-size: 14px; }
+.disclosure { margin: 0; color: var(--color-text-secondary); font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 11px; letter-spacing: 0; }
+/* Mainnet only: the audit and risk sentence, on its own line under the network. */
+.risk { flex-basis: 100%; margin: 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; text-wrap: pretty; }
+.switchAccount { display: block; margin: .5rem 0 0; min-block-size: 44px; padding: 0; background: none; border: 0; font: inherit; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; }
+.error { margin: .75rem 0 0; color: var(--color-danger-text); font-size: 13px; line-height: 1.5; }
+.loading { display: flex; align-items: center; gap: .75rem; min-block-size: 6.5rem; color: var(--color-text-secondary); font-size: 14px; }
+.loading > span { inline-size: 6px; block-size: 6px; background: currentColor; }
+@media (hover: hover) { .primary:hover { background: var(--color-accent-hover, #5b21b6); border-color: var(--color-accent-hover, #5b21b6); } .google:hover { background: var(--color-surface-sunken); } .back:hover, .footer a:hover, .switchAccount:hover { color: var(--color-text-primary); } }
+@media (prefers-reduced-motion: no-preference) { .primary, .google { transition: background-color 120ms linear, border-color 120ms linear, scale 200ms ease-out; } .primary:active, .google:active { scale: .98; } }
+@media (max-width: 52rem) { .page { grid-template-columns: 1fr; } .panel { min-height: 100dvh; padding: 1.25rem; } .mobileBrand { display: inline-flex; margin-right: auto; color: var(--color-text-primary); text-decoration: none; } .panelContent { padding-block: 2rem; } .footer { flex-wrap: wrap; } .frameHead h1 { font-size: 26px; } .frameHead, .frameBody, .frameFoot { padding-inline: 1.25rem; } }
