@@ -44,7 +44,7 @@ export function OnboardingScreen({state, onLogin, onLogout, error, name, address
             <h1 id="onboarding-title">{settingUp ? "Setting up your team" : signedIn ? "You’re signed in." : unavailable ? "Sign-in unavailable" : "Welcome to Rein."}</h1>
             <p className={styles.description}>
               {settingUp
-                ? "One transaction creates your team and its vault, and gives your Rein agent a small compute budget you can change any time. The sponsor pays the fee."
+                ? "One transaction creates your team and its vault, and gives your Rein agent a $0.30-a-month compute budget you can change any time. The sponsor pays the fee."
                 : signedIn
                 ? name ?? "Your Solana wallet is ready."
                 : unavailable

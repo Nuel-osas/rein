@@ -3,13 +3,14 @@
 // /signin and /auth/callback. Privy runs the Google sign-in and creates an embedded Solana wallet;
 // once the wallet exists, this sends the person to their team (the PDA ["team", wallet]) if it is on
 // chain. With no team yet, it sets one up in one sponsored transaction, [create_team, add_spender]:
-// the team named from their Google name and the Rein agent granted a starter compute budget. A failed
+// the team named from their Google name and the Rein agent granted the gateway catalog's services
+// (0G Compute) with a starter budget of 0.30 per 30 days. A failed
 // read is not "no team": it offers the team list instead, and never sends.
 
 import {useRouter} from "next/navigation";
 import {useCallback, useEffect, useRef, useState} from "react";
 import {PublicKey} from "@solana/web3.js";
-import {AGENT_LABEL, COMPUTE_SERVICE_IDS, fetchAgentKey, readComputeServices, starterPolicy, teamNameFor} from "@/lib/agent-setup";
+import {AGENT_LABEL, fetchAgentKey, fetchCatalog, readComputeServices, starterPolicy, teamNameFor} from "@/lib/agent-setup";
 import {PROGRAM_ID, connection} from "@/lib/chain";
 import {ixs, pda, readConfig, toTeam} from "@/lib/rein";
 import {errorText, useWallet} from "@/lib/wallet";
@@ -68,9 +69,9 @@ export function SignInExperience() {
     const fail = (text: string, tx?: string | null) => setSetup({tone: "bad", text, tx, retry: () => void runSetup()});
     attempt.current++;
     try {
-      setSetup({tone: "wait", text: "Reading the Rein registry and your agent’s key…"});
+      setSetup({tone: "wait", text: "Reading the Rein registry, the compute catalog and your agent’s key…"});
       const conn = connection();
-      const [config, agent, services, existing] = await Promise.all([readConfig(conn), fetchAgentKey(team), readComputeServices(conn), teamOnChain(team)]);
+      const [config, agent, catalog, existing] = await Promise.all([readConfig(conn), fetchAgentKey(team), fetchCatalog(), teamOnChain(team)]);
       if (existing && existing !== "unknown") {
         router.replace(`/app/${team}`);
         return;
@@ -78,11 +79,14 @@ export function SignInExperience() {
       if (existing === "unknown") return fail("Could not read the chain, so nothing was sent. Your team, if one exists, is unchanged.");
       if (!config) return fail("Could not read the Rein config from chain, so the token is unknown. Nothing was sent.");
       if (!agent.ok) return fail(agent.missing ? `${agent.error} You can still create a team without the agent.` : agent.error);
+      if (!catalog.ok) return fail(`Compute is not configured on this deployment yet: ${catalog.error} You can still create a team by hand.`);
+      const ids = catalog.services.map((x) => x.id);
+      const services = await readComputeServices(conn, ids);
       const missing = services ? services.rows.filter((r) => !r.service).map((r) => r.id) : [];
       const name = teamNameFor(label);
       setSetup({
         tone: "wait",
-        text: `Creating ${name} and granting the Rein agent 0.05 test USDC a day for compute…${missing.length ? ` (${missing.join(" and ")} ${missing.length > 1 ? "are" : "is"} not registered yet; the agent may buy ${missing.length > 1 ? "them" : "it"} once ${missing.length > 1 ? "they are" : "it is"}.)` : ""}`,
+        text: `Creating ${name} and giving the Rein agent a compute budget of $0.30 a month…${missing.length ? ` (${missing.join(", ")} ${missing.length > 1 ? "are" : "is"} not registered on chain yet; the agent may buy ${missing.length > 1 ? "them" : "it"} once ${missing.length > 1 ? "they are" : "it is"}.)` : ""}`,
       });
       const now = Math.floor(Date.now() / 1000);
       const sent = await send([
@@ -95,11 +99,11 @@ export function SignInExperience() {
           label: AGENT_LABEL,
           policy: starterPolicy(now),
           // Registry PDAs by id: the program stores addresses, so a service registered later is already allowed.
-          services: COMPUTE_SERVICE_IDS.map((id) => pda.service(id).toBase58()),
+          services: ids.map((id) => pda.service(id).toBase58()),
         }),
       ]);
       if (sent.status === "confirmed") {
-        setSetup({tone: "ok", text: `${name} is live with the Rein agent on a 0.05-a-day budget. Opening it…`, tx: sent.signature});
+        setSetup({tone: "ok", text: `${name} is live, with the Rein agent on a $0.30-a-month compute budget. Opening it…`, tx: sent.signature});
         router.replace(`/app/${team}`);
         return;
       }

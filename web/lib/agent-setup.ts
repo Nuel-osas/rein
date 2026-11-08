@@ -1,22 +1,64 @@
 // The Rein agent as a team sees it: the key the gateway lane runs for this team (GET /api/agent/key),
-// the compute services it may buy, and the starter policy it gets on first sign-in. Shared by the
-// sign-in setup, the budget card and the compute run panel. Browser-safe: no keys here.
+// the compute services it may buy (the gateway's GET /api/compute/catalog, runs on the 0G Compute
+// Network), and the starter policy it gets on first sign-in. Shared by the sign-in setup, the budget
+// card and the compute run panel. Browser-safe: no keys here.
 
 import { PublicKey, type Connection } from '@solana/web3.js';
 import { parseAddress } from './chain';
-import { pda, toService, type Policy, type Service, type Spender } from './rein';
+import { MAX_SERVICES, pda, toService, type Policy, type Service, type Spender } from './rein';
 
 export const AGENT_LABEL = 'Rein agent';
-export const COMPUTE_SERVICE_IDS = ['claude-run', 'codex-run'] as const;
-export type ComputeServiceId = (typeof COMPUTE_SERVICE_IDS)[number];
 /** The gateway's compute intents: "c" and 31 more characters (web/lib/server/compute/core.ts, INTENT_RE). */
 export const COMPUTE_INTENT_RE = /^c[A-Za-z0-9_-]{31}$/;
 
 const DAY = 86_400;
 
-/** 0.05 test USDC a day, 0.02 a run, 5 runs a day, for 30 days. Base units. */
+/** 0.30 test USDC per 30 days (the claim), 0.05 a run, 20 runs a period, for 30 days. Base units. */
 export function starterPolicy(nowSecs: number): Policy {
-  return { allowance: 50_000n, periodSecs: DAY, cap: 20_000n, maxPayments: 5, expiresAt: nowSecs + 30 * DAY };
+  return { allowance: 300_000n, periodSecs: 30 * DAY, cap: 50_000n, maxPayments: 20, expiresAt: nowSecs + 30 * DAY };
+}
+
+export type CatalogService = { id: string; label: string; model: string | null; price: string | null };
+export type Catalog = { ok: true; services: CatalogService[] } | { ok: false; missing: boolean; error: string };
+
+const SERVICE_ID_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
+
+function priceText(v: unknown): string | null {
+  if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 40);
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return null;
+}
+
+/**
+ * The compute services the gateway sells right now, from GET /api/compute/catalog. `missing` is true
+ * when the route does not exist here (the gateway is not merged or not live): compute not configured.
+ */
+export async function fetchCatalog(): Promise<Catalog> {
+  let res: Response;
+  try {
+    res = await fetch('/api/compute/catalog', { cache: 'no-store' });
+  } catch {
+    return { ok: false, missing: false, error: 'Could not reach the compute catalog. Try again.' };
+  }
+  const json = (await res.json().catch(() => null)) as unknown;
+  if (!res.ok || json === null) {
+    const err = (json as { error?: unknown } | null)?.error;
+    return { ok: false, missing: res.status === 404 && json === null, error: typeof err === 'string' ? err : 'Compute is not configured on this deployment yet.' };
+  }
+  const j = json as Record<string, unknown>;
+  const list = (Array.isArray(json) ? json : [j.services, j.catalog, j.items].find(Array.isArray) ?? []) as Record<string, unknown>[];
+  const services = list.flatMap((x): CatalogService[] => {
+    const id = typeof x?.id === 'string' ? x.id : typeof x?.service === 'string' ? x.service : null;
+    if (!id || !SERVICE_ID_RE.test(id) || x.active === false) return [];
+    return [{
+      id,
+      label: typeof x.label === 'string' && x.label.trim() ? x.label.trim() : id,
+      model: typeof x.model === 'string' ? x.model : null,
+      price: priceText(x.price_usdc ?? x.priceUsdc ?? x.price ?? x.amount_usdc),
+    }];
+  });
+  if (!services.length) return { ok: false, missing: false, error: 'The compute catalog lists no active services yet.' };
+  return { ok: true, services: services.slice(0, MAX_SERVICES) };
 }
 
 /** The team's name from the Google name ("Ada's team"), or "My team"; always within 32 bytes. */
@@ -53,17 +95,15 @@ export async function fetchAgentKey(team: string): Promise<AgentKey> {
 
 export type ComputeServices = {
   /** Every compute service id with its registry PDA; `service` is null when not registered yet. */
-  rows: { id: ComputeServiceId; address: string; service: Service | null }[];
+  rows: { id: string; address: string; service: Service | null }[];
 } | null;
 
-/** Resolves claude-run and codex-run by id from the registry. null when the read failed (unknown). */
-export async function readComputeServices(conn: Connection): Promise<ComputeServices> {
-  const addresses = COMPUTE_SERVICE_IDS.map((id) => pda.service(id));
+/** Resolves service ids to their registry PDAs and accounts. null when the read failed (unknown). */
+export async function readComputeServices(conn: Connection, ids: string[]): Promise<ComputeServices> {
+  const addresses = ids.map((id) => pda.service(id));
   try {
     const infos = await conn.getMultipleAccountsInfo(addresses, 'confirmed');
-    return {
-      rows: COMPUTE_SERVICE_IDS.map((id, i) => ({ id, address: addresses[i].toBase58(), service: toService(addresses[i].toBase58(), infos[i]) })),
-    };
+    return { rows: ids.map((id, i) => ({ id, address: addresses[i].toBase58(), service: toService(addresses[i].toBase58(), infos[i]) })) };
   } catch {
     return null;
   }
