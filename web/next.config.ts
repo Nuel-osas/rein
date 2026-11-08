@@ -15,6 +15,9 @@ const config: NextConfig = {
       // The agents list is part of Team, which shows people and agents together.
       {source: "/agents", destination: "/spenders", permanent: false},
       {source: "/app/:team/agents", destination: "/app/:team/spenders", permanent: false},
+      // The assistant is part of Compute, under the agent's run panel.
+      {source: "/assistant", destination: "/compute", permanent: false},
+      {source: "/app/:team/assistant", destination: "/app/:team/compute", permanent: false},
     ];
   },
   async headers() {

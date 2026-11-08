@@ -4,11 +4,13 @@
 // services from the registry (llm-inference, gpu-hour) under its policy. This page lists those
 // services and this team's purchases of them, from its Payment accounts. Rein records the payment,
 // not the run: the service delivers the work off chain, so no run, output or proof is shown here.
+// The assistant (the agent that pays for services in plain words) lives here too, under the run
+// panel; /assistant redirects to this page.
 
 import Link from "next/link";
 import {ago, short, usdc} from "@/lib/chain";
 import {groupBy} from "@/lib/metrics";
-import {ButtonLink} from "../Button";
+import {AgentPanel} from "../agent-panel";
 import {PageHeader} from "../PageHeader";
 import {ContentLoading, EmptyState} from "../ui";
 import list from "../ListView.module.css";
@@ -50,8 +52,7 @@ export function Compute() {
         <PageHeader
           kind="compute"
           title="AI compute"
-          description="Claim your $0.30 of test USDC, set your Rein agent's budget, and let it buy model runs on the 0G Compute Network. Every run is a payment under the agent's own policy."
-          action={<ButtonLink href={`${t.base}/assistant`} variant="secondary">Open the assistant</ButtonLink>}
+          description="Claim your $0.30 of test USDC, set your Rein agent's budget, and let it buy model runs on the 0G Compute Network, or ask the assistant to pay for services in plain words. Every run is a payment in test USDC under the agent's own policy."
         />
         <ul className={styles.facts} aria-label="About these purchases">
           {FACTS.map((f) => (
@@ -63,6 +64,10 @@ export function Compute() {
       </div>
 
       <ComputePanel teamAddress={t.address} />
+
+      <section className={rein.section} aria-label="Assistant">
+        <AgentPanel teamAddress={t.address} onActivity={() => void t.refresh()} />
+      </section>
 
       {services === null ? (
         <EmptyState title="Could not read the service registry" body="This is a problem reaching the network, not a registry without compute. Nothing was charged." />
@@ -110,7 +115,7 @@ export function Compute() {
       <section className={rein.section} aria-labelledby="purchases">
         <div className={rein.sectionHead}>
           <h2 className={rein.sectionTitle} id="purchases">Purchases</h2>
-          <Link href={`${t.base}/agents`} className={rein.sectionLink}>
+          <Link href={`${t.base}/spenders`} className={rein.sectionLink}>
             {agents === null ? "Agents →" : `${agents.length} ${agents.length === 1 ? "agent" : "agents"} on this team →`}
           </Link>
         </div>
@@ -119,8 +124,7 @@ export function Compute() {
           {t.payments !== null && services === null ? <div className={list.empty}><p>Purchases are matched to the registry, which could not be read.</p></div> : null}
           {purchases?.length === 0 ? (
             <div className={list.empty}>
-              <p>No compute bought yet. Ask the assistant for a job that needs a model call or GPU time; each purchase appears here when its transaction lands.</p>
-              <ButtonLink href={`${t.base}/assistant`}>Open the assistant</ButtonLink>
+              <p>No compute bought yet. Run the agent above, or ask the assistant for a job that needs a model call or GPU time; each purchase appears here when its transaction lands.</p>
             </div>
           ) : null}
           {purchases?.length ? (
