@@ -1,0 +1,465 @@
+/* ===========================================================================
+   The request path.
+
+   Mobile first: the diagram is a vertical stack by default and becomes a
+   left-to-right rail at 72rem, because five cells each carrying a sentence
+   need roughly 180px before the text starts breaking into two-word lines. At
+   900px it is still the stack, and that is the right answer rather than a
+   fallback.
+
+   No hardcoded colour anywhere. No fifth type size, no fourth radius, no
+   second light source: every shadow in here is an elevation token composed
+   with a ring, exactly as the rest of the page does it.
+   =========================================================================== */
+
+.flow {
+  /* The ring tokens are declared on `.page` in the marketing route, which is
+     where this belongs. They are given fallbacks anyway, for the same reason
+     the font stacks carry theirs: one undefined variable invalidates the whole
+     `box-shadow` declaration, and the panel then has no edge at all with
+     nothing in the console to say why. */
+  --rf-ring: var(--nt-ring, 0 0 0 1px var(--color-border-subtle));
+  --rf-ring-amber: var(
+    --nt-ring-amber,
+    0 0 0 1px color-mix(in oklab, var(--color-blocked-text) 32%, transparent)
+  );
+  --rf-ring-accent: var(
+    --nt-ring-accent,
+    0 0 0 1px color-mix(in oklab, var(--color-accent-solid) 24%, transparent)
+  );
+
+  margin: 0;
+  display: grid;
+  justify-items: stretch;
+}
+
+/* The picture as a sentence, for a reader who is getting the list rather than
+   the drawing. Not `display: none`, which would take it out of the
+   accessibility tree along with everything else. */
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- The machine ---------------------------------------------------------
+
+   One frosted panel with five wells set into it.
+
+   Padding is exactly 0.5rem so the arithmetic works: 16px outer radius minus
+   8px of padding is the 8px inner radius, which is `--radius-control`, a value
+   the system already has. Any other padding would have needed either a fourth
+   radius or corners that are visibly not concentric.
+
+   `backdrop-filter` is the expensive declaration in this file and it is on one
+   element, which is the only way the glass tokens are meant to be used. The
+   noise sits on a pseudo-element behind the content so it grains the panel
+   without touching the text, and it can never swallow a pointer.
+   ------------------------------------------------------------------------- */
+
+.plinth {
+  position: relative;
+  isolation: isolate;
+  padding: 0.5rem;
+  border-radius: var(--radius-card);
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-ring), var(--shadow-card);
+}
+
+.plinth::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--noise);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  /* 2rem, so the 20px arrow sitting in it has 6px of air on each side. */
+  gap: 2rem;
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Between groups. The name-and-body group below sets 0.375rem within itself,
+     so this is more than the 2x the system asks for. */
+  gap: 1rem;
+  padding: 1.125rem;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-sunken);
+  box-shadow: var(--rf-ring);
+}
+
+.stageBody {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.stageHead {
+  display: grid;
+  gap: 0.375rem;
+}
+
+/* Uses the system's `.eyebrow` utility for the case and tracking; only the ink
+   is decided here, and it is scoped through `.stage` so it wins on specificity
+   rather than on whichever stylesheet the bundler emits last. */
+.stage .index {
+  color: var(--color-accent-text);
+}
+
+.stageName {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.stageText {
+  margin: 0;
+  /* A ceiling rather than a width, so the cell still shrinks below it. The
+     rail layout never reaches it; the widths in between would sail past it. */
+  max-inline-size: 68ch;
+  font-size: var(--text-small);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+/* The one thing a person actually says, so it sits in primary ink while the
+   explanation around it stays secondary. */
+.quote {
+  color: var(--color-text-primary);
+}
+
+/* --- The three layers that can refuse ------------------------------------
+
+   `margin-block-start: auto` pushes every foot to the bottom of its cell, so
+   in the rail layout the three rules line up across the row and the count of
+   three is readable without counting. The flex gap still guarantees 1rem of
+   separation when a cell is short.
+
+   Secondary ink rather than tertiary: this is 12px text on the sunken surface,
+   and tertiary does not clear 4.5:1 against `--color-surface-sunken` in the
+   light scheme.
+   ------------------------------------------------------------------------- */
+
+.foot {
+  margin: 0;
+  margin-block-start: auto;
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+/* The policy's refusal is the amber ending, so the foot that describes it is
+   amber and the mark inherits that through `currentColor`. It is the same
+   thread, drawn twice, and the eye follows it down to the Held panel. */
+.footHeld {
+  border-block-start-color: color-mix(in oklab, var(--color-blocked-text) 28%, transparent);
+  color: var(--color-blocked-text);
+}
+
+.footLabel {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.footHeld .footLabel {
+  color: var(--color-blocked-text);
+}
+
+/* Optically aligned rather than geometrically: the glyph's stroke starts an
+   eighth of the way down its box, so a top-aligned 14px mark sits low of the
+   12px cap height next to it. */
+.mark {
+  inline-size: var(--icon-nav);
+  block-size: var(--icon-nav);
+  margin-block-start: -0.0625rem;
+}
+
+/* The two layers that let everything through. Quieter than the branch marks,
+   because a line carrying straight on is the unremarkable half of the pair and
+   should not compete with the three that can say no. */
+.markPass {
+  color: var(--color-text-tertiary);
+}
+
+/* --- The rail connectors -------------------------------------------------
+
+   Absolutely positioned into the gap above each cell, which keeps the `<ol>`
+   valid: an `<ol>` may only contain `<li>`, so the arrow cannot be a sibling
+   of the cells and has to be a child of the one it points into.
+
+   -1.625rem with a 20px glyph and a 2rem gap puts the glyph's centre exactly
+   at the middle of the gap. It is left-aligned to the cell's own 1.125rem
+   padding so the stack reads as one spine rather than as a centred zigzag.
+   ------------------------------------------------------------------------- */
+
+.connector {
+  position: absolute;
+  inset-block-start: -1.625rem;
+  inset-inline-start: 1.125rem;
+  inline-size: var(--icon-card);
+  block-size: var(--icon-card);
+  rotate: 90deg;
+  color: var(--color-text-tertiary);
+}
+
+/* --- The fork ------------------------------------------------------------
+
+   Narrow first: the two endings are stacked, so there is nothing to fork into
+   and a single arrow points at the panel that really is next.
+   ------------------------------------------------------------------------- */
+
+/* Scoped through `.flow` on purpose. This element also carries the global
+   `.eyebrow`, which sets `color` at the same specificity, so an unscoped rule
+   here would be decided by whichever stylesheet the bundler emits last rather
+   than by intent. `.eyebrow` ships tertiary, which does not clear 4.5:1 on the
+   canvas at 12px, so the case and tracking are inherited and the ink is not. */
+.flow .forkLabel {
+  margin: calc(var(--nt-gap-between, 2rem) * 1.25) 0 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.stem {
+  display: block;
+  margin: 0.75rem auto;
+  inline-size: var(--icon-card);
+  block-size: var(--icon-card);
+  rotate: 90deg;
+  color: var(--color-text-tertiary);
+}
+
+.rake {
+  display: none;
+}
+
+.endings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ending {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.125rem 1.25rem;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+/* Card elevation on both, because the two endings are the same kind of event
+   and lifting one above the other would say one of them is the real outcome. */
+.paid {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-settled-text) 28%, transparent), var(--shadow-card);
+}
+
+.held {
+  background: var(--color-blocked-surface);
+  box-shadow: var(--rf-ring-amber), var(--shadow-card);
+}
+
+/* Every badge carries a glyph as well as a hue, because amber against green is
+   exactly the distinction that disappears for a reader who cannot separate
+   them, and this section's whole argument rests on it holding. */
+.badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-block: 0.25rem;
+  padding-inline: 0.5rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Paid is green, held is amber, refused is red: the status colours, never the brand purple. */
+.badgePaid {
+  background: var(--color-settled-surface);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-settled-text) 28%, transparent);
+  color: var(--color-settled-text);
+}
+
+.badgeHeld {
+  background: color-mix(in oklab, var(--color-blocked-text) 14%, var(--color-blocked-surface));
+  box-shadow: var(--rf-ring-amber);
+  color: var(--color-blocked-text);
+}
+
+.endingHead {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-wrap: balance;
+}
+
+.endingHeadHeld {
+  color: var(--color-blocked-text);
+}
+
+.endingBody {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.caption {
+  margin: 0.875rem 0 0;
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* ===========================================================================
+   The fork proper, once there are two panels to fork into.
+
+   30rem rather than a larger number because two panels at roughly 240px each
+   still hold a badge, a headline and four lines of 13px text without a word
+   breaking, and stacking them costs the diagram its second ending.
+   =========================================================================== */
+
+@media (min-width: 30rem) {
+  .stem {
+    display: none;
+  }
+
+  /* Stretched to the width of the grid below, so the arms land at 25% and 75%
+     of it, which is where the two panel centres are. `preserveAspectRatio:
+     none` is safe here only because every segment is axis aligned, and
+     `non-scaling-stroke` on the lines keeps them 1px through the stretch. */
+  .rake {
+    display: block;
+    inline-size: 100%;
+    block-size: 2.75rem;
+    margin-block-start: 0.75rem;
+  }
+
+  .rake line {
+    stroke-width: 1;
+  }
+
+  .rakeStem {
+    stroke: var(--color-border-strong);
+  }
+
+  .rakePaid {
+    stroke: var(--color-settled-text);
+  }
+
+  .rakeHeld {
+    stroke: var(--color-blocked-text);
+  }
+
+  .endings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ===========================================================================
+   The widths in between.
+
+   Still a stack, but a full-width cell is far wider than a sentence wants to
+   be, so the name moves beside the text rather than above it. The rail block
+   below sets `.stageBody` back to one column, which is why this needs no upper
+   bound: the later rule wins on order for the one property they share.
+   =========================================================================== */
+
+@media (min-width: 44rem) {
+  .stageBody {
+    /* Proportional rather than a fixed first column, which is how the mapping
+       rows on the how-it-works band split too. A fixed 14rem left a visible
+       hole beside a two-word stage name at 900px. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    column-gap: clamp(1.25rem, 4vw, 3rem);
+    align-items: start;
+  }
+}
+
+/* ===========================================================================
+   The rail.
+
+   Five cells across, and the breakpoint is arithmetic rather than a round
+   number. At 72rem the shell is 1056px, the plinth takes 16px of it and the
+   four gaps take 128px, which leaves 182px a cell and 146px of measure inside
+   the padding: about 22 characters a line at 13px. At 1440 the same sum gives
+   208px a cell and 26 characters. Both hold a sentence.
+
+   Below this the stack is the design and not a fallback. At 900px the same
+   arithmetic gives 145px a cell, which is 18 characters, and a five-word
+   sentence would break into five lines.
+   =========================================================================== */
+
+@media (min-width: 72rem) {
+  .stages {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .stage {
+    flex: 1 1 0;
+    min-inline-size: 0;
+  }
+
+  /* Back to one column. A 180px cell has no room for two. */
+  .stageBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* A floor, not a height, and only in the rail where five feet sit side by
+     side. `margin-block-start: auto` already drops every foot to the bottom of
+     its cell, but the rule is drawn at the TOP of the foot, so a two-line foot
+     next to a three-line one puts its rule a line lower and the row of rules
+     goes ragged. 0.75rem of padding plus three lines of 12px at 1.45 is 4rem.
+     A longer foot still grows past it, because the text is what decides. */
+  .foot {
+    min-block-size: 4rem;
+  }
+
+  .connector {
+    inset-block-start: 50%;
+    inset-inline-start: -1.625rem;
+    translate: 0 -50%;
+    rotate: none;
+  }
+}
+
+/* A tool name inside a stage sentence: the monospace face that says "this is
+   the literal name", sized in em so it shrinks with the sentence around it. */
+.stageText code {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 0.9em;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
