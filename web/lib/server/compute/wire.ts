@@ -132,7 +132,8 @@ export function computeDeps(): Deps | null {
     paymentPda: (spender, intent) => pda.payment(new PublicKey(spender), intent).toBase58(),
     readPayment,
     backend: async () => {
-      if (env.fake) return fakeBackend();
+      // Dev only (env.fake is forced off in production). COMPUTE_FAKE_FAIL=1 exercises the refund path.
+      if (env.fake) return fakeBackend({ fail: process.env.COMPUTE_FAKE_FAIL === '1' });
       const key = process.env.ZG_PRIVATE_KEY?.trim();
       if (!key) return { error: 'no 0G wallet key on this server' };
       const maxLedger = Number(process.env.ZG_MAX_LEDGER_ZG ?? '10');
