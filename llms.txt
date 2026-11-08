@@ -1,0 +1,60 @@
+# Rein
+
+> Spending rules for teams and their AI agents, enforced by a Solana program (Anchor 0.31) on
+> devnet. The agent proposes a payment. Only the program authorizes it. A team shares one test-USDC
+> vault owned by its PDA; each person or agent pays under an on-chain policy (allowance per period,
+> cap per payment, payment count, expiry, allowed services). Over a limit the payment is filed as
+> Pending and the owner approves it in one transaction. Agents can buy TEE-verified 0G mainnet AI
+> runs for devnet test USDC through a gateway that checks the on-chain payment first.
+
+Live: https://rein-navy.vercel.app (demo without sign-in: https://rein-navy.vercel.app/demo)
+Program id (devnet): F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe
+Status: devnet only, test token, no license yet (all rights reserved by the authors).
+
+## Claims and where each is proven
+
+- pay takes a service, never an address: programs/rein/src/lib.rs:695 (payee must equal Service.payee_token); refusal tx https://explorer.solana.com/tx/4uZN8NEASQZjW1HyqTPHxaZQ7QfQjL5WeHC94Za8imDnJzpHbzQ2DgD4CNR3uNb4cVCqqhhuzmG9b8znkNo9uZnr?cluster=devnet
+- An unknown service has no registry account: programs/rein/src/lib.rs:690; refusal tx https://explorer.solana.com/tx/5veVH6qrhhjEyZdTyPAsZuDa9RDkNg6ozBedGnDAduxqtZ9WQ4AWsNxRrHQxbtEYeaM52734tcR8HwkbmwPRr1fA?cluster=devnet
+- Spenders hold no SOL, a sponsor pays fees: programs/rein/src/lib.rs:676-678; tx https://explorer.solana.com/tx/4Ygd81XkNoDzwUxJoNXKrdPT9PHpyPdKikM6uNsN2Tj49ScGCxricxwVqRNb7w4DXcLen2TACfbtWZ38psdTM6K6?cluster=devnet
+- Over a limit, filed Pending: programs/rein/src/lib.rs:400-415 and programs/rein/src/lib.rs:236-240; tx https://explorer.solana.com/tx/w1VEqKk3icLuuBUgreeyafsHFQyyiXy9MuJVHETjr6edEnLSkWNjCchvfbJs3MBtm6CJUPgVTprC1ZZNAKoBDbo?cluster=devnet
+- Owner approval settles in the same transaction: programs/rein/src/lib.rs:246-285; tx https://explorer.solana.com/tx/3PTN2Q5CYHv8NGjfr4FvwX9GG8QSxbq8JvdC9Z4XiwNNY6LYTRptxniY7ETC1PBQ47jJREQ1L6Wxvfes7tLqvHNa?cluster=devnet
+- An approval waives a budget, never a stop: programs/rein/src/lib.rs:257-266; test tests/rein.ts:245
+- One intent is paid at most once (Payment PDA seeded by spender and intent): programs/rein/src/lib.rs:701; test tests/rein.ts:182
+- The vault's authority is the team PDA: programs/rein/src/lib.rs:607-613
+- Compute gateway verifies the Payment before running: web/lib/server/compute/core.ts:373-390
+- Compute price = 0G worst case x 1.5, at least 0.01: web/lib/server/compute/core.ts:37-44
+- Paid runs that cannot happen are refunded once: web/lib/server/compute/core.ts:350-357, web/lib/server/compute/wire.ts:60-99
+- First verified 0G production run (payment, devnet): https://explorer.solana.com/tx/2q3PVGSdFgZjanxjjdYokwonesQZdzi8j3EnyYA8TfTRRrxm9P3Bdj565VT9o62A5qC4jR75J3fKuQNEe9kBmMs2?cluster=devnet
+- Claim of 0.30 test USDC once per Google account: web/lib/server/claim.ts:41-42 (unique indexes), web/app/api/claim/route.ts:37-48 (owner check)
+- Sponsor co-signs only Rein instructions: web/app/api/sponsor/route.ts:115-122
+- Agent tools have no address parameter: agent/src/tools.ts:16-52
+
+## Verify in one command
+
+- Unit tests (no chain needed): cd agent && pnpm test; cd web && pnpm test; cd zg-compute && pnpm test
+  (last run 2026-11-08: 53, 44 and 186 passing)
+- Devnet claims with explorer links (needs a funded CLI wallet and the seeded devnet keys):
+  REIN_CLUSTER=devnet REIN_RPC_URL=https://api.devnet.solana.com pnpm evidence
+- Program rules (needs a local validator seeded with pnpm seed):
+  REIN_RPC_URL=http://127.0.0.1:8999 pnpm test:rules (13 tests, last run 2026-11-08)
+- Docs references: pnpm docs:check
+
+## Layout
+
+- programs/rein/src/lib.rs: the whole Anchor program (instructions, accounts, errors)
+- idl/rein.json: the program IDL used by web and agent
+- web/: Next 16 app; web/app/api/* server routes; web/lib/server/* keys, store, claim, compute, cache
+- agent/: Groq-hosted buying agent (openai/gpt-oss-120b), tools in agent/src/tools.ts
+- zg-compute/: 0G Compute adapter, ported from Nuntio with its author's agreement
+- scripts/: seed.ts, evidence.ts, compute-setup.ts, pool-setup.ts, check-docs.mjs
+- tests/rein.ts: 13 program tests
+- docs/: CONSTANTS.md (addresses), EVIDENCE.md (transactions), DESIGN.md, PROVENANCE.md, SUBMISSION.md
+
+## Docs
+
+- [README](README.md): overview, try it, proof, rules, diagrams
+- [SECURITY](SECURITY.md): threat model, guarantees, gaps
+- [DESIGN](docs/DESIGN.md): decisions and rejected alternatives
+- [CONSTANTS](docs/CONSTANTS.md): every address and how it was verified
+- [EVIDENCE](docs/EVIDENCE.md): devnet transactions
+- [AGENTS](AGENTS.md): how to work in this repo
