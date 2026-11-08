@@ -1,0 +1,782 @@
+/* ===========================================================================
+   /docs, in the site's traced look: square corners, hairlines, mono labels,
+   one purple. A reading surface first: 17 to 19px body on a 46rem measure.
+
+   Three columns from 72rem (contents, page, "on this page"), two from 56rem,
+   one below that, where the contents fold into a disclosure above the page.
+   The header is sticky and takes its own space, so the sticky columns start
+   just under it.
+   =========================================================================== */
+
+.shell {
+  --docs-top: 5.5rem;
+  --docs-line: var(--color-border-subtle);
+  --docs-line-strong: var(--color-border-strong);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3rem;
+  inline-size: min(100%, var(--nt-shell, 100rem));
+  margin-inline: auto;
+  padding: 2.5rem var(--nt-gutter, 1.25rem) 6rem;
+  color: var(--color-text-primary);
+}
+
+@media (min-width: 56rem) {
+  .shell {
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 72rem) {
+  .shell {
+    grid-template-columns: 15rem minmax(0, 1fr) 13rem;
+  }
+}
+
+/* --- Contents ------------------------------------------------------------- */
+
+.sidebar {
+  display: none;
+}
+
+@media (min-width: 56rem) {
+  .sidebar {
+    display: block;
+    position: sticky;
+    inset-block-start: var(--docs-top);
+    align-self: start;
+    max-block-size: calc(100dvh - var(--docs-top) - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-inline-end: 0.5rem;
+    border-inline-end: 1px solid var(--docs-line);
+  }
+}
+
+.nav {
+  display: grid;
+  gap: 1.5rem;
+  padding-block-end: 2rem;
+}
+
+.navGroup ul,
+.toc ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navTitle {
+  margin: 0 0 0.5rem;
+  padding-inline: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.25rem;
+  padding: 0.375rem 0.75rem;
+  border-inline-start: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.navLink[aria-current="page"] {
+  border-inline-start-color: var(--color-accent-solid);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+@media (hover: hover) {
+  .navLink:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-sunken);
+  }
+  .navLink[aria-current="page"]:hover {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-text);
+  }
+}
+
+@media (pointer: coarse) {
+  .navLink {
+    min-block-size: 2.75rem;
+  }
+}
+
+.navLink:focus-visible,
+.toc a:focus-visible,
+.pagerLink:focus-visible,
+.mobileNav summary:focus-visible,
+.details summary:focus-visible,
+.crumb a:focus-visible,
+.body a:focus-visible,
+.tableWrap:focus-visible,
+.codeBlock pre:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* The contents on a phone: one line that opens into the list. */
+.mobileNav {
+  margin-block-end: 2rem;
+  border: 1px solid var(--docs-line-strong);
+  background: var(--color-surface);
+}
+
+.mobileNav summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.mobileNav summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobileNav summary::after {
+  content: "";
+  margin-inline-start: auto;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  flex: none;
+}
+
+.mobileNav[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+.mobileNav[open] summary {
+  border-block-end: 1px solid var(--docs-line);
+}
+
+.mobileNav .nav {
+  padding: 1rem 0.25rem 1rem;
+}
+
+.mobileNavLabel {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.mobileNavCurrent {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+@media (min-width: 56rem) {
+  .mobileNav {
+    display: none;
+  }
+}
+
+/* --- On this page --------------------------------------------------------- */
+
+.toc {
+  display: none;
+}
+
+@media (min-width: 72rem) {
+  .toc {
+    display: block;
+    position: sticky;
+    inset-block-start: var(--docs-top);
+    align-self: start;
+    max-block-size: calc(100dvh - var(--docs-top) - 1rem);
+    overflow-y: auto;
+  }
+}
+
+.toc li a {
+  display: block;
+  padding: 0.3rem 0.75rem;
+  border-inline-start: 1px solid var(--docs-line);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .toc li a:hover {
+    color: var(--color-accent-text);
+    border-inline-start-color: var(--color-accent-solid);
+  }
+}
+
+/* --- The page ------------------------------------------------------------- */
+
+.main {
+  min-inline-size: 0;
+}
+
+.article {
+  max-inline-size: 46rem;
+}
+
+.head {
+  padding-block-end: 1.75rem;
+  border-block-end: 1px solid var(--docs-line);
+}
+
+.crumb {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crumb a {
+  color: inherit;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: clamp(34px, 3.4vw, 48px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.lead {
+  margin: 1rem 0 0;
+  max-inline-size: 40rem;
+  color: var(--color-text-secondary);
+  font-size: var(--nt-text-lead, 19px);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.body {
+  padding-block-start: 0.5rem;
+  font-size: var(--nt-text-body, 17px);
+  line-height: 1.65;
+}
+
+.body p {
+  margin: 1.1rem 0;
+}
+
+.body strong {
+  font-weight: 500;
+}
+
+.body a {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: auto;
+  text-decoration-thickness: 1px;
+  overflow-wrap: anywhere;
+}
+
+/* A heading opens with a hairline and the small purple square the site uses to open a section. */
+.h2 {
+  position: relative;
+  margin: 3rem 0 1rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 1px solid var(--docs-line);
+  font-family: var(--font-rounded);
+  font-size: clamp(25px, 2vw, 30px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  scroll-margin-block-start: calc(var(--docs-top) + 0.5rem);
+}
+
+.h2::before {
+  content: "";
+  position: absolute;
+  inset-block-start: -3px;
+  inset-inline-start: 0;
+  inline-size: 6px;
+  block-size: 6px;
+  background: var(--color-accent-solid);
+}
+
+.h3,
+.h4 {
+  margin: 2rem 0 0.5rem;
+  font-family: var(--font-rounded);
+  font-size: clamp(20px, 1.5vw, 23px);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  scroll-margin-block-start: calc(var(--docs-top) + 0.5rem);
+}
+
+.h4 {
+  font-size: 19px;
+}
+
+/* The heading's own link: there for keyboard and copy-a-link, quiet until wanted. */
+.anchor {
+  position: absolute;
+  margin-inline-start: -1.1em;
+  padding-inline-end: 0.3em;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  opacity: 0;
+}
+
+.h3,
+.h4 {
+  position: relative;
+}
+
+.anchor:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .h2:hover .anchor,
+  .h3:hover .anchor,
+  .h4:hover .anchor {
+    opacity: 1;
+  }
+}
+
+/* Tailwind's preflight takes list markers away; a document wants them back. */
+.list {
+  margin: 1rem 0;
+  padding-inline-start: 1.4rem;
+  list-style: square;
+}
+
+ol.list {
+  list-style: decimal;
+}
+
+.list li {
+  padding-inline-start: 0.25rem;
+}
+
+.list li + li {
+  margin-block-start: 0.45rem;
+}
+
+.list li::marker {
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.inlineCode {
+  padding: 0.08em 0.35em;
+  background: var(--color-surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--docs-line);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+/* --- Tables --------------------------------------------------------------- */
+
+.tableWrap {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--docs-line);
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th {
+  padding: 0.7rem 0.9rem;
+  background: var(--color-surface-sunken);
+  border-block-end: 1px solid var(--docs-line-strong);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-align: start;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  vertical-align: bottom;
+}
+
+.table td {
+  padding: 0.7rem 0.9rem;
+  border-block-start: 1px solid var(--docs-line);
+  vertical-align: top;
+  min-inline-size: 8rem;
+}
+
+.table td:first-child {
+  min-inline-size: 9rem;
+}
+
+/* --- Code ----------------------------------------------------------------- */
+
+.codeBlock {
+  margin: 1.5rem 0;
+  border: 1px solid var(--color-brand-black, #0a0a0b);
+  background: var(--color-brand-black, #0a0a0b);
+}
+
+.codeLabel {
+  padding: 0.5rem 1rem;
+  border-block-end: 1px solid color-mix(in oklab, var(--color-text-on-brand) 14%, transparent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-text-on-brand) 64%, transparent);
+}
+
+.codeBlock pre {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  color: var(--color-text-on-brand);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+/* --- Quote, hints, tabs, steps, disclosures ------------------------------ */
+
+.quote {
+  margin: 1.5rem 0;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  border-inline-start: 2px solid var(--color-accent-solid);
+  font-family: var(--font-rounded);
+  font-size: clamp(20px, 1.6vw, 24px);
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.quote p {
+  margin: 0;
+}
+
+.hint {
+  --hint-ink: var(--color-accent-text);
+  --hint-ground: var(--color-accent-soft);
+
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--hint-ink) 22%, transparent);
+  border-inline-start: 3px solid var(--hint-ink);
+  background: var(--hint-ground);
+}
+
+.hint[data-style="warning"] {
+  --hint-ink: var(--color-blocked-text);
+  --hint-ground: var(--color-blocked-surface);
+}
+
+.hint[data-style="danger"] {
+  --hint-ink: var(--color-danger-text);
+  --hint-ground: var(--color-danger-surface);
+}
+
+.hint[data-style="success"] {
+  --hint-ink: var(--color-money-in);
+  --hint-ground: color-mix(in oklab, var(--color-money-in) 8%, var(--color-surface));
+}
+
+.hint > :last-child {
+  margin-block-end: 0;
+}
+
+.hint p {
+  margin: 0.5rem 0;
+}
+
+.hintLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.25rem !important;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hint-ink);
+}
+
+.hintMark {
+  inline-size: 7px;
+  block-size: 7px;
+  background: var(--hint-ink);
+}
+
+.tabs {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.tab {
+  padding: 0.25rem 1.25rem 0.5rem;
+  border: 1px solid var(--docs-line-strong);
+}
+
+.tabLabel {
+  margin: 0.75rem 0 0 !important;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.stepper {
+  margin: 1.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 1.25rem;
+  padding-block-end: 1.5rem;
+}
+
+/* The dotted line that joins one step to the next. */
+.step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  inset-block: 2.5rem 0;
+  inset-inline-start: calc(1.125rem - 0.5px);
+  inline-size: 1px;
+  background: repeating-linear-gradient(180deg, var(--docs-line-strong) 0 1px, transparent 1px 4px);
+}
+
+.stepNumber {
+  display: grid;
+  place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  background: var(--color-brand-black, #0a0a0b);
+  color: var(--color-text-on-brand);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.stepBody > :first-child {
+  margin-block-start: 0.25rem;
+}
+
+.stepBody > :last-child {
+  margin-block-end: 0;
+}
+
+.details {
+  border-block-end: 1px solid var(--docs-line);
+}
+
+.details:first-of-type {
+  border-block-start: 1px solid var(--docs-line);
+}
+
+/* Straight under the page's header, whose own rule already sits there. */
+.body > .details:first-child {
+  border-block-start: none;
+}
+
+.details + :not(.details) {
+  margin-block-start: 1.5rem;
+}
+
+.details summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-block-size: 3.25rem;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  letter-spacing: -0.015em;
+}
+
+.details summary::-webkit-details-marker {
+  display: none;
+}
+
+.details summary::after {
+  content: "";
+  margin-inline-start: auto;
+  inline-size: 0.55rem;
+  block-size: 0.55rem;
+  border-inline-end: 1.5px solid var(--color-text-tertiary);
+  border-block-end: 1.5px solid var(--color-text-tertiary);
+  transform: rotate(45deg);
+  flex: none;
+}
+
+.details[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+.detailsBody {
+  padding-block-end: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.detailsBody > :first-child {
+  margin-block-start: 0;
+}
+
+/* --- Previous and next ---------------------------------------------------- */
+
+.pager {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-block-start: 4rem;
+}
+
+.pagerLink {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--docs-line-strong);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.pagerLink[data-dir="next"] {
+  grid-column: 2;
+  text-align: end;
+}
+
+.pagerLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.pagerLink[data-dir="next"] .pagerLabel {
+  justify-content: flex-end;
+}
+
+.pagerTitle {
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  letter-spacing: -0.015em;
+}
+
+@media (hover: hover) {
+  .pagerLink:hover {
+    border-color: var(--color-accent-solid);
+  }
+  .pagerLink:hover .pagerTitle {
+    color: var(--color-accent-text);
+  }
+}
+
+@media (max-width: 36rem) {
+  .pager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pagerLink[data-dir="next"] {
+    grid-column: 1;
+  }
+}
+
+/* --- A drawn diagram ------------------------------------------------------ */
+
+/* Wider than the reading measure where the page has room: a diagram's words are small. */
+.diagram {
+  margin: 1.5rem 0 2rem;
+}
+
+@media (max-width: 36rem) {
+  .diagramImage {
+    padding: 0.5rem;
+  }
+}
+
+@media (min-width: 90rem) {
+  .diagram {
+    margin-inline-end: -4rem;
+  }
+}
+
+.diagramImage {
+  display: block;
+  padding: 1rem;
+  border: 1px solid var(--docs-line);
+  background: var(--color-surface);
+}
+
+.diagramImage img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.diagramCaption {
+  margin-block: 0.5rem 1rem;
+  font-size: 14px;
+}
+
+.diagramCaption a {
+  color: var(--color-accent-text);
+}
+
+.diagramSource {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  background: var(--color-surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  color: var(--color-text-primary);
+}
+
+.diagramImage:focus-visible,
+.diagramCaption a:focus-visible,
+.diagramSource:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
