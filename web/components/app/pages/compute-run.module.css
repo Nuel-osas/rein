@@ -5,7 +5,7 @@
 .value { font-size: 1.25rem; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: var(--color-text-primary); }
 
 /* ---- claim ---- */
-.claim { box-shadow: inset 3px 0 0 var(--color-accent-solid), var(--app-ring); }
+.claim { align-content: start; box-shadow: inset 3px 0 0 var(--color-accent-solid), var(--app-ring); }
 .claimFigures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0; }
 .claimFigures > div { display: grid; gap: .25rem; padding: .75rem 1rem; background: var(--color-surface-sunken, var(--color-surface)); box-shadow: 0 0 0 1px var(--app-line); }
 .claimed { margin: 0; display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; color: var(--color-text-primary); font-size: var(--text-small); }

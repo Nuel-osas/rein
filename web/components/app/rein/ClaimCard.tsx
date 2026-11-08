@@ -113,7 +113,7 @@ export function ClaimCard({team, isOwner, onClaimed}: {team: string; isOwner: bo
         </div>
       </div>
       <p className={styles.panelNote}>
-        Test USDC into this team&apos;s vault, once per Google account, while the shared pool lasts. Your Rein agent spends it on AI compute under the budget you set below.
+        Test USDC into this team&apos;s vault, once per Google account, while the shared pool lasts. Your Rein agent spends it on AI compute under the budget you set for it.
       </p>
       {claimed === true ? (
         <p className={card.claimed}>
