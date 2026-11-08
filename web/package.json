@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "idl:sync": "cp ../idl/rein.json lib/idl/rein.json",
     "idl:check": "cmp ../idl/rein.json lib/idl/rein.json",
-    "test": "tsx --test lib/server/compute/*.test.ts"
+    "test": "tsx --test lib/server/compute/*.test.ts lib/server/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.137.0",
