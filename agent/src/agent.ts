@@ -32,6 +32,10 @@ export interface RunAgentOptions {
   signal?: AbortSignal;
 }
 
+const MAX_NUDGES = 2;
+const NUDGE =
+  'Continue the task. Either call the next tool you need, or, if you are done, reply with a short summary for the team owner: what you paid, what is waiting for approval, and what you refused to do.';
+
 export function systemPrompt(teamName: string | null): string {
   return [
     `You are Rein's buying agent for the team${teamName ? ` "${teamName}"` : ''}. You buy the services a task needs and pay for them from the team's vault in test USDC.`,
@@ -96,6 +100,7 @@ export async function* runAgent(opts: RunAgentOptions): AsyncGenerator<AgentEven
   ];
 
   let triedUnknownService = false;
+  let nudges = 0;
   let finalText: string | null = null;
   let finalError: string | undefined;
 
@@ -110,7 +115,16 @@ export async function* runAgent(opts: RunAgentOptions): AsyncGenerator<AgentEven
     }
 
     if (reply.toolCalls.length === 0) {
-      finalText = reply.content ?? '(the model ended without a summary)';
+      // gpt-oss sometimes ends a turn with reasoning only: no text and no tool call. Ask it to go on,
+      // at most twice, before treating that as the end. A real answer always has text.
+      if (!reply.content?.trim() && nudges < MAX_NUDGES) {
+        nudges++;
+        if (showReasoning && reply.reasoning) yield { type: 'thinking', text: brief(reply.reasoning) };
+        messages.push({ role: 'assistant', content: '' });
+        messages.push({ role: 'user', content: NUDGE });
+        continue;
+      }
+      finalText = reply.content?.trim() || '(the model ended without a summary)';
       break;
     }
 
