@@ -1,0 +1,25 @@
+{
+  "name": "@rein/agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rein's AI buyer: plans a task with a Groq model and pays registered services under an on-chain policy",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "agent": "tsx src/cli.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.31.1",
+    "@solana/web3.js": "1.98.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "tsx": "4.23.14",
+    "typescript": "5.9.3"
+  },
+  "packageManager": "pnpm@10.7.1"
+}
