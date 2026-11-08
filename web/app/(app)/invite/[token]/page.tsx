@@ -5,7 +5,7 @@ export const metadata: Metadata = {title: "Join a team | Rein", robots: {index: 
 
 /**
  * An invite link, /invite/<token>. Outside the app frame and the sign-in gate on purpose, like
- * Nuntio's: it has to work for somebody who is not signed in and is on no team yet. The token is
+ * It has to work for somebody who is not signed in and is on no team yet. The token is
  * decoded in the browser; nothing is stored.
  */
 export default async function InvitePage({params}: {params: Promise<{token: string}>}) {

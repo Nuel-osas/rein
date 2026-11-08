@@ -1,5 +1,5 @@
 // The compute services Rein sells, each one Solana registry service backed by one 0G Compute
-// operation (`@rein/zg-compute`, ported from Nuntio). Prices are not here: every quote asks 0G for
+// operation (`@rein/zg-compute`). Prices are not here: every quote asks 0G for
 // the worst case of one run right now (provider prices × 0G's USD rate) and marks it up 1.5×.
 //
 // What 0G serves was read live on mainnet (chain 16661) on 2026-11-08 with

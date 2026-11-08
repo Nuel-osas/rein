@@ -4,7 +4,7 @@ The Rein web app: Next 16.4.3 and React 19.3.1, deployed at https://rein-navy.ve
 is Google only, through Privy (`loginMethods: ['google']` in [lib/wallet.tsx](lib/wallet.tsx)),
 and each person's Privy embedded Solana wallet signs their Rein transactions. The server holds the
 fee sponsor, the demo keys, the claim pool and the 0G compute gateway. UI screens are adapted from
-Nuntio's web app with its author's agreement ([docs/PROVENANCE.md](../docs/PROVENANCE.md)).
+an earlier web app with its author's agreement ([docs/PROVENANCE.md](../docs/PROVENANCE.md)).
 
 ## Pages
 

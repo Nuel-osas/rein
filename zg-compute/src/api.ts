@@ -10,7 +10,7 @@ import {resolveProviders, type ResolvedProvider, type Trust} from "./providers";
 import type {RateSource} from "./rate";
 
 /*
- * The 0G side of Nuntio AI keys (packages/commerce/src/keys.ts): what an OpenAI-compatible key can
+ * The 0G side of OpenAI-compatible AI keys: what an OpenAI-compatible key can
  * call, and a pass-through chat call.
  *
  * - catalog: every model a usable provider serves directly (TeeML, signer acknowledged, https, the

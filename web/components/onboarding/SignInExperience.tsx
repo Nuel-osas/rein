@@ -2,7 +2,7 @@
 
 // /onboarding and /auth/callback (/signin redirects to /onboarding). Privy runs the Google sign-in
 // and creates an embedded Solana wallet; once the wallet exists, this sends the person where they
-// were going (the return-to path the gate or an invite left) or to /dashboard, Nuntio's way in, when
+// were going (the return-to path the gate or an invite left) or to /dashboard when
 // their team (the PDA ["team", wallet]) is on chain; with no team, to /teams/new unless they came
 // from an invite. A failed read is not "no team": it offers the way on, where the gate retries.
 

@@ -1,10 +1,8 @@
 # In Rein
 
-This package is `@rein/zg-compute`, ported from Nuntio's `packages/zg-compute` (71Labs/nuntio)
-with its author's agreement. Everything below the "In Rein" section is Nuntio's original text,
-kept as written: package names such as `@nuntio/commerce` refer to the vendored copy in
-[src/commerce/](src/commerce) (operations, closed models, the `ComputeBackend` seam and input
-checks), and doc paths such as the agent-commerce plan live in Nuntio's repository, not this one.
+This package is `@rein/zg-compute`. It is adapted from Nuntio by 71Labs, with its author's agreement. The
+commerce module it uses (operations, closed models, the `ComputeBackend` seam and input checks) is
+vendored in [src/commerce/](src/commerce).
 
 | How Rein uses it | Where |
 |---|---|
@@ -15,16 +13,15 @@ checks), and doc paths such as the agent-commerce plan live in Nuntio's reposito
 
 Tests: `pnpm test` (vitest). Re-run 2026-11-08: 10 test files, 186 tests, all pass, exit 0.
 
-# @nuntio/zg-compute
+# @rein/zg-compute
 
-The 0G Compute Network adapter for the commerce gateway (`docs/hackathon/AGENT-COMMERCE-PLAN.md`,
-section 9). It implements `ComputeBackend` from `@nuntio/commerce` on 0G mainnet (chain 16661),
+The 0G Compute Network adapter for the compute gateway. It implements `ComputeBackend` from the
+vendored commerce module ([src/commerce/](src/commerce)) on 0G mainnet (chain 16661),
 using the direct SDK `@0gfoundation/0g-compute-ts-sdk` 0.9.0 and the gateway's own 0G wallet.
 Server only: it holds that wallet's key. It imports nothing from `apps/`.
 
 ```ts
-import {createZgCompute} from "@nuntio/zg-compute";
-import {operationById} from "@nuntio/commerce";
+import {createZgCompute, operationById} from "@rein/zg-compute";
 
 const compute = await createZgCompute({privateKey: process.env.GATEWAY_ZG_PRIVATE_KEY!});
 const op = operationById("chat")!;
@@ -122,7 +119,7 @@ Live results, request shapes, prices and what each signature covers: [PROBE.md](
 ## Files
 
 - `src/backend.ts`: `createZgComputeWith(port, options)`, the four calls, `BINDING`.
-- `src/api.ts`: `compute.api`, the pass-through behind Nuntio AI keys: `catalog()` (every chatbot
+- `src/api.ts`: `compute.api`, the pass-through behind OpenAI-compatible AI keys: `catalog()` (every chatbot
   model a usable TEE provider serves, cheapest provider each, plus whisper and z-image-turbo, with
   quote-safe unit prices and 0G's rate) and `chat()` (funds the request's worst case under the same
   wallet lock and holds as `run`, sends the OpenAI body to `/chat/completions`, hands back the
@@ -134,4 +131,4 @@ Live results, request shapes, prices and what each signature covers: [PROBE.md](
 - `src/pricing.ts`, `src/funding.ts`, `src/rate.ts`, `src/verify.ts`, `src/audio.ts`, `src/providers.ts`.
 - `scripts/probe.mts`: the live probe (spends real 0G; see its header).
 
-`pnpm --filter @nuntio/zg-compute typecheck` and `test` (no network: the broker and fetch are faked).
+`pnpm --filter @rein/zg-compute typecheck` and `test` (no network: the broker and fetch are faked).

@@ -1,5 +1,5 @@
 /*
- * The closed models Nuntio sells through 0G's direct providers (Claude Fable 5, Claude Opus 5,
+ * The closed models the gateway sells through 0G's direct providers (Claude Fable 5, Claude Opus 5,
  * GPT-5.4 mini; commerce's CLOSED_MODELS, docs/hackathon/CLOSED-MODELS-PLAN.md), on 0G mainnet.
  *
  *   pnpm --filter @rein/zg-compute exec tsx scripts/closed-probe.mts [--env /abs/path/.env.gateway.mainnet]

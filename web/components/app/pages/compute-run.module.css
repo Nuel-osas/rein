@@ -1,5 +1,5 @@
 /* The compute page's working parts: the claim card, the agent's budget, and the run panel with
-   Nuntio's four steps (Price, Paid or Waiting, Ran, Delivered or Refunded). Rein's tokens only. */
+   Four steps (Price, Paid or Waiting, Ran, Delivered or Refunded). Rein's tokens only. */
 
 .label { font-size: var(--text-meta); color: var(--color-text-secondary); }
 .value { font-size: 1.25rem; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: var(--color-text-primary); }

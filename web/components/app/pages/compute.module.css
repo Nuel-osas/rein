@@ -1,4 +1,4 @@
-/* AI compute: Nuntio's compute layout (a lead with fact chips, a grid of traced cards, a foot
+/* AI compute: the compute layout (a lead with fact chips, a grid of traced cards, a foot
    note) in Rein's tokens. Cards show registry services, never a run. */
 
 .page { container: compute / inline-size; display: flex; flex-direction: column; gap: var(--app-gap-group, 2.5rem); }

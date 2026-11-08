@@ -1,7 +1,7 @@
 /*
  * Claude's 0G providers take Anthropic's Messages API only (POST {endpoint}/messages): sent an
  * OpenAI chat body they answer 400 "not available on the openai API format (supported: [anthropic])"
- * (the paid probe of 30 Oct). Everything else in Nuntio speaks OpenAI chat, so this file translates
+ * (the paid probe of 30 Oct). Everything else speaks OpenAI chat, so this file translates
  * at the edge, both ways:
  *
  * - toAnthropicBody: an OpenAI chat body (as the gateway built and cleaned it) to a Messages body.
@@ -17,7 +17,7 @@
  *   stream, so the reader treats it as an answer cut short (charged by what was used), never a
  *   finished one.
  *
- * Usage: prompt tokens are input + cache writes + cache reads (Nuntio never asks for caching, so the
+ * Usage: prompt tokens are input + cache writes + cache reads (the gateway never asks for caching, so the
  * last two are zero; counted at the full input price if a relay reports them), completion tokens
  * are output tokens.
  */

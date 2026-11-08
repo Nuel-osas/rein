@@ -116,7 +116,7 @@ export const relayedAllowed = (s: Pick<ZgService, "model" | "provider">): boolea
 export function unusableReason(s: ZgService): string | null {
   if (!isTeeMl(s)) {
     if (!isRelayedModel(s)) return `verifiability is "${s.verifiability || "none"}", not TeeML`;
-    if (!relayedAllowed(s)) return `not a provider Nuntio relays ${s.model} from`;
+    if (!relayedAllowed(s)) return `not a provider this gateway relays ${s.model} from`;
     // A relayed closed model has no signer to check, but 0G must still list it, over https.
     if (!s.teeSignerAcknowledged) return "not acknowledged by 0G";
     if (!/^https:\/\//.test(s.url)) return "endpoint is not https";

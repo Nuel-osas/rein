@@ -1,7 +1,7 @@
 "use client";
 
-// The sign-in gate for the signed-in person's own team, at Nuntio's top-level routes (/dashboard,
-// /spenders, …). Nuntio's AppShell does the same job: it reads the Privy session, then the person's
+// The sign-in gate for the signed-in person's own team, at the top-level routes (/dashboard,
+// /spenders, …). It reads the Privy session, then the person's
 // account, and mounts the app only for somebody signed in. Rein's "account" is the team PDA
 // ["team", <embedded Solana wallet>] (lib/rein.ts), read straight from chain:
 //

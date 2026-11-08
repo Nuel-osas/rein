@@ -2,7 +2,7 @@
   "name": "@rein/zg-compute",
   "private": true,
   "version": "0.0.0",
-  "description": "0G Compute Network adapter (chain 16661), ported from Nuntio's @nuntio/zg-compute with its author's agreement",
+  "description": "0G Compute Network adapter (chain 16661)",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

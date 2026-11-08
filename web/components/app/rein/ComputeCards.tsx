@@ -2,7 +2,7 @@
 
 // The compute page's working cards: the Rein agent's budget (its on-chain policy, edited with the
 // existing set_policy flow), the run panel (the agent buys a 0G compute run through the gateway),
-// and Nuntio's four steps: Price → Paid or Waiting → Ran → Delivered or Refunded. Every figure is
+// and four steps: Price → Paid or Waiting → Ran → Delivered or Refunded. Every figure is
 // read from chain or from the gateway; a missing gateway is said, and no result is ever made up.
 
 import Link from "next/link";
