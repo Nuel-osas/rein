@@ -6,7 +6,8 @@
     "seed": "tsx scripts/seed.ts",
     "test:rules": "tsx --test tests/rein.ts",
     "evidence": "tsx scripts/evidence.ts",
-    "pool:setup": "tsx scripts/pool-setup.ts"
+    "pool:setup": "tsx scripts/pool-setup.ts",
+    "docs:check": "node scripts/check-docs.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.31.1",
