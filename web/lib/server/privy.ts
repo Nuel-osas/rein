@@ -6,6 +6,11 @@ import { PrivyClient } from '@privy-io/node';
 
 let client: PrivyClient | null | undefined;
 
+/** True when this server can verify Privy tokens (both the app id and the secret are set). */
+export function privyConfigured(): boolean {
+  return privy() !== null;
+}
+
 function privy(): PrivyClient | null {
   if (client !== undefined) return client;
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim();
@@ -36,5 +41,24 @@ export async function privySession(req: Request): Promise<PrivySession> {
     return claims.user_id ? { kind: 'user', userId: claims.user_id } : { kind: 'invalid' };
   } catch {
     return { kind: 'invalid' };
+  }
+}
+
+/**
+ * The user's Privy embedded Solana wallets, read from Privy's API (never from the client), or null
+ * when the read fails or this server cannot ask (unknown, which callers refuse on).
+ */
+export async function privySolanaWallets(userId: string): Promise<string[] | null> {
+  const p = privy();
+  if (!p) return null;
+  try {
+    const user = await p.users()._get(userId);
+    return user.linked_accounts.flatMap((a) =>
+      a.type === 'wallet' && 'chain_type' in a && a.chain_type === 'solana' && 'connector_type' in a && a.connector_type === 'embedded' && typeof a.address === 'string'
+        ? [a.address]
+        : [],
+    );
+  } catch {
+    return null;
   }
 }
