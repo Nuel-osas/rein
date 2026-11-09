@@ -1,18 +1,19 @@
 "use client";
 
-// AI compute. An AI agent buying compute
-// services from the registry (llm-inference, gpu-hour) under its policy. This page lists those
-// services and this team's purchases of them, from its Payment accounts. Rein records the payment,
-// not the run: the service delivers the work off chain, so no run, output or proof is shown here.
-// The assistant (the agent that pays for services in plain words) lives here too, under the run
-// panel; /assistant redirects to this page.
+// AI compute. The team's Rein agent buys runs from Rein's compute gateway, which runs them on 0G:
+// chat, images and transcripts in a TEE through the 0G Compute SDK, and Claude or GPT relayed through
+// 0G Private Computer with no TEE (each card says which, and whether this server can sell it yet).
+// Every run is a payment under the agent's on-chain policy; the gateway checks it, runs it once, and
+// delivers the result or refunds it. The purchases below are this team's Payment accounts for the
+// catalog's services. The assistant (the agent that pays for services in plain words) lives here
+// too, under the run panel; /assistant redirects to this page.
 
 import Link from "next/link";
 import {ago, short, usdc} from "@/lib/chain";
-import {groupBy} from "@/lib/metrics";
+import {pda} from "@/lib/rein";
 import {AgentPanel} from "../agent-panel";
 import {PageHeader} from "../PageHeader";
-import {ContentLoading, EmptyState} from "../ui";
+import {ContentLoading} from "../ui";
 import list from "../ListView.module.css";
 import {PaymentPill, spenderName} from "../rein/bits";
 import {useTeamPage} from "../rein/context";
@@ -20,30 +21,17 @@ import rein from "../rein/rein.module.css";
 import styles from "../pages/compute.module.css";
 import {ComputePanel, useComputeSetup} from "../rein/ComputeCards";
 
-/** The registry ids this page counts as compute. Anything else the agent buys is under Activity. */
-export const COMPUTE_IDS = ["llm-inference", "gpu-hour"] as const;
-
-const KIND: Record<(typeof COMPUTE_IDS)[number], {kind: string; unit: string; blurb: string}> = {
-  "llm-inference": {kind: "LLM", unit: "a call", blurb: "Model inference the agent pays per call, from the vault, under its own cap and allowance."},
-  "gpu-hour": {kind: "GPU", unit: "an hour", blurb: "Rented GPU time, paid per hour. A job over the agent's cap or allowance waits on chain for the owner."},
-};
-
-const FACTS = ["Paid from the team vault", "Checked by the Rein program", "Over a limit, it waits for you", "Test USDC only"];
+const FACTS = ["Paid from the team vault", "Checked by the Rein program", "Over a limit, it waits for you", "Refunded if it cannot run", "Test USDC only"];
 
 export function Compute() {
   const t = useTeamPage();
-  const {agentKey, catalog} = useComputeSetup(t.address);
+  const {catalog} = useComputeSetup(t.address);
   if (t.at === 0) return <ContentLoading label="Reading compute purchases from chain…" rows={3} />;
 
-  const services = t.services ? COMPUTE_IDS.map((id) => ({id, service: t.services!.find((s) => s.id === id) ?? null})) : null;
-  // Purchases count the registry's legacy compute ids and every service the gateway's catalog sells.
-  const catalogIds = new Set(catalog?.ok ? catalog.services.map((c) => c.id) : []);
-  const addresses = new Set([
-    ...(services ?? []).flatMap((x) => (x.service ? [x.service.address] : [])),
-    ...(t.services ?? []).filter((s) => catalogIds.has(s.id)).map((s) => s.address),
-  ]);
-  const purchases = t.payments && services ? t.payments.filter((p) => addresses.has(p.service)) : null;
-  const totals = purchases ? new Map(groupBy(purchases, (p) => p.service, t.now).map((g) => [g.key, g])) : null;
+  // A purchase is a payment to one of the catalog's services, matched by its registry PDA. Without
+  // the catalog nothing can be matched, which is unknown, not an empty history.
+  const ids = catalog?.ok ? new Map(catalog.services.map((s) => [pda.service(s.id).toBase58(), s.id])) : null;
+  const purchases = t.payments && ids ? t.payments.filter((p) => ids.has(p.service)) : null;
   const agents = t.spenders?.filter((s) => s.kind === "agent" && s.status !== "revoked") ?? null;
 
   return (
@@ -52,7 +40,7 @@ export function Compute() {
         <PageHeader
           kind="compute"
           title="AI compute"
-          description="Claim your $0.30 of test USDC, set your Rein agent's budget, and let it buy model runs on the 0G Compute Network, or ask the assistant to pay for services in plain words. Every run is a payment in test USDC under the agent's own policy."
+          description="Claim your $0.30 of test USDC, set your Rein agent's budget, and let it buy model runs on 0G: chat, images and transcripts in a TEE, or Claude and GPT relayed with no TEE. Every run is a payment in test USDC under the agent's own policy, and a run that cannot happen is refunded."
         />
         <ul className={styles.facts} aria-label="About these purchases">
           {FACTS.map((f) => (
@@ -69,49 +57,6 @@ export function Compute() {
         <AgentPanel teamAddress={t.address} onActivity={() => void t.refresh()} />
       </section>
 
-      {services === null ? (
-        <EmptyState title="Could not read the service registry" body="This is a problem reaching the network, not a registry without compute. Nothing was charged." />
-      ) : (
-        <ul className={styles.grid}>
-          {services.map(({id, service}) => {
-            const g = service && totals ? totals.get(service.address) : undefined;
-            return (
-              <li key={id} className={styles.card} aria-label={`${KIND[id].kind}: ${service?.label ?? id}`}>
-                <div className={styles.cardTop}>
-                  <span className={styles.kind}>{KIND[id].kind}</span>
-                  <span className={styles.tee}>{service ? (service.active ? id : `${id} · suspended`) : `${id} · not listed`}</span>
-                </div>
-                <h2 className={styles.model}>{service?.label ?? id}</h2>
-                <p className={styles.spec}>
-                  {service ? KIND[id].blurb : `${id} is not in this cluster's registry, so no agent can buy it here.`}
-                  {service ? <> Payee <span className={rein.mono}>{short(service.payee, 4)}</span>.</> : null}
-                </p>
-                <div className={styles.cardFoot}>
-                  {service ? (
-                    <p className={styles.price}>
-                      <span>{usdc(service.price)}</span>
-                      <small>{KIND[id].unit}, list price</small>
-                    </p>
-                  ) : (
-                    <span />
-                  )}
-                  <p className={styles.bought}>
-                    {totals === null ? (
-                      "Purchases could not be read"
-                    ) : (
-                      <>
-                        <b>{g?.paidCount ?? 0}</b> bought · <b>{usdc(g?.paid ?? 0n)}</b>
-                        {g?.waiting ? ` · ${g.waiting} waiting` : ""}
-                      </>
-                    )}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
       <section className={rein.section} aria-labelledby="purchases">
         <div className={rein.sectionHead}>
           <h2 className={rein.sectionTitle} id="purchases">Purchases</h2>
@@ -121,10 +66,13 @@ export function Compute() {
         </div>
         <div className={`${list.card} ${styles.purchases}`}>
           {t.payments === null ? <div className={list.empty}><p>Could not read this team&apos;s payments. This is not an empty history.</p></div> : null}
-          {t.payments !== null && services === null ? <div className={list.empty}><p>Purchases are matched to the registry, which could not be read.</p></div> : null}
+          {t.payments !== null && catalog === undefined ? <div className={list.empty}><p>Reading the compute catalog to match purchases…</p></div> : null}
+          {t.payments !== null && catalog !== undefined && !catalog.ok ? (
+            <div className={list.empty}><p>Purchases are matched to the compute catalog, which could not be read ({catalog.error}). This is not an empty history.</p></div>
+          ) : null}
           {purchases?.length === 0 ? (
             <div className={list.empty}>
-              <p>No compute bought yet. Run the agent above, or ask the assistant for a job that needs a model call or GPU time; each purchase appears here when its transaction lands.</p>
+              <p>No compute bought yet. Pick a service above, or ask the assistant for a job that needs a model; each purchase appears here when its transaction lands.</p>
             </div>
           ) : null}
           {purchases?.length ? (
@@ -134,7 +82,7 @@ export function Compute() {
                   <Link href={`${t.base}/activity/${p.address}`} className={list.row}>
                     <span className={list.cell}>
                       <span className={list.main}>
-                        {spenderName(p.spender, t.spenders)} → {t.services?.find((s) => s.address === p.service)?.id ?? short(p.service)}
+                        {spenderName(p.spender, t.spenders)} → {ids?.get(p.service) ?? short(p.service)}
                       </span>
                       <span className={list.sub}>
                         #{p.number.toString()} · {ago(p.decidedAt || p.createdAt, t.now * 1000)}
@@ -156,8 +104,9 @@ export function Compute() {
       </section>
 
       <p className={styles.foot}>
-        Rein records the payment, not the run. The service delivers the work off chain, so this page shows what was bought, by whom and what the program decided, and
-        never an output it did not see. Other services the agent buys, such as web-search or market-data, are under Activity.
+        Each purchase is a Rein payment read from chain. The result comes from Rein&apos;s compute gateway, which runs a paid intent once on 0G after checking the
+        payment, or refunds it in full. A TEE-verified result carries the 0G provider&apos;s signature; a relayed one (Claude, GPT) is delivered unchecked and says so.
+        Payments to services outside this catalog are under Activity.
       </p>
     </div>
   );

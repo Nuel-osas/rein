@@ -173,3 +173,40 @@ test('httpGateway calls the gateway routes and reports silence as unknown', asyn
   assert.equal(r.status, 0);
   assert.equal(r.body.status, 'unknown');
 });
+
+test('buy_compute returns an ai-image result as a link to this intent, never a link the result names freely', async () => {
+  const url = `/api/compute/result/${INTENT}/blob`;
+  const image = { status: 200, body: { ok: true, status: 'done', result: { output: 'image', text: '', url, mime: 'image/png', model: 'z-image-turbo', verified: true, trust: 'tee' } } };
+  const { gw } = gateway({ quote: { status: 200, body: { intent: INTENT, service: 'ai-image', amount: '20000' } }, run: [image] });
+  const r = await buyCompute(ctxWith(gw, async (p) => paidOutcome(p)), { service: 'ai-image', prompt: 'A purple padlock' });
+  assert.equal(r.result.status, 'done');
+  assert.equal(r.result.output, 'image');
+  assert.equal(r.result.image_url, url);
+  assert.equal(r.result.verified, true);
+  assert.equal('output_untrusted' in r.result, false);
+  const evil = { status: 200, body: { ok: true, status: 'done', result: { output: 'image', url: 'https://evil.example/x.png', model: 'z-image-turbo', verified: true } } };
+  const { gw: gw2 } = gateway({ quote: { status: 200, body: { intent: INTENT, service: 'ai-image', amount: '20000' } }, run: [evil] });
+  const r2 = await buyCompute(ctxWith(gw2, async (p) => paidOutcome(p)), { service: 'ai-image', prompt: 'x' });
+  assert.equal(r2.result.image_url, null);
+});
+
+test('a relayed answer is labelled unchecked, and a refund for a missing key says not configured', async () => {
+  const relayed = { status: 200, body: { ok: true, status: 'done', result: { output: 'text', text: 'From Claude.', model: 'claude-haiku-5.5', verified: false, covers: 'none', trust: 'relayed' } } };
+  const { gw } = gateway({ quote: { status: 200, body: { intent: INTENT, service: 'ai-claude', amount: '10000' } }, run: [relayed] });
+  const r = await buyCompute(ctxWith(gw, async (p) => paidOutcome(p)), { service: 'ai-claude', prompt: 'hi' });
+  assert.equal(r.result.verified, false);
+  assert.match(String(r.result.trust), /no TEE/);
+  const refunded = { status: 503, body: { ok: false, status: 'refunded', code: 'not_configured', reason: 'ai-claude is not configured', refund: { state: 'confirmed', signature: 's' } } };
+  const { gw: gw2 } = gateway({ run: [refunded] });
+  const r2 = await computeResult(ctxWith(gw2, async (p) => paidOutcome(p)), { intent: INTENT });
+  assert.equal(r2.result.status, 'refunded');
+  assert.equal(r2.result.not_configured, true);
+});
+
+test('the demo scenarios buy only real services', async () => {
+  const { SCENARIOS } = await import('../src/scenarios.ts');
+  assert.match(SCENARIOS.research.task, /ai-chat/);
+  assert.match(SCENARIOS.overspend.task, /ai-claude/);
+  assert.equal(SCENARIOS.injection.probe?.service_id, 'wallet-9xqe');
+  for (const s of Object.values(SCENARIOS)) assert.doesNotMatch(s.task, /web-search|llm-inference|market-data|gpu-hour|premium-dataset|web search/i);
+});

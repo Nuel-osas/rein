@@ -4,20 +4,37 @@
 > devnet. The agent proposes a payment. Only the program authorizes it. A team shares one test-USDC
 > vault owned by its PDA; each person or agent pays under an on-chain policy (allowance per period,
 > cap per payment, payment count, expiry, allowed services). Over a limit the payment is filed as
-> Pending and the owner approves it in one transaction. Agents can buy TEE-verified 0G mainnet AI
-> runs for devnet test USDC through a gateway that checks the on-chain payment first.
+> Pending and the owner approves it in one transaction. The only services sold are real 0G mainnet
+> AI runs by Rein's gateway, paid in devnet test USDC, with the on-chain payment checked first:
+> ai-chat, ai-image and ai-voice on TEE-verified providers (0G Compute wallet SDK); ai-claude,
+> ai-gpt and ai-video relayed through the 0G Router (0G Private Computer) with no TEE.
 
 Live: https://rein-navy.vercel.app (demo without sign-in: https://rein-navy.vercel.app/demo)
 Program id (devnet): F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe
 Status: devnet only, test token, no license yet (all rights reserved by the authors).
 
+## Services (all run by Rein on 0G; full table in README.md under "Compute (0G)")
+
+- ai-chat: 0GM-1.0-35B-A3B, one answer up to 1,024 tokens, TEE verified, live (0G Compute wallet SDK only, never the Router)
+- ai-image: z-image-turbo, one 1024x1024 image, TEE verified, live (wallet SDK); image served at /api/compute/result/<intent>/blob
+- ai-voice: openai/whisper-large-v3, transcript of up to 60 s (3 MB) of uploaded or recorded audio, TEE verified, live (wallet SDK); the audio's sha256 is bound into the quote intent
+- ai-claude: claude-haiku-5.5 by default (COMPUTE_CLAUDE_MODEL), relayed through the 0G Router, no TEE, live
+- ai-gpt: gpt-5.6-luna by default (COMPUTE_GPT_MODEL), relayed through the 0G Router, no TEE, live
+- ai-video: bytedance/seedance-2.0-fast by default (COMPUTE_VIDEO_MODEL), one 4 s 480p 16:9 clip with no audio, relayed through the 0G Router, no TEE, live; an async job (run starts it, result reads finish it), clip served at the same blob route
+- Without ZG_ROUTER_API_KEY a Router service is still priced from the public model list, but a paid run is refunded in full (503 not_configured), never faked
+- Price of every run: 0G worst case x 1.5, rounded up to the cent, at least 0.01. Live on 2026-11-09: chat 0.01, image 0.02, voice 0.02, claude 0.01, gpt 0.01, video 0.43
+- Real paid runs on 2026-11-09 of image, voice, Claude, GPT and video (image and voice verified true; Claude, GPT and video relayed, verified false; chat was not re-run that day): docs/EVIDENCE.md, "Paid 0G runs, 2026-11-09"
+- The placeholder services of the first demo (web-search, llm-inference, market-data, gpu-hour, premium-dataset) are suspended on devnet since 2026-11-09. New transactions: docs/EVIDENCE.md; addresses: docs/CONSTANTS.md
+
 ## Claims and where each is proven
 
-- pay takes a service, never an address: programs/rein/src/lib.rs:695 (payee must equal Service.payee_token); refusal tx https://explorer.solana.com/tx/4uZN8NEASQZjW1HyqTPHxaZQ7QfQjL5WeHC94Za8imDnJzpHbzQ2DgD4CNR3uNb4cVCqqhhuzmG9b8znkNo9uZnr?cluster=devnet
-- An unknown service has no registry account: programs/rein/src/lib.rs:690; refusal tx https://explorer.solana.com/tx/5veVH6qrhhjEyZdTyPAsZuDa9RDkNg6ozBedGnDAduxqtZ9WQ4AWsNxRrHQxbtEYeaM52734tcR8HwkbmwPRr1fA?cluster=devnet
-- Spenders hold no SOL, a sponsor pays fees: programs/rein/src/lib.rs:676-678; tx https://explorer.solana.com/tx/4Ygd81XkNoDzwUxJoNXKrdPT9PHpyPdKikM6uNsN2Tj49ScGCxricxwVqRNb7w4DXcLen2TACfbtWZ38psdTM6K6?cluster=devnet
-- Over a limit, filed Pending: programs/rein/src/lib.rs:400-415 and programs/rein/src/lib.rs:236-240; tx https://explorer.solana.com/tx/w1VEqKk3icLuuBUgreeyafsHFQyyiXy9MuJVHETjr6edEnLSkWNjCchvfbJs3MBtm6CJUPgVTprC1ZZNAKoBDbo?cluster=devnet
-- Owner approval settles in the same transaction: programs/rein/src/lib.rs:246-285; tx https://explorer.solana.com/tx/3PTN2Q5CYHv8NGjfr4FvwX9GG8QSxbq8JvdC9Z4XiwNNY6LYTRptxniY7ETC1PBQ47jJREQ1L6Wxvfes7tLqvHNa?cluster=devnet
+Transactions marked "earlier evidence" were made before 2026-11-09 against placeholder services that are suspended now; they still show what the program does.
+
+- pay takes a service, never an address: programs/rein/src/lib.rs:695 (payee must equal Service.payee_token); refusal tx (earlier evidence) https://explorer.solana.com/tx/4uZN8NEASQZjW1HyqTPHxaZQ7QfQjL5WeHC94Za8imDnJzpHbzQ2DgD4CNR3uNb4cVCqqhhuzmG9b8znkNo9uZnr?cluster=devnet
+- An unknown service has no registry account: programs/rein/src/lib.rs:690; refusal tx (earlier evidence) https://explorer.solana.com/tx/5veVH6qrhhjEyZdTyPAsZuDa9RDkNg6ozBedGnDAduxqtZ9WQ4AWsNxRrHQxbtEYeaM52734tcR8HwkbmwPRr1fA?cluster=devnet
+- Spenders hold no SOL, a sponsor pays fees: programs/rein/src/lib.rs:676-678; tx (earlier evidence) https://explorer.solana.com/tx/4Ygd81XkNoDzwUxJoNXKrdPT9PHpyPdKikM6uNsN2Tj49ScGCxricxwVqRNb7w4DXcLen2TACfbtWZ38psdTM6K6?cluster=devnet
+- Over a limit, filed Pending: programs/rein/src/lib.rs:400-415 and programs/rein/src/lib.rs:236-240; tx (earlier evidence) https://explorer.solana.com/tx/w1VEqKk3icLuuBUgreeyafsHFQyyiXy9MuJVHETjr6edEnLSkWNjCchvfbJs3MBtm6CJUPgVTprC1ZZNAKoBDbo?cluster=devnet
+- Owner approval settles in the same transaction: programs/rein/src/lib.rs:246-285; tx (earlier evidence) https://explorer.solana.com/tx/3PTN2Q5CYHv8NGjfr4FvwX9GG8QSxbq8JvdC9Z4XiwNNY6LYTRptxniY7ETC1PBQ47jJREQ1L6Wxvfes7tLqvHNa?cluster=devnet
 - An approval waives a budget, never a stop: programs/rein/src/lib.rs:257-266; test tests/rein.ts:245
 - One intent is paid at most once (Payment PDA seeded by spender and intent): programs/rein/src/lib.rs:701; test tests/rein.ts:182
 - The vault's authority is the team PDA: programs/rein/src/lib.rs:607-613
@@ -32,8 +49,8 @@ Status: devnet only, test token, no license yet (all rights reserved by the auth
 ## Verify in one command
 
 - Unit tests (no chain needed): cd agent && pnpm test; cd web && pnpm test; cd zg-compute && pnpm test
-  (last run 2026-11-08: 53, 44 and 186 passing)
-- Devnet claims with explorer links (needs a funded CLI wallet and the seeded devnet keys):
+  (last run 2026-11-09: 56, 67 and 186 passing)
+- Earlier devnet claims with explorer links (placeholder-era script; its services are suspended now):
   REIN_CLUSTER=devnet REIN_RPC_URL=https://api.devnet.solana.com pnpm evidence
 - Program rules (needs a local validator seeded with pnpm seed):
   REIN_RPC_URL=http://127.0.0.1:8999 pnpm test:rules (13 tests, last run 2026-11-08)
@@ -62,6 +79,6 @@ Status: devnet only, test token, no license yet (all rights reserved by the auth
 ## Screenshots
 
 Real captures of the live app (2026-11-08), embedded in README.md under "See it": [docs/images/](docs/images/)
-- Demo flow: [overspend filed](docs/images/demo-overspend-pending.jpg), [approved and settled](docs/images/demo-approved-settled.jpg), [prompt injection refused](docs/images/demo-injection-refused.jpg)
+- Demo flow (earlier screenshots, placeholder-era): [overspend filed](docs/images/demo-overspend-pending.jpg), [approved and settled](docs/images/demo-approved-settled.jpg), [prompt injection refused](docs/images/demo-injection-refused.jpg)
 - App: [home](docs/images/home.jpg), [team and policies](docs/images/team-policies.jpg), [activity](docs/images/activity.jpg), [compute](docs/images/compute.jpg), [tour](docs/images/get-started-tour.jpg), [sign-in](docs/images/sign-in.jpg)
 - Demo video: https://youtu.be/ut9FW1qgL8A

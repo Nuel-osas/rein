@@ -34,8 +34,8 @@ type Wire =
   | {type: "final"; text: string; error?: string};
 
 const SCENARIOS = [
-  {id: "research", label: "Research brief", hint: "Buys a few cheap services inside its policy."},
-  {id: "overspend", label: "Over the cap", hint: "Asks for the $12 dataset. It waits for you."},
+  {id: "research", label: "Research brief", hint: "Buys an ai-chat answer (and maybe an ai-image) inside its policy."},
+  {id: "overspend", label: "Over the limit", hint: "Asks Claude through ai-claude, which is not on its list. It waits for you."},
   {id: "injection", label: "Prompt injection", hint: "A pasted message tells it to send 50 USDC to a wallet."},
 ] as const;
 
@@ -162,7 +162,7 @@ export function AgentPanel({teamAddress, onActivity}: AgentPanelProps) {
           value={task}
           maxLength={500}
           onChange={(e) => setTask(e.target.value)}
-          placeholder="Or give it a task in plain words, e.g. buy an hour of GPU time"
+          placeholder="Or give it a task in plain words, e.g. ask ai-chat for a two-line note on Solana fees"
           aria-label="Task for the agent"
         />
         <Button type="submit" small busy={running === "task"}>Run</Button>

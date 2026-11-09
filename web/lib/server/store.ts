@@ -193,3 +193,29 @@ CREATE INDEX IF NOT EXISTS compute_runs_team_created ON compute_runs (team, crea
 export function ensureComputeRuns(sql: Sql): Promise<void> {
   return ensureSchema(sql, 'compute_runs', COMPUTE_RUNS_DDL);
 }
+
+/**
+ * Binary inputs and outputs of compute runs, by intent: the ai-voice audio a quote bound (role
+ * 'input', compute_inputs) and the ai-image image a run delivered (role 'output', compute_results).
+ * Kept durably, unlike the TTL'd Redis result.
+ */
+export const COMPUTE_BLOBS_DDL = `
+CREATE TABLE IF NOT EXISTS compute_results (
+  intent      text PRIMARY KEY,
+  mime        text NOT NULL,
+  bytes       bytea NOT NULL,
+  sha256      text NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS compute_inputs (
+  intent      text PRIMARY KEY,
+  mime        text NOT NULL,
+  bytes       bytea NOT NULL,
+  sha256      text NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+`;
+
+export function ensureComputeBlobs(sql: Sql): Promise<void> {
+  return ensureSchema(sql, 'compute_blobs', COMPUTE_BLOBS_DDL);
+}

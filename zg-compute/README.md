@@ -6,12 +6,12 @@ vendored in [src/commerce/](src/commerce).
 
 | How Rein uses it | Where |
 |---|---|
-| Loaded lazily, once per process, by `zgBackend` with the gateway's 0G wallet key and `maxLedgerZg` | [web/lib/server/compute/backend.ts#L34](../web/lib/server/compute/backend.ts#L34) |
-| Chosen when `ZG_PRIVATE_KEY` is set and no `ZG_ROUTER_API_KEY` is; with a Router key the gateway uses 0G Private Computer instead, which does not use this package | [web/lib/server/compute/wire.ts#L131](../web/lib/server/compute/wire.ts#L131), [web/lib/server/compute/router.ts#L53](../web/lib/server/compute/router.ts#L53) |
-| Rein sells one operation: registry service `ai-chat`, operation `chat`, 0G model `0GM-1.0-35B-A3B` | [web/lib/server/compute/catalog.ts#L34](../web/lib/server/compute/catalog.ts#L34) |
+| Loaded lazily, once per process, by `zgBackend` with the gateway's 0G wallet key and `maxLedgerZg` | [web/lib/server/compute/backend.ts#L64](../web/lib/server/compute/backend.ts#L64) |
+| Runs three of Rein's services with `ZG_PRIVATE_KEY`: `ai-chat` (operation `chat`, `0GM-1.0-35B-A3B`), `ai-image` (`image`, `z-image-turbo`) and `ai-voice` (`voice`, `openai/whisper-large-v3`, after its audio checks). All three stay here even when the Router key is set: the Router's private mode returned no `tee_verified` on 2026-11-09, and here the provider's signature is checked. Its `audio` module (`@rein/zg-compute/audio`) also measures voice uploads before they are quoted | [web/lib/server/compute/catalog.ts](../web/lib/server/compute/catalog.ts), [web/lib/server/compute/wire.ts](../web/lib/server/compute/wire.ts) |
+| Not used for `ai-claude`, `ai-gpt` and `ai-video`: they run only on the 0G Router (no verified provider for them here: Claude's are relayed with no TEE, GPT's TEE signer is not acknowledged, and no verified provider serves video) | [web/lib/server/compute/router.ts](../web/lib/server/compute/router.ts) |
 | Gateway wallet, ledger and the first verified production run | [docs/CONSTANTS.md](../docs/CONSTANTS.md) |
 
-Tests: `pnpm test` (vitest). Re-run 2026-11-08: 10 test files, 186 tests, all pass, exit 0.
+Tests: `pnpm test` (vitest). Re-run 2026-11-09: 10 test files, 186 tests, all pass, exit 0.
 
 # @rein/zg-compute
 

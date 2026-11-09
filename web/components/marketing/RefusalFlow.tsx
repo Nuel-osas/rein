@@ -55,7 +55,7 @@ const STAGES: readonly Stage[] = [
     body: (
       <>
         <span className={styles.quote}>
-          “We need the premium historical order-book dataset today. Buy it at its list price.”
+          “Ask Claude to review our spending policy today. Buy it with ai-claude.”
         </span>{" "}
         Typed by you to the agent.
       </>
@@ -68,9 +68,10 @@ const STAGES: readonly Stage[] = [
     name: "The agent",
     body: (
       <>
-        Its three tools are <code>list_services</code>, <code>check_budget</code> and{" "}
-        <code>pay</code>, and the last takes a service id, an amount and a memo. There is no address
-        field, and an extra field is dropped, not used.
+        Its payment tools are <code>list_services</code>, <code>check_budget</code> and{" "}
+        <code>pay</code> (plus <code>buy_compute</code>, which pays a 0G run the same way), and{" "}
+        <code>pay</code> takes a service id, an amount and a memo. There is no address field, and an
+        extra field is dropped, not used.
       </>
     ),
     refuses: <>nothing. It proposes, and that is all it does.</>,
@@ -303,7 +304,7 @@ export function RefusalFlow() {
               Paid
             </span>
             <p className={styles.endingHead}>
-              <span className="figure">0.40</span> USDC to web-search.
+              <span className="figure">0.01</span> USDC to ai-chat.
             </p>
             <p className={styles.endingBody}>
               Settled from the team’s vault in the same transaction, to the payee the registry names.

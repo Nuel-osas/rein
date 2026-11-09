@@ -8,6 +8,11 @@
 // 2. An over-cap payment is filed as pending, and the owner's approval settles it in one transaction.
 // 3. An unknown service is refused on chain (the failed transaction is mined and linked).
 // 4. A payee the registry does not name is refused on chain.
+//
+// History: this script produced the earlier evidence (2026-11-08) on the first demo's placeholder
+// services (web-search, gpu-hour, ...). Those were suspended on 2026-11-09, so on devnet it is now
+// refused with ServiceSuspended; it still runs on a fresh localnet seeded before that change. The
+// current evidence is the paid 0G runs in docs/EVIDENCE.md.
 
 import { BN } from '@coral-xyz/anchor';
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
@@ -120,8 +125,18 @@ async function main() {
   ].join('\n');
   for (const l of lines) console.log(`${l.result.padEnd(32)} ${l.claim}\n${' '.repeat(33)}${explorer('tx', l.signature)}`);
   if (cluster() === 'devnet') {
+    // Only the earlier-evidence section is this script's; the rest of the file is kept.
     mkdirSync(join(__dirname, '..', 'docs'), { recursive: true });
-    writeFileSync(join(__dirname, '..', 'docs', 'EVIDENCE.md'), md);
+    const file = join(__dirname, '..', 'docs', 'EVIDENCE.md');
+    const section = `<!-- evidence:start -->\n${md.replace(/^# /, '## ')}<!-- evidence:end -->`;
+    const re = /<!-- evidence:start -->[\s\S]*?<!-- evidence:end -->/;
+    let text = '';
+    try {
+      text = readFileSync(file, 'utf8');
+    } catch {
+      text = '# Evidence\n';
+    }
+    writeFileSync(file, re.test(text) ? text.replace(re, section) : `${text.trimEnd()}\n\n${section}\n`);
     console.log('\nwrote docs/EVIDENCE.md');
   }
 }

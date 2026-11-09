@@ -29,7 +29,7 @@ screen is readable by anyone, wallet or not.
 | `/approvals` | Pending payments for the owner to approve or decline |
 | `/activity`, `/activity/[id]` | Payment history and a receipt per payment |
 | `/pay` | Pay a registered service by hand |
-| `/compute`, `/compute/[intent]` | 0G compute: the agent's run panel and assistant, purchases, one run's payment and result or refund |
+| `/compute`, `/compute/[intent]` | 0G compute: a service picker (Chat, Image, Voice, Claude, GPT, Video) with the right input per kind, the trust level on each card, the assistant, purchases, and one run's payment and result (text, image, transcript or clip) or refund |
 | `/settings` | Team settings, including the owner's withdraw |
 | `/teams/new` | Where a signed-in person with no team lands: one sponsored transaction, `create_team` plus `add_spender` for the Rein agent with the starter policy ([components/app/rein/TeamSetup.tsx](components/app/rein/TeamSetup.tsx)); also `/app/teams/new` |
 | `/invite/[token]` | Invite link; decoded in the browser, nothing stored, works signed out |
@@ -58,18 +58,27 @@ noted.
 | [/api/faucet](app/api/faucet/route.ts) | POST | Mints up to 100 test USDC into the demo team's vault only | none (demo team only) | 3 per 10 min |
 | [/api/services](app/api/services/route.ts) | GET | The service registry, cached 60 s and shared | none | none |
 | [/api/team/[team]/state](app/api/team/[team]/state/route.ts) | GET | The team view's data from the shared cache; `?fresh=1` skips the freshness window | none | 120/min; fresh 20/min |
-| [/api/compute/catalog](app/api/compute/catalog/route.ts) | GET | Compute services on sale with a live price | none | 60/min |
-| [/api/compute/quote](app/api/compute/quote/route.ts) | POST | Prices one 0G run and returns the intent to pay it under. Nothing moves | none | 30 per 10 min |
-| [/api/compute/run](app/api/compute/run/route.ts) | POST | Runs a paid quote once after reading the Payment PDA from chain; refunds if the run cannot happen | none (the payment is the capability) | 60 per 10 min |
-| [/api/compute/result/[intent]](app/api/compute/result/[intent]/route.ts) | GET | A stored result (7 days) or its refund | the unguessable HMAC intent | 120 per 10 min |
+| [/api/compute/catalog](app/api/compute/catalog/route.ts) | GET | Every compute service with its kind, trust level ("TEE verified" or "Relayed, no TEE"), whether this server is configured for it, and a live price | none | 60/min |
+| [/api/compute/quote](app/api/compute/quote/route.ts) | POST | Prices one 0G run (a prompt, or for `ai-voice` an audio clip whose sha256 is bound into the intent) and returns the intent to pay it under. Nothing moves | none | 30 per 10 min |
+| [/api/compute/buy](app/api/compute/buy/route.ts) | POST | Quotes a run and pays it with the team's Rein agent key under its policy (the Compute page's direct buy, for every kind); the caller then calls `/api/compute/run` | as `/api/agent`: demo team none, own team the owner's Privy token | 6 per 10 min (IP for demo, user for own team) |
+| [/api/compute/run](app/api/compute/run/route.ts) | POST | Runs a paid quote once after reading the Payment PDA from chain; refunds if the run cannot happen. For `ai-video` it starts the clip job and answers 202 running | none (the payment is the capability) | 60 per 10 min |
+| [/api/compute/result/[intent]](app/api/compute/result/[intent]/route.ts) | GET | A stored result (7 days) or its refund. For a started `ai-video` job each call reads the job's status once and, when it is done, stores the clip | the unguessable HMAC intent | 120 per 10 min |
+| [/api/compute/result/[intent]/blob](app/api/compute/result/[intent]/blob/route.ts) | GET | The image of an `ai-image` run or the MP4 of an `ai-video` run, from Postgres `compute_results`, served only as the type its bytes show | the unguessable HMAC intent | 120 per 10 min |
 
 Compute logic lives in [lib/server/compute/core.ts](lib/server/compute/core.ts) with every outside
 effect injected; [lib/server/compute/wire.ts](lib/server/compute/wire.ts) wires the real chain
-reads, store, refund and backend. Backends: the 0G Router (0G Private Computer,
-[lib/server/compute/router.ts](lib/server/compute/router.ts)) when `ZG_ROUTER_API_KEY` is set,
-else the 0G Compute SDK through `@rein/zg-compute`
-([lib/server/compute/backend.ts#L34](lib/server/compute/backend.ts#L34)), selected at
-[lib/server/compute/wire.ts#L131](lib/server/compute/wire.ts#L131).
+reads, store, refund and backend. The services are in
+[lib/server/compute/catalog.ts](lib/server/compute/catalog.ts), and each picks its own backend:
+`ai-chat`, `ai-image` and `ai-voice` run on the 0G Compute SDK through `@rein/zg-compute`
+([lib/server/compute/backend.ts](lib/server/compute/backend.ts)) with the gateway's 0G wallet,
+whether or not the Router key is set (the Router's private mode returned no `tee_verified` on
+2026-11-09, so a Router chat could not be called verified); `ai-claude`, `ai-gpt` and `ai-video`
+run only on the 0G Router (0G Private Computer, [lib/server/compute/router.ts](lib/server/compute/router.ts)),
+relayed with no TEE. `ai-video` is a job: `run` starts it (Router `POST /v1/videos`) and each
+result read checks it once, so no request waits for a clip (the routes cap at 60 s; the project's
+Vercel default is 300 s on the Hobby plan with Fluid compute). A server without
+`ZG_ROUTER_API_KEY` shows "Needs 0G Private Computer key" for the Router services and refunds a
+paid run in full. Nothing is faked: a paid run that cannot happen is refunded.
 
 ## How chain reads are cached
 
@@ -100,7 +109,7 @@ Names only. Server keys are JSON byte arrays in env; outside production, or with
 | Keys | `REIN_SPONSOR_SECRET`, `REIN_DEMO_OWNER_SECRET`, `REIN_MINT_AUTHORITY_SECRET`, `REIN_DEMO_AGENT_SECRET`, `REIN_POOL_SECRET`, `REIN_GATEWAY_SECRET`, `REIN_KEYS_DIR`, `REIN_ALLOW_KEY_FILES` | [lib/server/keys.ts](lib/server/keys.ts) |
 | Store | `REDIS_URL`, `DATABASE_URL`, `REIN_ALLOW_MEMORY_STORE` | [lib/server/store.ts](lib/server/store.ts) |
 | Agent | `GROQ_API_KEY`, `REIN_AGENT_SEED`, `REIN_AGENT_MODEL` (read by `@rein/agent` inside the route) | [app/api/agent/route.ts](app/api/agent/route.ts), [lib/server/agent-key.ts](lib/server/agent-key.ts), [../agent/src/agent.ts](../agent/src/agent.ts) |
-| Compute | `GATEWAY_SECRET`, `COMPUTE_ENABLED`, `COMPUTE_DAILY_BUDGET_USD`, `ZG_LEDGER_FLOOR_USD`, `ZG_PRIVATE_KEY`, `ZG_ROUTER_API_KEY`, `ZG_MAX_LEDGER_ZG`, `COMPUTE_FAKE_UPSTREAM`, `COMPUTE_FAKE_FAIL` (the two fake flags are dev only) | [lib/server/compute/core.ts](lib/server/compute/core.ts), [lib/server/compute/wire.ts](lib/server/compute/wire.ts) |
+| Compute | `GATEWAY_SECRET`, `COMPUTE_ENABLED`, `COMPUTE_DAILY_BUDGET_USD`, `ZG_LEDGER_FLOOR_USD`, `ZG_PRIVATE_KEY`, `ZG_ROUTER_API_KEY`, `ZG_MAX_LEDGER_ZG`, `COMPUTE_CLAUDE_MODEL`, `COMPUTE_GPT_MODEL`, `COMPUTE_VIDEO_MODEL`, `COMPUTE_RELAYED_MAX_TOKENS`, `COMPUTE_FAKE_UPSTREAM`, `COMPUTE_FAKE_FAIL` (the two fake flags are dev only) | [lib/server/compute/core.ts](lib/server/compute/core.ts), [lib/server/compute/wire.ts](lib/server/compute/wire.ts) |
 | Claim | `CLAIM_TOTAL_CAP` | [lib/server/claim.ts](lib/server/claim.ts) |
 
 In production a missing `REDIS_URL` makes the store null and the compute and claim routes answer
@@ -115,7 +124,7 @@ pnpm typecheck
 pnpm build
 ```
 
-Tests re-run 2026-11-08: 44 tests in 11 suites, 44 pass, 0 fail, exit 0. `pnpm typecheck` and
+Tests re-run 2026-11-09: 67 tests in 18 suites, 67 pass, 0 fail, exit 0. `pnpm typecheck` and
 `pnpm build` were not run for this document. There is no lint script.
 
 | File | Tests |

@@ -264,7 +264,7 @@ const FINDINGS: readonly Finding[] = [
     body: (
       <>
         A fresh agent holding <span className="figure">0</span> SOL paid{" "}
-        <span className="figure">0.40</span> test USDC for <code>web-search</code>. The sponsor paid
+        <span className="figure">0.40</span> test USDC to a placeholder service of the first run. The sponsor paid
         the fee and the payment record’s rent; the USDC came from the team’s vault. <Tx sig="4Ygd81XkNoDzwUxJoNXKrdPT9PHpyPdKikM6uNsN2Tj49ScGCxricxwVqRNb7w4DXcLen2TACfbtWZ38psdTM6K6" />
       </>
     ),
@@ -275,7 +275,7 @@ const FINDINGS: readonly Finding[] = [
     term: "Over its cap, the payment waited",
     body: (
       <>
-        The same agent asked for <span className="figure">9</span> USDC of GPU time against a{" "}
+        The same agent asked a placeholder service for <span className="figure">9</span> USDC against a{" "}
         <span className="figure">5</span> USDC cap. The program filed it as Pending with the reason{" "}
         <code>over_cap</code>, and nothing moved. <Tx sig="w1VEqKk3icLuuBUgreeyafsHFQyyiXy9MuJVHETjr6edEnLSkWNjCchvfbJs3MBtm6CJUPgVTprC1ZZNAKoBDbo" />
       </>
@@ -310,7 +310,7 @@ const FINDINGS: readonly Finding[] = [
     term: "An attacker’s payee was refused on chain",
     body: (
       <>
-        The agent passed a token account of its own choosing as the <code>web-search</code> payee.
+        The agent passed a token account of its own choosing as a registered service’s payee.
         The program refused it with <code>WrongPayee</code>, because the registry names a different
         account. <Tx sig="4uZN8NEASQZjW1HyqTPHxaZQ7QfQjL5WeHC94Za8imDnJzpHbzQ2DgD4CNR3uNb4cVCqqhhuzmG9b8znkNo9uZnr" />
       </>
@@ -338,7 +338,7 @@ export function SecurityEvidence() {
       id="verified"
       eyebrow="Checked, not asserted"
       title="What has been run against the chain."
-      lede="Each of these was run on Solana devnet on 8 November 2026 by the evidence script and written down at the time. Open any of them on the explorer and read the program’s own log rather than this summary of it."
+      lede="Each of these was run on Solana devnet on 8 November 2026 by the evidence script and written down at the time. That run paid placeholder services, suspended since 9 November 2026 now that Rein sells only real 0G runs; the program’s rules they show are unchanged. Open any of them on the explorer and read the program’s own log rather than this summary of it."
       tone="sunken"
     >
       <dl className={styles.findings}>

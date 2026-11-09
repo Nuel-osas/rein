@@ -72,11 +72,91 @@
         "address": "ANBMUJg453YEQM6dGWuZtkvFHRa9ina2dDT5wegBw9s8",
         "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
         "label": "0G Chat (0GM-1.0-35B-A3B)",
-        "model": "0GM-1.0-35B-A3B",
+        "model": "0GM-1.0-35B-A3B (wallet route, TEE)",
         "price": "0.01",
         "registerTx": "46LZLaFksDTryRmjqwheDM62hd2h3cuzhABXmz5m5MEd6pBUzHQNhzho52Au3Ce1CrUo37TGrmABLnNkcEiXSbYS"
+      },
+      "ai-image": {
+        "address": "ACm5z2ZHktQpZufDQC1BgtCFRc1yTPpMWZ9qDvGvSacX",
+        "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+        "label": "0G Image, Z-Image-Turbo (TEE)",
+        "model": "z-image-turbo (wallet route, TEE)",
+        "price": "0.02",
+        "registerTx": "T4g6oBynG7X7VxmaA5tsRHhtGa2Xfzo7fM1385vBUZu8zaQ7Exnocf1QWHvy5rGYjtYGx9fpKnFkWPUqWqcmPow"
+      },
+      "ai-voice": {
+        "address": "6iopRv9bPU5svbKcEw1N8ojdiLrBCb85CrK9geEokkTt",
+        "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+        "label": "0G Voice, Whisper v3 (TEE)",
+        "model": "openai/whisper-large-v3 (wallet route, TEE)",
+        "price": "0.02",
+        "registerTx": "4SwVvZRYwwkNaKskujqn2YcdGZwVegbG8MbkfxaNjeLFeqYrXkpWYgxirCVbEEPGy96gUJkaty5JXZ6iLc385gXq"
+      },
+      "ai-claude": {
+        "address": "2iL1EsbsqRKD29F2wNubMjAtcSwZWsPcCKqmiy4WRzau",
+        "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+        "label": "Claude via 0G (relayed, no TEE)",
+        "model": "claude-haiku-5.5 by default (0G Router only, relayed, no TEE)",
+        "price": "0.01",
+        "registerTx": "37LCt54uEx1mb6gu2NDZRrgkBF9GvR7sw49fBsSJ9qPFQVgSQtA91Q3Yfc6QqgK9gaU6nwZ9A6QaCUCLrJkvfrQB"
+      },
+      "ai-gpt": {
+        "address": "G3C5WfPLqpkq6HKGpP5o5ujKJe2ub5LqtMowpYkCT3gD",
+        "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+        "label": "GPT via 0G (relayed, no TEE)",
+        "model": "gpt-5.6-luna by default (0G Router only, relayed, no TEE)",
+        "price": "0.01",
+        "registerTx": "2DRuJBxhmVMoazhpVtivjSWoSWRvrm8LPprQR3wUfgWjbhkK5uv9J74H6uQ27yEVgoMdoYKA6rwtn8tYQWmVSWv5"
+      },
+      "ai-video": {
+        "address": "H5WPnSovaM6TyrAaDMQTe1f22jSyjBUpUiGMRm269Ky3",
+        "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+        "label": "Video via 0G (relayed, no TEE)",
+        "model": "bytedance/seedance-2.0-fast by default, one 4 s 480p clip (0G Router only, relayed, no TEE)",
+        "price": "0.45",
+        "registerTx": "3JFMSoAfcHZgkmPxmGXmYxoWhazSmoC3ThkZjcHvLpq6kXQpARYMEWnbNFhvzrSocAwSJCY9iRh9tscWpZ4cTUtB"
       }
     },
-    "setupAt": "2026-11-08T14:13:27.101Z"
+    "setupAt": "2026-11-09T07:30:38.213Z",
+    "suspended": {
+      "web-search": {
+        "address": "8uLAhqCCWRF4JqT9GgnUQvLozRCp3JKcQo5gJfwPsj1Z",
+        "suspendTx": "4B4cidsYU4DE6XuLNzks2yBecuUNWjkeWym5GZ2fpWpCLWvkYYExa1uF7eL3CZvPpEawvKE6zjQamZ6i4LpiyhLm"
+      },
+      "llm-inference": {
+        "address": "DEj1rr9Q3zBuNcC9FeFeWi6BZrHMxq34G4AqDYSnHg7p",
+        "suspendTx": "4HEJTbkoYyGj5oo3r2iuUyMggnTyvYPNky13iPzeahmN5Dd2NFaQhuQGSAQroBUCw8sJHnQwSbT38nT7rqRF26kH"
+      },
+      "market-data": {
+        "address": "Hft9fRxre32TCa9T8nooDPhqBxJNnfsGurwzdBBQAQRS",
+        "suspendTx": "2nTYuYLFPp8qWivJtiaJX9k7qATrjjRxwmETA9k4jouCAjAgqrVTCZqj5Go1x7VJj5YUJUA3ZHb7KhuG4RPhF7Uf"
+      },
+      "gpu-hour": {
+        "address": "4RwFfvF93w5aFB4S56UhiUdF2b91ZugP9p9ENdQxS4Di",
+        "suspendTx": "2hHCpSWF5SX6FRwzuPwHeD4DPVu1DYkegWaSQS4qZ3yW1xHgVcjQXDCahqEofVWDB143KVbiwyzTNp4So8bzo5b5"
+      },
+      "premium-dataset": {
+        "address": "GvMw9LZqdgQyhkfybT6mp6XgSRRGAgSLKxZnTp8AfXNc",
+        "suspendTx": "5ooh15GmE1eENzAE6kTAvxNgSqpffTLk8asMKrTLEm8efC3zbbGnJpgUYs1LirLbQBH7yrHd6EmXgjTejqdCSVzF"
+      }
+    }
+  },
+  "demoAgent": {
+    "spender": "GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d",
+    "services": [
+      "ai-chat",
+      "ai-image",
+      "ai-voice"
+    ],
+    "policy": {
+      "cap": "0.05",
+      "allowance": "0.5",
+      "periodSecs": 3600,
+      "maxPayments": 20,
+      "expiresAt": "2026-12-09T07:20:45.000Z"
+    },
+    "setServicesTx": "2yKL9mtqt2db2ktP7qh3kzqyrVWFAFfNmYcqn3wfroSn5emrXrsSFHQzatquVuaVC7iipSuQ6B6xu1L5N1zUainT",
+    "setPolicyTx": "59ZBuLTyK79fQdjsNxb7C14RKvxEMc4dzzQ2A3pQKCnDFXxosg7cT9GaJeeisPsK5LkKTUxphuCCYYtNDnvS3ueM",
+    "checkedAt": "2026-11-09T07:20:49.113Z"
   }
 }

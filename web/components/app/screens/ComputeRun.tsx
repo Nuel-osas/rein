@@ -15,7 +15,7 @@ export function ComputeRun({intent}: {intent: string}) {
   if (t.at === 0) return <ContentLoading label="Reading the run's payment from chain…" rows={2} />;
   return (
     <div className={styles.page}>
-      <PageHeader kind="compute" title="Compute run" description="Price, payment, run and delivery for one purchase. The payment is read from chain; the answer comes from the compute gateway." />
+      <PageHeader kind="compute" title="Compute run" description="Price, payment, run and delivery for one purchase. The payment is read from chain; the result (an answer, a transcript or an image) or the refund comes from the compute gateway." />
       <ComputeResultView teamAddress={t.address} intent={intent} />
       <Link href={`${t.base}/compute`} className={rein.sectionLink}>
         ← AI compute

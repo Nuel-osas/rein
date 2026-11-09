@@ -16,7 +16,8 @@ authorizes it. Over a limit, the payment waits for the owner's approval.
 | What can move money, and under what checks? | [programs/rein/src/lib.rs](programs/rein/src/lib.rs) (`pay` at line 186, `approve` at line 246) |
 | Can an agent name a recipient? | No. [agent/src/tools.ts#L16-L52](agent/src/tools.ts#L16-L52) and [lib.rs#L695](programs/rein/src/lib.rs#L695) |
 | What does the sponsor co-sign? | [web/app/api/sponsor/route.ts#L24-L42](web/app/api/sponsor/route.ts#L24-L42) |
-| How is a compute purchase checked? | [web/lib/server/compute/core.ts#L373-L390](web/lib/server/compute/core.ts#L373-L390) |
+| Which services does Rein sell? | Only real 0G runs, one registry service each: [web/lib/server/compute/catalog.ts](web/lib/server/compute/catalog.ts) and the table in [README.md](README.md#compute-0g). The placeholder services of the first demo are suspended on devnet |
+| How is a compute purchase checked? | [web/lib/server/compute/core.ts#L569-L586](web/lib/server/compute/core.ts#L569-L586) |
 | How is the claim kept to once per account? | [web/lib/server/claim.ts#L1-L42](web/lib/server/claim.ts#L1-L42) |
 | Which addresses are real, and how were they verified? | [docs/CONSTANTS.md](docs/CONSTANTS.md) |
 | Which transactions prove the claims? | [docs/EVIDENCE.md](docs/EVIDENCE.md) |
@@ -44,11 +45,11 @@ authorizes it. Over a limit, the payment waits for the owner's approval.
 |---|---|---|
 | Unit tests | `cd agent && pnpm test`, `cd web && pnpm test`, `cd zg-compute && pnpm test` | `pnpm install` only |
 | Program tests | `REIN_RPC_URL=http://127.0.0.1:8999 pnpm test:rules` | A local validator seeded with `pnpm seed` |
-| Devnet evidence | `REIN_CLUSTER=devnet REIN_RPC_URL=https://api.devnet.solana.com pnpm evidence` | The seeded devnet keys in `~/.config/rein/` |
+| Earlier devnet evidence (placeholder-era; its services are suspended now) | `REIN_CLUSTER=devnet REIN_RPC_URL=https://api.devnet.solana.com pnpm evidence` | The seeded devnet keys in `~/.config/rein/` |
 | Docs check | `pnpm docs:check` | Nothing |
 | Web dev server | `cd web && pnpm dev` | Env vars, see [web/README.md](web/README.md) |
 
-Last results (2026-11-08): agent 53 pass, web 44 pass, zg-compute 186 pass, all exit 0; program 13
+Last results (2026-11-09): agent 56 pass, web 67 pass, zg-compute 186 pass, all exit 0; program 13
 tests, last run against a seeded local validator.
 
 ## Rules for agents working here

@@ -70,3 +70,56 @@
 .resultText { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-small); line-height: 1.6; color: var(--color-text-primary); max-block-size: 24rem; overflow: auto; }
 /* Side-by-side cards share a row height; each packs its own content to the top. */
 .cards > * { align-content: start; }
+
+/* ---- the service picker: six square tiles, the chosen one marked by an accent rule ---- */
+.picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; }
+@container compute (min-width: 40rem) { .picker { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container compute (min-width: 72rem) { .picker { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.option {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  gap: .375rem;
+  min-block-size: 8.5rem;
+  padding: .875rem 1rem;
+  border: 0;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--app-line);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.option:hover { background: var(--app-sidebar-hover); }
+.option:focus-visible { outline: 2px solid var(--color-border-focus, var(--color-accent-text)); outline-offset: -2px; }
+.option[aria-pressed="true"] { background: var(--color-accent-soft); box-shadow: inset 0 3px 0 var(--color-accent-solid), 0 0 0 1px var(--app-line-strong); }
+.option[data-off] .optionName { color: var(--color-text-secondary); }
+.optionTop { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem .5rem; }
+.optionKind { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--color-accent-text); }
+.optionName { font-size: var(--text-small); font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.optionMeta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary); overflow-wrap: anywhere; }
+.optionFoot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem .5rem; align-self: end; }
+.optionPrice { font-size: var(--text-small); font-variant-numeric: tabular-nums; color: var(--color-text-primary); }
+.optionPrice small { color: var(--color-text-tertiary); font-size: var(--text-meta); }
+.optionState { font-size: var(--text-meta); color: var(--color-blocked-text); }
+.optionState[data-ready] { color: var(--color-settled-text); }
+
+/* Trust: what a run's answer can prove. TEE in the settled ink, relayed in the waiting ink. */
+.badge { padding: .125rem .375rem; font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; line-height: 1.4; text-transform: uppercase; white-space: nowrap; color: var(--color-text-secondary); box-shadow: var(--app-ring-inset); }
+.badge[data-tone="tee"] { color: var(--color-settled-text); background: var(--color-settled-surface); box-shadow: none; }
+.badge[data-tone="relayed"] { color: var(--color-blocked-text); background: var(--color-blocked-surface); box-shadow: none; }
+.badge[data-tone="fake"] { color: var(--color-danger-text); background: var(--color-danger-surface); box-shadow: none; }
+
+.why { margin: 0; padding: .625rem .875rem; font-size: var(--text-small); line-height: 1.5; color: var(--color-text-primary); background: var(--color-blocked-surface); box-shadow: inset 3px 0 0 var(--color-blocked-text); }
+.count[data-over] { color: var(--color-danger-text); }
+
+/* ---- audio in ---- */
+.fileLabel { position: relative; display: inline-flex; align-items: center; min-block-size: 2.25rem; padding: 0 .875rem; box-shadow: 0 0 0 1px var(--app-control-edge); font-size: var(--text-small); color: var(--color-text-primary); cursor: pointer; }
+.fileLabel:focus-within { outline: 2px solid var(--color-border-focus, var(--color-accent-text)); outline-offset: 1px; }
+.fileInput { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; opacity: 0; cursor: pointer; }
+.clip { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+.clip audio { max-inline-size: 100%; block-size: 2.25rem; }
+
+/* ---- media out ---- */
+.media { display: grid; gap: .5rem; margin: 0; }
+.mediaItem { display: block; inline-size: 100%; max-inline-size: 32rem; block-size: auto; background: var(--color-surface-sunken); box-shadow: var(--app-ring); }
+.mediaCaption { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: baseline; font-size: var(--text-meta); color: var(--color-text-secondary); }

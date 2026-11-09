@@ -13,7 +13,7 @@ test('PDAs use the program seeds', () => {
   const owner = pk(), authority = pk();
   const find = (seeds: Buffer[]) => PublicKey.findProgramAddressSync(seeds, IDL_PROGRAM_ID)[0];
   assert.ok(chain.configPda().equals(find([Buffer.from('config')])));
-  assert.ok(chain.servicePda('web-search').address.equals(find([Buffer.from('service'), Buffer.from('web-search')])));
+  assert.ok(chain.servicePda('ai-chat').address.equals(find([Buffer.from('service'), Buffer.from('ai-chat')])));
   const team = chain.teamPda(owner);
   assert.ok(team.equals(find([Buffer.from('team'), owner.toBuffer()])));
   const spender = chain.spenderPda(team, authority);

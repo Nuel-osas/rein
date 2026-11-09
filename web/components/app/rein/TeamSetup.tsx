@@ -13,7 +13,7 @@
 import {useRouter} from "next/navigation";
 import {useCallback, useEffect, useState, type ReactNode} from "react";
 import {PublicKey} from "@solana/web3.js";
-import {AGENT_LABEL, fetchAgentKey, fetchCatalog, readComputeServices, starterPolicy, teamNameFor} from "@/lib/agent-setup";
+import {AGENT_LABEL, fetchAgentKey, fetchCatalog, grantable, readComputeServices, starterPolicy, teamNameFor} from "@/lib/agent-setup";
 import {PROGRAM_ID, connection} from "@/lib/chain";
 import {ixs, pda, readConfig, toTeam} from "@/lib/rein";
 import {errorText, useWallet} from "@/lib/wallet";
@@ -65,7 +65,8 @@ export function TeamSetup({next = "/dashboard", fallback}: {next?: string; fallb
       if (!config) return fail("Could not read the Rein config from chain, so the token is unknown. Nothing was sent.");
       if (!agent.ok) return fail(agent.missing ? `${agent.error} Nothing was sent.` : agent.error);
       if (!catalog.ok) return fail(`Compute is not configured on this deployment yet: ${catalog.error} Nothing was sent.`);
-      const ids = catalog.services.map((s) => s.id);
+      // Only services registered and active in the registry are granted; the catalog also lists ones it cannot sell yet.
+      const ids = grantable(catalog).map((s) => s.id);
       const registered = await readComputeServices(conn, ids);
       const missing = registered ? registered.rows.filter((r) => !r.service).map((r) => r.id) : [];
       const name = teamNameFor(label);

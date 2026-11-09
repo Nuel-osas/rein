@@ -40,7 +40,7 @@ export const TOOL_SPECS: ToolSpec[] = [
       parameters: {
         type: 'object',
         properties: {
-          service_id: { type: 'string', description: 'A registered service id from list_services, e.g. "web-search".' },
+          service_id: { type: 'string', description: 'A registered service id from list_services, e.g. "ai-chat".' },
           amount_usdc: { type: 'string', description: 'Decimal USDC string with at most 6 decimals, e.g. "0.40".' },
           memo: { type: 'string', description: 'What the payment is for, at most 64 bytes.' },
         },
@@ -61,7 +61,7 @@ export const COMPUTE_TOOL_SPECS: ToolSpec[] = [
       parameters: {
         type: 'object',
         properties: {
-          service: { type: 'string', description: 'A compute service id from list_services, e.g. "ai-chat".' },
+          service: { type: 'string', description: 'A compute service id from list_services: "ai-chat", "ai-claude" or "ai-gpt" (text), or "ai-image" (one image). ai-voice needs an audio upload and is bought from the Compute page.' },
           prompt: { type: 'string', description: 'The prompt to send to the model, at most 4,000 characters.' },
         },
         required: ['service', 'prompt'],
@@ -74,11 +74,11 @@ export const COMPUTE_TOOL_SPECS: ToolSpec[] = [
     function: {
       name: 'buy_compute',
       description:
-        "Buy one AI model run: quotes it, pays the quoted price from the team vault under this agent's policy, and if the payment settles, runs it and returns the model's answer. If the payment needs the owner's approval, returns the intent and the approval deadline instead.",
+        "Buy one AI model run: quotes it, pays the quoted price from the team vault under this agent's policy, and if the payment settles, runs it and returns the model's answer (or, for ai-image, a link to the image). If the payment needs the owner's approval, returns the intent and the approval deadline instead.",
       parameters: {
         type: 'object',
         properties: {
-          service: { type: 'string', description: 'A compute service id from list_services, e.g. "ai-chat".' },
+          service: { type: 'string', description: 'A compute service id from list_services: "ai-chat", "ai-claude" or "ai-gpt" (text), or "ai-image" (one image). ai-voice needs an audio upload and is bought from the Compute page.' },
           prompt: { type: 'string', description: 'The prompt to send to the model, at most 4,000 characters.' },
           max_price_usdc: { type: 'string', description: 'Optional. Do not pay if the quote is above this decimal USDC amount.' },
         },
@@ -255,18 +255,31 @@ function gatewayError(r: GatewayReply): string {
 function runResult(r: GatewayReply, intent: string): Record<string, unknown> {
   const status = typeof r.body.status === 'string' ? r.body.status : null;
   if (status === 'done' && r.body.result && typeof r.body.result === 'object') {
-    const res = r.body.result as { text?: unknown; model?: unknown; fake?: unknown; verified?: unknown; covers?: unknown };
-    return {
+    const res = r.body.result as { text?: unknown; model?: unknown; fake?: unknown; verified?: unknown; covers?: unknown; output?: unknown; url?: unknown; mime?: unknown; trust?: unknown };
+    const common = {
       status: 'done',
       intent,
       model: res.model,
       verified: res.verified === true,
+      ...(res.trust === 'relayed' || res.covers === 'none' ? { trust: 'relayed, no TEE: the answer was not checked' } : {}),
       ...(res.fake === true ? { fake: true, fake_note: 'no model was called; this is the gateway test stand-in' } : {}),
-      output_untrusted: trimOutput(typeof res.text === 'string' ? res.text : ''),
-      note: UNTRUSTED_NOTE,
     };
+    if (res.output === 'image') {
+      // Only the gateway's own blob path for this intent is passed on: never a link the result names freely.
+      const url = typeof res.url === 'string' && res.url === `/api/compute/result/${intent}/blob` ? res.url : null;
+      return { ...common, output: 'image', image_url: url, mime: typeof res.mime === 'string' ? res.mime : null, note: url ? 'one image was made; give the owner image_url (a path on this Rein server)' : 'the image link was missing; call compute_result later' };
+    }
+    return { ...common, output_untrusted: trimOutput(typeof res.text === 'string' ? res.text : ''), note: UNTRUSTED_NOTE };
   }
-  if (status === 'refunded') return { status: 'refunded', intent, reason: r.body.reason, refund: r.body.refund, note: 'the run did not happen and the full price went back to the team vault' };
+  if (status === 'refunded')
+    return {
+      status: 'refunded',
+      intent,
+      reason: r.body.reason,
+      refund: r.body.refund,
+      ...(r.body.code === 'not_configured' ? { not_configured: true } : {}),
+      note: 'the run did not happen and the full price went back to the team vault',
+    };
   if (status === 'pending_approval') return { status: 'pending', intent, approve_by: r.body.approve_by ?? null, note: 'waiting for the team owner to approve the payment; call compute_result after that' };
   return { status: status ?? 'unknown', intent, error: gatewayError(r), note: 'do not pay for this intent again; call compute_result later' };
 }

@@ -10,7 +10,7 @@ rejected alternatives are quoted from the commit bodies (`git log --format=%B`),
 | Program ([programs/rein](../programs/rein/README.md)) | Solana devnet | `Config`, `Service`, `Team`, `Spender`, `Payment` accounts and every vault | Nothing off chain |
 | Web app ([web](../web/README.md)) | Vercel (Next 16) | Nothing durable on chain; server routes hold keys and the store | The program for money, Privy for identity |
 | Agent ([agent](../agent/README.md)) | Inside `/api/agent` or the CLI | Its conversation only | The program for every payment outcome |
-| Compute gateway (`web/lib/server/compute/`) | Inside the web app | Quotes, run locks, results, refund records (Redis), `compute_runs` (Postgres), the gateway token account | The `Payment` account it reads itself |
+| Compute gateway (`web/lib/server/compute/`) | Inside the web app | Quotes, run locks, results, refund records (Redis), `compute_runs`, voice inputs in `compute_inputs` and image and clip results in `compute_results` (Postgres), the gateway token account | The `Payment` account it reads itself |
 | 0G adapter ([zg-compute](../zg-compute/README.md)) | Inside the web app, server only | The 0G wallet's ledger and provider sub-accounts | 0G's TEE signatures, verified per run |
 | Claim pool (`web/lib/server/claim.ts`) | Inside the web app | `claims` rows (Postgres), race locks (Redis), the pool token account | Privy for who, the chain for team ownership |
 | Sponsor (`web/app/api/sponsor/route.ts`) | Inside the web app | The fee payer key | Nothing it did not check in the transaction |
@@ -38,6 +38,9 @@ rejected alternatives are quoted from the commit bodies (`git log --format=%B`),
 | Team view cache | Redis (`KEEP_SEC` 300 s) or process memory | Minutes |
 | Compute quote | Redis `quote:<intent>` | 25 hours |
 | Compute result | Redis `result:<intent>` | 7 days |
+| Image and clip bytes and mime type (`ai-image`, `ai-video`) | Postgres `compute_results`, served at `/api/compute/result/<intent>/blob` | Durable |
+| Voice input audio (`ai-voice`), bound by its sha256 in the intent | Postgres `compute_inputs` | Durable |
+| Started video job id | Redis `job:<intent>` | 7 days |
 | Refund record | Redis `refund:<intent>`, `due:<intent>` | 30 days |
 | Compute run history | Postgres `compute_runs` | Durable |
 | Claims | Postgres `claims` (unique per user and per wallet), Redis locks | Durable |
@@ -50,8 +53,8 @@ rejected alternatives are quoted from the commit bodies (`git log --format=%B`),
 | A chain read fails | Unknown (`null`), shown as unknown, never 0; routes refuse to act | [team-cache.ts](../web/lib/server/team-cache.ts), [claim.ts#L1-L11](../web/lib/server/claim.ts#L1-L11) |
 | A transaction's fate is unknown | Pending under its recorded signature; never resent automatically | [claim.ts#L234](../web/lib/server/claim.ts#L234), [wire.ts#L94-L99](../web/lib/server/compute/wire.ts#L94-L99) |
 | Redis missing in production | No store; the route answers 503 | [store.ts#L142-L143](../web/lib/server/store.ts#L142-L143) |
-| Malformed config value | Budget becomes 0, floor becomes huge, cap becomes null: everything refuses | [core.ts#L76-L94](../web/lib/server/compute/core.ts#L76-L94), [claim.ts#L45-L46](../web/lib/server/claim.ts#L45-L46) |
-| A paid compute run cannot happen | Full refund, once | [core.ts#L350-L357](../web/lib/server/compute/core.ts#L350-L357) |
+| Malformed config value | Budget becomes 0, floor becomes huge, cap becomes null: everything refuses | [core.ts#L161-L180](../web/lib/server/compute/core.ts#L161-L180), [claim.ts#L45-L46](../web/lib/server/claim.ts#L45-L46) |
+| A paid compute run cannot happen | Full refund, once | [core.ts#L543-L550](../web/lib/server/compute/core.ts#L543-L550) |
 | A payment over a limit | Filed Pending, not reverted | [lib.rs#L236-L240](../programs/rein/src/lib.rs#L236-L240) |
 
 ## Decisions, and what was rejected
@@ -78,6 +81,11 @@ rejected alternatives are quoted from the commit bodies (`git log --format=%B`),
 | Invites carry `{team, label}` in the link, no server storage | One owner adds spenders by address | "A server-side request queue ... would add storage and a trust point for no gain" (fd45b29) |
 | Pages that duplicated others or described things Rein does not do were deleted | Nothing keeps compiling, shipping or being linked by accident | hiding them (a73c14a) |
 | Privacy and terms written from the code | They must describe what the code does | "a template ... would claim practices the code does not have" (f8af49d) |
+| One backend per service: chat, image and voice on the 0G wallet SDK, Claude, GPT and video on the Router only | Each runs where 0G really serves it; the wallet route checks TEE signatures over the delivered bytes | "sending voice and image to the Router as well" (b63a93b) |
+| Chat stays on the wallet route even with a Router key | The Router's private mode returned no `tee_verified` on 2026-11-09, and the card's "TEE verified" label is decided before the run | "keeping the Router for chat and labelling Router runs by whatever tee_verified says" (737392c) |
+| Video is a job: `run` starts it, result reads finish it | A clip takes a minute or more; a timeout inside `run` would refund a clip 0G may still bill | "waiting for the clip inside run" (dd0aa27) |
+| The Compute page buys with the team's agent key, no model in the loop | Audio cannot travel through a model's tool arguments | "a second, owner-signed payment path" (da3dd06) |
+| The placeholder services are suspended, not closed | The program has no close instruction, and their past payments stay readable as evidence | "closing the placeholder accounts" (19d2548) |
 
 ## What is not designed yet
 

@@ -9,15 +9,11 @@
 // budget and model credits. With the compute gateway configured the agent can also buy 0G runs.
 
 import { runAgent, SCENARIOS, isScenarioId, eventToJSON } from '@rein/agent';
-import { DEMO_TEAM, parseAddress } from '@/lib/chain';
-import { readTeam } from '@/lib/rein';
-import { agentKeyFor } from '@/lib/server/agent-key';
 import { inProcessGateway } from '@/lib/server/compute/agent-gateway';
 import { computeDeps } from '@/lib/server/compute/wire';
 import { serverKey } from '@/lib/server/keys';
-import { allow, allowKey, tooMany } from '@/lib/server/limit';
-import { privySession, privySolanaWallets } from '@/lib/server/privy';
 import { serverConnection } from '@/lib/server/send';
+import { teamAgent } from '@/lib/server/team-agent';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,29 +46,10 @@ export async function POST(req: Request) {
     return fail('send a scenario or a task');
   }
 
-  let team: string;
-  let agent;
-  if (body.team === undefined || body.team === DEMO_TEAM) {
-    if (!allow('agent', req, 6, 10 * 60_000)) return tooMany();
-    if (!DEMO_TEAM) return fail('No demo team is configured on this server.', 503);
-    team = DEMO_TEAM;
-    agent = serverKey('demoAgent');
-    if (!agent) return fail('The demo agent key is not configured on this server.', 503);
-  } else {
-    // Another team: only its owner, proven by a Privy session whose linked wallet owns the team.
-    const asked = parseAddress(typeof body.team === 'string' ? body.team : null);
-    if (!asked) return fail('team must be a team account address');
-    const session = await privySession(req);
-    if (session.kind !== 'user') return fail('Sign in as the team owner to run its agent.', 401);
-    if (!allowKey('agent', `user:${session.userId}`, 6, 10 * 60_000)) return tooMany();
-    const [onChain, wallets] = await Promise.all([readTeam(serverConnection(), asked), privySolanaWallets(session.userId)]);
-    if (!onChain) return fail('Could not read that team on chain.', 404);
-    if (wallets === null) return fail('Could not check your wallets. Try again.', 503);
-    if (!wallets.includes(onChain.owner)) return fail('Only the team owner can run its agent.', 403);
-    team = asked;
-    agent = agentKeyFor(team);
-    if (!agent) return fail('No agent key is configured on this server.', 503);
-  }
+  // The demo team for anyone (rate-limited), another team only for its owner (lib/server/team-agent.ts).
+  const who = await teamAgent(req, body.team, 'agent');
+  if (!who.ok) return fail(who.error, who.status);
+  const { team, agent } = who;
   const sponsor = serverKey('sponsor');
   if (!sponsor) return fail('The sponsor key is not configured on this server.', 503);
   if (!process.env.GROQ_API_KEY) return fail('The model key is not configured on this server.', 503);
