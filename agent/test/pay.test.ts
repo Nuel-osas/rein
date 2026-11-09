@@ -23,7 +23,7 @@ async function fixtures() {
     paid_total: new BN(0), created_at: new BN(1), bump: 255,
   });
   const service = await coder.accounts.encode('Service', {
-    id: 'web-search', label: 'Web search', payee: pk(), payee_token: payeeToken, price: new BN(400_000), active: true, bump: 255,
+    id: 'ai-chat', label: '0G Chat', payee: pk(), payee_token: payeeToken, price: new BN(400_000), active: true, bump: 255,
   });
   return { config, teamData, service };
 }
@@ -49,7 +49,7 @@ async function fakeChain(s: Script) {
   const accounts = new Map<string, Buffer>([
     [probe.configPda().toBase58(), f.config],
     [team.toBase58(), f.teamData],
-    [probe.servicePda('web-search').address.toBase58(), f.service],
+    [probe.servicePda('ai-chat').address.toBase58(), f.service],
   ]);
   const calls = { send: 0, status: 0, skipPreflight: [] as boolean[] };
   const conn = {
@@ -84,7 +84,7 @@ async function fakeChain(s: Script) {
   return { chain: new ReinChain(conn as unknown as Connection), calls };
 }
 
-const params = (chain: ReinChain, serviceId = 'web-search') => ({
+const params = (chain: ReinChain, serviceId = 'ai-chat') => ({
   chain, team, agent, sponsor, serviceId, amount: 400_000n, memo: 'test', confirmTimeoutMs: 2_000, pollMs: 5,
 });
 
