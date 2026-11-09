@@ -1,6 +1,10 @@
 // Seeds a cluster with everything the demo needs, and is safe to re-run:
-// a test USDC mint, the config, a service registry, the demo team "Acme Research",
-// a funded vault, a research agent and one person. Writes public addresses to deploy/<cluster>.json.
+// a test USDC mint, the config, the demo team "Acme Research", a funded vault, a research agent and
+// one person. Writes public addresses to deploy/<cluster>.json, keeping what other scripts wrote there.
+// It registers no services: the services sold are the real 0G ones, registered with the compute
+// gateway as payee by scripts/compute-setup.ts (devnet). The five stand-in services this script
+// registered before 2026-11-09 (web-search, llm-inference, market-data, gpu-hour, premium-dataset)
+// delivered nothing and are suspended on devnet.
 //
 //   REIN_CLUSTER=localnet REIN_RPC_URL=http://127.0.0.1:8999 pnpm seed
 //   REIN_CLUSTER=devnet   REIN_RPC_URL=https://api.devnet.solana.com pnpm seed
@@ -17,16 +21,12 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
-import { createMint, getOrCreateAssociatedTokenAccount, mintTo, getAccount } from '@solana/spl-token';
-import { adminKey, client, cluster, deployFile, fmt, key, pda, rpcUrl, U, usdc } from './lib';
+import { createMint, mintTo, getAccount } from '@solana/spl-token';
+import { adminKey, client, cluster, deployFile, fmt, key, pda, rpcUrl, U } from './lib';
 
-export const SERVICES = [
-  { id: 'web-search', label: 'Web search API, 1k queries', price: '0.40' },
-  { id: 'llm-inference', label: 'LLM inference, 1M tokens', price: '2' },
-  { id: 'market-data', label: 'Market data feed, 1 day', price: '1.50' },
-  { id: 'gpu-hour', label: 'GPU hour (H100)', price: '3' },
-  { id: 'premium-dataset', label: 'Premium dataset licence', price: '12' },
-] as const;
+/** The real compute services (web/lib/server/compute/catalog.ts); the demo agent may buy the TEE ones. */
+export const AGENT_SERVICES = ['ai-chat', 'ai-image', 'ai-voice'] as const;
+export const ALL_SERVICES = [...AGENT_SERVICES, 'ai-claude', 'ai-gpt'] as const;
 
 const DAY = 24 * 3600;
 
@@ -82,26 +82,6 @@ async function main() {
   const cfg = await program.account.config.fetch(config);
   if (!cfg.mint.equals(mint)) throw new Error(`config already points at mint ${cfg.mint.toBase58()}`);
 
-  const services: Record<string, { address: string; payee: string; payeeToken: string; price: string }> = {};
-  for (const s of SERVICES) {
-    const payee = key(`payee-${s.id}`);
-    const payeeToken = await getOrCreateAssociatedTokenAccount(conn, admin, mint, payee.publicKey);
-    const address = pda.service(s.id);
-    if (!(await conn.getAccountInfo(address))) {
-      await program.methods
-        .registerService(s.id, s.label, new BN(usdc(s.price).toString()))
-        .accounts({ admin: admin.publicKey, payeeToken: payeeToken.address })
-        .rpc();
-    }
-    services[s.id] = {
-      address: address.toBase58(),
-      payee: payee.publicKey.toBase58(),
-      payeeToken: payeeToken.address.toBase58(),
-      price: s.price,
-    };
-  }
-  console.log(`services ${Object.keys(services).join(', ')}`);
-
   const team = pda.team(owner.publicKey);
   const vault = pda.vault(mint, team);
   const asSponsor = client(conn, sponsor);
@@ -116,24 +96,25 @@ async function main() {
   if (balance < 200n * U) await mintTo(conn, admin, mint, vault, mintAuthority, 500n * U - balance);
   console.log(`team    ${team.toBase58()}  vault ${vault.toBase58()}  ${fmt((await getAccount(conn, vault)).amount)} USDC`);
 
-  // The research agent: 5 USDC per payment, 20 USDC an hour, 10 payments an hour, 30 days. Hourly so
-  // judges running the demo through the day keep finding budget; over-limit runs still wait for the owner.
-  // It may pay search, inference, market data and GPU time. Not the premium dataset.
+  // The research agent: 0.05 per payment, 0.50 an hour, 20 payments an hour, 30 days, sized to real
+  // 0G prices ($0.01 to $0.02 a run). Hourly so people running the demo through the day keep finding
+  // budget. It may buy ai-chat, ai-image and ai-voice; ai-claude and ai-gpt are left off on purpose,
+  // so buying them files a Pending payment (service_not_allowed) for the owner.
   const now = Math.floor(Date.now() / 1000);
   const grants = [
     {
       who: agent,
       kind: { agent: {} },
       label: 'Research agent',
-      policy: { allowance: 20n * U, periodSecs: 3600, cap: 5n * U, maxPayments: 10, expiresAt: now + 30 * DAY },
-      services: ['web-search', 'llm-inference', 'market-data', 'gpu-hour'],
+      policy: { allowance: 500_000n, periodSecs: 3600, cap: 50_000n, maxPayments: 20, expiresAt: now + 30 * DAY },
+      services: [...AGENT_SERVICES],
     },
     {
       who: person,
       kind: { person: {} },
       label: 'Ada, operations',
       policy: { allowance: 100n * U, periodSecs: 7 * DAY, cap: 25n * U, maxPayments: 20, expiresAt: now + 30 * DAY },
-      services: SERVICES.map((s) => s.id),
+      services: [...ALL_SERVICES],
     },
   ];
   for (const g of grants) {
@@ -159,6 +140,7 @@ async function main() {
   }
 
   const out = {
+    ...prior,
     cluster: cluster(),
     rpc: rpcUrl(),
     programId: program.programId.toBase58(),
@@ -172,7 +154,6 @@ async function main() {
     owner: owner.publicKey.toBase58(),
     agent: { authority: agent.publicKey.toBase58(), spender: pda.spender(team, agent.publicKey).toBase58() },
     person: { authority: person.publicKey.toBase58(), spender: pda.spender(team, person.publicKey).toBase58() },
-    services,
     seededAt: new Date().toISOString(),
   };
   mkdirSync(dirname(file), { recursive: true });

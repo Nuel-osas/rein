@@ -8,6 +8,11 @@
 // 2. An over-cap payment is filed as pending, and the owner's approval settles it in one transaction.
 // 3. An unknown service is refused on chain (the failed transaction is mined and linked).
 // 4. A payee the registry does not name is refused on chain.
+//
+// History: this script produced the earlier evidence (2026-11-08) on the first demo's placeholder
+// services (web-search, gpu-hour, ...). Those were suspended on 2026-11-09, so on devnet it is now
+// refused with ServiceSuspended; it still runs on a fresh localnet seeded before that change. The
+// current evidence is the paid 0G runs in docs/EVIDENCE.md.
 
 import { BN } from '@coral-xyz/anchor';
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
