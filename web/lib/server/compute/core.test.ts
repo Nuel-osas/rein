@@ -164,16 +164,18 @@ describe('quote', () => {
     const h = harness();
     const c = await catalog(h.d);
     const rows = c.body.services as { id: string; price: string; available: boolean; model: string }[];
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].id, 'ai-chat');
-    assert.equal(rows[0].model, '0GM-1.0-35B-A3B');
-    assert.equal(rows[0].price, '10000');
-    assert.equal(rows[0].available, true);
+    assert.deepEqual(rows.map((x) => x.id), ['ai-chat', 'ai-image', 'ai-voice', 'ai-claude', 'ai-gpt']);
+    const chat = rows.find((x) => x.id === 'ai-chat')!;
+    assert.equal(chat.model, '0GM-1.0-35B-A3B');
+    assert.equal(chat.price, '10000');
+    assert.equal(chat.available, true);
+    assert.deepEqual((c.body.coming_soon as { id: string }[]).map((x) => x.id), ['ai-video']);
     const low = harness({ ledgerNeuron: 0n });
-    const r = (await catalog(low.d)).body.services as { available: boolean; price: string | null; reason: string }[];
-    assert.equal(r[0].available, false);
-    assert.equal(r[0].price, null);
-    assert.match(r[0].reason, /floor/);
+    const r = (await catalog(low.d)).body.services as { id: string; available: boolean; price: string | null; reason: string }[];
+    const lowChat = r.find((x) => x.id === 'ai-chat')!;
+    assert.equal(lowChat.available, false);
+    assert.equal(lowChat.price, null);
+    assert.match(lowChat.reason, /floor/);
   });
   it('refuses a service whose registry payee is not the gateway', async () => {
     const h = harness({ payee: 'Other1111111111111111111111111111111111111' });

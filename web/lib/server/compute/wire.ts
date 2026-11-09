@@ -10,9 +10,9 @@ import { serverKey } from '@/lib/server/keys';
 import { broadcast, serverConnection } from '@/lib/server/send';
 import { store, type Store } from '@/lib/server/store';
 import { recordRun } from './record';
-import { readComputeEnv, REFUND_TTL_SEC, type ComputeService, type Deps, type Quote, type RefundOutcome } from './core';
-import { fakeBackend, zgBackend } from './backend';
-import { routerBackend } from './router';
+import { readComputeEnv, REFUND_TTL_SEC, RESULT_TTL_SEC, type ComputeService, type Deps, type Quote, type RefundOutcome } from './core';
+import { backendEnv, chooseBackend, fakeBackend } from './backend';
+import { kvBlobs, sqlBlobs } from './blobs';
 
 let mintCache: { mint: string; at: number } | null = null;
 async function mint(): Promise<string | null> {
@@ -123,18 +123,16 @@ export function computeDeps(): Deps | null {
     spenderPda: (team, authority) => pda.spender(new PublicKey(team), new PublicKey(authority)).toBase58(),
     paymentPda: (spender, intent) => pda.payment(new PublicKey(spender), intent).toBase58(),
     readPayment,
-    backend: async () => {
+    backend: async (service: ComputeService) => {
       // Dev only (env.fake is forced off in production). COMPUTE_FAKE_FAIL=1 exercises the refund path.
       if (env.fake) return fakeBackend({ fail: process.env.COMPUTE_FAKE_FAIL === '1' });
-      // 0G Private Computer (the Router, one sk- key funded at pc.0g.ai) when configured; otherwise
-      // the 0G Compute SDK with a funded wallet.
-      const routerKey = process.env.ZG_ROUTER_API_KEY?.trim();
-      if (routerKey) return routerBackend(routerKey);
-      const key = process.env.ZG_PRIVATE_KEY?.trim();
-      if (!key) return { error: 'no 0G Router key or 0G wallet key on this server' };
-      const maxLedger = Number(process.env.ZG_MAX_LEDGER_ZG ?? '10');
-      return zgBackend(key, Number.isFinite(maxLedger) && maxLedger > 0 ? maxLedger : 10);
+      // Per service (backend.ts chooseBackend): chat, voice and image on the 0G Compute SDK with the
+      // funded wallet (chat on the Router in private mode when its key is set); Claude and GPT on
+      // 0G Private Computer (the Router, one sk- key funded at pc.0g.ai) only.
+      return chooseBackend(service, backendEnv());
     },
+    // Postgres when configured; otherwise Redis with the result TTL, for small blobs only.
+    blobs: kv.sql ? sqlBlobs(kv.sql) : kvBlobs(kv, RESULT_TTL_SEC),
     refund: makeRefund(kv),
     record: makeRecord(kv),
   };

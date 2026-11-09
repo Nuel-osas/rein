@@ -4,7 +4,8 @@
 // 1 test USDC = $1) throughout.
 
 import { createHash, createHmac, randomBytes } from 'node:crypto';
-import { SERVICE_TABLE, type ComputeService } from './catalog';
+import { audioLength } from '@rein/zg-compute/audio';
+import { COMING_SOON, SERVICE_TABLE, TRUST_LABEL, type ComputeService } from './catalog';
 import type { Store } from '../store';
 
 export { SERVICE_TABLE, type ComputeService };
@@ -50,6 +51,76 @@ export function neuronToMicroUsd(neuron: bigint, usdPerZg: number): bigint {
 }
 
 export const sha256Hex = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
+export const sha256Bytes = (b: Uint8Array) => createHash('sha256').update(b).digest('hex');
+
+// ------------------------------------------------------------------------------ inputs ---
+
+/** The container a voice upload is, told by its first bytes (never by the declared type), as its MIME type. */
+const AUDIO_MIME = { wav: 'audio/wav', mp3: 'audio/mpeg', mp4: 'audio/mp4', ogg: 'audio/ogg', webm: 'audio/webm' } as const;
+/** Declared types a client may send for each container (browsers name the same file differently). */
+const DECLARED_OK: Record<keyof typeof AUDIO_MIME, readonly string[]> = {
+  wav: ['audio/wav', 'audio/x-wav', 'audio/wave', 'audio/vnd.wave'],
+  mp3: ['audio/mpeg', 'audio/mp3'],
+  mp4: ['audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/aac'],
+  ogg: ['audio/ogg', 'application/ogg'],
+  webm: ['audio/webm', 'video/webm'],
+};
+/** How far past the limit a measured length may read (the adapter refuses beyond the same 0.25 s). */
+export const AUDIO_LIMIT_TOLERANCE = 0.25;
+
+export type QuoteAudio = { bytes: Uint8Array; mime?: string };
+export type CheckedInput =
+  | { kind: 'prompt'; prompt: string; sha: string }
+  | { kind: 'audio'; bytes: Uint8Array; mime: string; seconds: number; sha: string };
+
+/**
+ * The input of one run, checked against its service before anything is quoted: a prompt within the
+ * service's limit, or (ai-voice) an audio file whose container is told by its bytes, within the size
+ * cap, whose declared type (when given) matches that container, and that plays at most the limit as
+ * measured from its frames. `sha` is what the quote's intent binds.
+ */
+export function checkInput(service: ComputeService, input: { prompt?: unknown; audio?: QuoteAudio | null }): CheckedInput | { error: string } {
+  const meta = SERVICE_TABLE[service];
+  if (meta.input === 'prompt') {
+    if (input.audio) return { error: `${service} takes a prompt, not audio` };
+    const p = input.prompt;
+    if (typeof p !== 'string' || !p.trim()) return { error: 'prompt is required' };
+    // The adapter checks the trimmed prompt against the same limit; the quote binds it as sent.
+    if (p.length > meta.maxPromptChars) return { error: `prompt is at most ${meta.maxPromptChars} characters` };
+    return { kind: 'prompt', prompt: p, sha: sha256Hex(p) };
+  }
+  if (input.prompt !== undefined && input.prompt !== '') return { error: `${service} takes an audio file, not a prompt` };
+  const a = input.audio;
+  if (!a || !(a.bytes instanceof Uint8Array) || a.bytes.length === 0) return { error: `${service} takes an audio file: send audio.base64 (and audio.mime)` };
+  const maxBytes = meta.maxAudioBytes ?? 0;
+  if (a.bytes.length > maxBytes) return { error: `audio is at most ${Math.floor(maxBytes / (1024 * 1024))} MB` };
+  const len = audioLength(a.bytes);
+  if (!len) return { error: 'could not read that audio: use an MP3, WAV, M4A, WebM or Ogg file' };
+  const declared = a.mime?.split(';')[0]?.trim().toLowerCase();
+  if (declared && !DECLARED_OK[len.format].includes(declared)) return { error: `the file is ${len.format} but was sent as ${declared}` };
+  const maxS = meta.maxAudioSeconds ?? 0;
+  if (len.seconds > maxS + AUDIO_LIMIT_TOLERANCE) return { error: `audio is at most ${maxS} seconds (this plays ${Math.ceil(len.seconds)})` };
+  // Stated to the adapter as measured here, rounded up to the hundredth; it re-measures before it spends.
+  return { kind: 'audio', bytes: a.bytes, mime: AUDIO_MIME[len.format], seconds: Math.ceil(len.seconds * 100) / 100, sha: sha256Bytes(a.bytes) };
+}
+
+/** Decodes standard base64 (no data: prefix), or null when it is not base64 or decodes past `maxBytes`. */
+export function decodeBase64(s: unknown, maxBytes: number): Uint8Array | null {
+  if (typeof s !== 'string' || !s) return null;
+  if (s.length > Math.ceil((maxBytes * 4) / 3) + 4) return null;
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(s) || s.length % 4 === 1) return null;
+  const b = Buffer.from(s, 'base64');
+  return b.length > 0 && b.length <= maxBytes ? new Uint8Array(b) : null;
+}
+
+/** Image types a result may be served as, told by the bytes. Anything else is never stored or served. */
+export function sniffImage(b: Uint8Array): 'image/png' | 'image/jpeg' | 'image/webp' | null {
+  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b.length >= 12 && Buffer.from(b.subarray(0, 4)).toString('latin1') === 'RIFF' && Buffer.from(b.subarray(8, 12)).toString('latin1') === 'WEBP') return 'image/webp';
+  return null;
+}
+export const IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 
 /** "c" + base64url(HMAC(secret, team|spender|service|amount|sha256(prompt)|maxTokens|nonce)), 32 chars. */
 export function intentFor(secret: string, f: { team: string; spender: string; service: string; amount: bigint; promptSha: string; maxTokens: number; nonce: string }): string {
@@ -110,8 +181,13 @@ export type Quote = {
   amount: string;
   worst: string;
   maxTokens: number;
+  /** sha256 of the prompt, or of the audio bytes for ai-voice: what the intent binds. */
   promptSha: string;
+  /** The prompt as sent; '' for an audio input (its bytes are in the blob store under the intent). */
   prompt: string;
+  input?: 'prompt' | 'audio';
+  /** ai-voice: the audio's container type, measured length and size, as quoted. */
+  audio?: { mime: string; seconds: number; bytes: number };
   nonce: string;
   /** 0G's price revision the quote was made from (provider, unit prices, rate, time). */
   revision: string;
@@ -122,7 +198,16 @@ export type ComputeResult = {
   intent: string;
   service: ComputeService;
   model: string;
+  /** What was delivered: text (chat, Claude, GPT, a voice transcript) or an image. */
+  output?: 'text' | 'image';
+  /** The answer or transcript; '' for an image. */
   text: string;
+  /** Image results: the type, size and where to fetch the bytes (the intent is the capability). */
+  mime?: string;
+  bytes?: number;
+  url?: string;
+  /** tee: run in a TEE whose signature was checked. relayed: no TEE, nothing checked. */
+  trust?: 'tee' | 'relayed';
   /** True when no model was called (COMPUTE_FAKE_UPSTREAM=1, never in production). The text says so too. */
   fake: boolean;
   /** True only when the provider's TEE signature over the answer checked out. */
@@ -153,12 +238,16 @@ export type RefundOutcome =
   | { state: 'unavailable'; error: string };
 
 export type BackendPrice = { ok: true; maxCostNeuron: bigint; usdPerZg: number; revision: string } | { ok: false; reason: string };
+export type BackendInput = { prompt: string } | { audio: { bytes: Uint8Array; mime: string; seconds: number } };
+export type BackendOutput = { kind: 'text'; text: string } | { kind: 'image'; mime: string; bytes: Uint8Array };
 export type BackendRun =
-  | { ok: true; text: string; fake: boolean; verified: boolean; covers: string | null; provider: string | null; costNeuron: bigint | null }
+  | { ok: true; output: BackendOutput; fake: boolean; verified: boolean; covers: string | null; provider: string | null; costNeuron: bigint | null }
   | { ok: false; code: string; message: string };
 
-/** What the gateway needs from 0G: the adapter (`@rein/zg-compute`) or the labelled fake. */
+/** What the gateway needs from 0G: the adapter (`@rein/zg-compute`), the 0G Router, or the labelled fake. */
 export interface ComputeBackendLike {
+  /** Which route this is, for the result and the logs. */
+  route?: 'wallet' | 'router' | 'fake';
   model(service: ComputeService): string;
   priceOf(service: ComputeService): Promise<BackendPrice>;
   /** The ledger's available balance, neuron; null when unread. */
@@ -166,7 +255,21 @@ export interface ComputeBackendLike {
   /** True when the backend cannot read its balance by design (the 0G Router without a management key):
    *  the floor check is skipped, an empty balance fails the run, and the run is refunded. */
   ledgerOptional?: boolean;
-  run(service: ComputeService, prompt: string, o: { purchaseId: string; signal: AbortSignal }): Promise<BackendRun>;
+  run(service: ComputeService, input: BackendInput, o: { purchaseId: string; signal: AbortSignal }): Promise<BackendRun>;
+}
+
+/**
+ * No backend for a service, and why. `notConfigured`: its key is missing on this server (a Router
+ * service without ZG_ROUTER_API_KEY). `pricer` still reads the public price, so a quote can be made
+ * and a Pending payment filed for the owner; a run that finds no backend is refunded, never faked.
+ */
+export type BackendMissing = { error: string; notConfigured?: true; pricer?: Pick<ComputeBackendLike, 'model' | 'priceOf' | 'ledgerNeuron' | 'ledgerOptional'> };
+
+/** Binary inputs and outputs of runs (ai-voice audio, ai-image images), keyed by intent. */
+export interface BlobStore {
+  put(intent: string, role: 'input' | 'output', mime: string, bytes: Uint8Array): Promise<void>;
+  /** null when absent; throws when the read failed (the caller answers "unknown", never "missing"). */
+  get(intent: string, role: 'input' | 'output'): Promise<{ mime: string; bytes: Uint8Array } | null>;
 }
 
 export interface Deps {
@@ -182,8 +285,10 @@ export interface Deps {
   paymentPda: (spender: string, intent: string) => string;
   /** The Payment account and its owner; null when absent; 'error' when the read failed. */
   readPayment: (address: string) => Promise<PaymentView | null | 'error'>;
-  /** The 0G backend, or why there is none (no ZG_PRIVATE_KEY): the service then answers 503. */
-  backend: () => Promise<ComputeBackendLike | { error: string }>;
+  /** The backend for one service, or why there is none (its key is missing): see BackendMissing. */
+  backend: (service: ComputeService) => Promise<ComputeBackendLike | BackendMissing>;
+  /** Audio inputs and image outputs. Absent: those services refuse to quote (503). */
+  blobs?: BlobStore;
   refund: (q: Quote, reason: string) => Promise<RefundOutcome>;
   /** Durable record (Postgres). Best effort: never blocks a result. */
   record?: (row: { intent: string; team: string; spender: string; service: string; amount: bigint; status: string; resultHash?: string | null; refundSig?: string | null }) => Promise<void>;
@@ -205,13 +310,16 @@ const fmt = (units: bigint) => {
 
 // ------------------------------------------------------------------------------ quote ---
 
-async function backendOf(d: Deps): Promise<ComputeBackendLike | { error: string }> {
+async function backendOf(d: Deps, service: ComputeService): Promise<ComputeBackendLike | BackendMissing> {
   try {
-    return await d.backend();
+    return await d.backend(service);
   } catch {
     return { error: 'Could not reach the 0G compute network.' };
   }
 }
+
+const NOT_CONFIGURED_NOTE = (service: string) =>
+  `${service} needs a 0G Private Computer key (ZG_ROUTER_API_KEY) on this server, which is not set. The price is real; if the key is still missing when the run starts, the run is refunded in full and nothing is made up.`;
 
 /** A live price for one service: its registry entry, 0G's worst case now, and the ledger floor. */
 async function livePrice(d: Deps, service: ComputeService) {
@@ -221,24 +329,36 @@ async function livePrice(d: Deps, service: ComputeService) {
   if (!svc) return { ok: false as const, status: 503, error: `${service} is not registered on chain.` };
   if (!svc.active) return { ok: false as const, status: 503, error: `${service} is suspended in the registry.` };
   if (svc.payeeToken !== gatewayToken) return { ok: false as const, status: 503, error: `${service} pays an account this gateway does not hold; refusing to quote.` };
-  const b = await backendOf(d);
-  if ('error' in b) return { ok: false as const, status: 503, error: `${service} is not configured: ${b.error}` };
+  const got = await backendOf(d, service);
+  let b: Pick<ComputeBackendLike, 'model' | 'priceOf' | 'ledgerNeuron' | 'ledgerOptional'>;
+  let configured = true;
+  if ('error' in got) {
+    if (!got.notConfigured || !got.pricer) return { ok: false as const, status: 503, error: `${service} is not configured: ${got.error}`, notConfigured: !!got.notConfigured };
+    b = got.pricer;
+    configured = false;
+  } else b = got;
   const [price, ledger] = await Promise.all([b.priceOf(service), b.ledgerNeuron()]);
   if (!price.ok) return { ok: false as const, status: 503, error: price.reason };
   // Hard cap: the 0G ledger, with a floor so the last runs never fail for want of funds.
   if (ledger === null && !b.ledgerOptional) return { ok: false as const, status: 503, error: 'Could not read the 0G compute balance. Try again.' };
   if (ledger !== null && neuronToMicroUsd(ledger, price.usdPerZg) < d.env.ledgerFloor) return { ok: false as const, status: 503, error: 'The compute balance is below its floor; no new runs until it is topped up.' };
   const { amount, worst } = priceOf(price.maxCostNeuron, price.usdPerZg);
-  return { ok: true as const, svc, model: b.model(service), amount, worst, revision: price.revision };
+  return { ok: true as const, svc, model: b.model(service), amount, worst, revision: price.revision, configured };
 }
 
-export async function quote(d: Deps, input: { team: string; authority: string; service: ComputeService; prompt: string }): Promise<Reply> {
+export type QuoteRequest = { team: string; authority: string; service: ComputeService; prompt?: string; audio?: QuoteAudio | null };
+
+export async function quote(d: Deps, input: QuoteRequest): Promise<Reply> {
+  const checked = checkInput(input.service, input);
+  if ('error' in checked) return reply(400, { error: checked.error });
   if (await halted(d)) return reply(503, { error: 'Compute is switched off on this server.' });
   if (!d.env.gatewaySecret) return reply(503, { error: 'Compute is not configured on this server (no gateway secret).' });
-  const maxTokens = SERVICE_TABLE[input.service].maxOutputTokens;
+  const meta = SERVICE_TABLE[input.service];
+  if ((checked.kind === 'audio' || meta.output === 'image') && !d.blobs) return reply(503, { error: `${input.service} needs a result store (DATABASE_URL) on this server.` });
+  const maxTokens = meta.maxOutputTokens ?? 0;
 
   const live = await livePrice(d, input.service);
-  if (!live.ok) return reply(live.status, { error: live.error });
+  if (!live.ok) return reply(live.status, { error: live.error, ...(live.notConfigured ? { code: 'not_configured' } : {}) });
   const { svc, amount, worst } = live;
   const nowMs = d.now();
   const day = utcDay(nowMs);
@@ -249,9 +369,8 @@ export async function quote(d: Deps, input: { team: string; authority: string; s
   if (runs >= TEAM_RUNS_PER_DAY) return reply(429, { error: `This team has used its ${TEAM_RUNS_PER_DAY} compute runs for today (UTC).` });
 
   const spender = d.spenderPda(input.team, input.authority);
-  const promptSha = sha256Hex(input.prompt);
   const nonce = randomBytes(16).toString('hex');
-  const intent = intentFor(d.env.gatewaySecret, { team: input.team, spender, service: input.service, amount, promptSha, maxTokens, nonce });
+  const intent = intentFor(d.env.gatewaySecret, { team: input.team, spender, service: input.service, amount, promptSha: checked.sha, maxTokens, nonce });
   const q: Quote = {
     v: 1,
     intent,
@@ -265,20 +384,36 @@ export async function quote(d: Deps, input: { team: string; authority: string; s
     amount: amount.toString(),
     worst: worst.toString(),
     maxTokens,
-    promptSha,
-    prompt: input.prompt,
+    promptSha: checked.sha,
+    prompt: checked.kind === 'prompt' ? checked.prompt : '',
+    input: checked.kind,
+    ...(checked.kind === 'audio' ? { audio: { mime: checked.mime, seconds: checked.seconds, bytes: checked.bytes.length } } : {}),
     nonce,
     revision: live.revision,
     createdAt: nowMs,
   };
+  // The audio is stored before the quote exists, so a quote never points at an input that is not there.
+  if (checked.kind === 'audio') {
+    try {
+      await d.blobs!.put(intent, 'input', checked.mime, checked.bytes);
+    } catch {
+      return reply(503, { error: 'Could not store the audio. Nothing was quoted; try again.' });
+    }
+  }
   if (!(await d.store.setNX(`quote:${intent}`, JSON.stringify(q), QUOTE_TTL_SEC))) return reply(409, { error: 'Quote collision; ask again.' });
   return reply(200, {
     intent,
     service: input.service,
     model: live.model,
+    input: checked.kind,
+    output: meta.output,
+    trust: meta.trust,
+    configured: live.configured,
+    ...(live.configured ? {} : { code: 'not_configured', note: NOT_CONFIGURED_NOTE(input.service) }),
+    ...(checked.kind === 'audio' ? { audio: { mime: checked.mime, seconds: checked.seconds, bytes: checked.bytes.length, sha256: checked.sha } } : {}),
     amount: amount.toString(),
     amount_usdc: fmt(amount),
-    max_tokens: maxTokens,
+    max_tokens: meta.maxOutputTokens,
     spender,
     authority: input.authority,
     payee_token: svc.payeeToken,
@@ -288,29 +423,63 @@ export async function quote(d: Deps, input: { team: string; authority: string; s
   });
 }
 
-/** Every registered compute service with its live price (or why it has none). For the claim lane's UI. */
+/**
+ * Every compute service with its state and live price (or why it has none), and what is coming
+ * soon. Services not registered or suspended are listed as unavailable so a screen can say why;
+ * only registered, active services can be granted or bought.
+ */
 export async function catalog(d: Deps): Promise<Reply> {
   const off = await halted(d);
-  const rows = [];
-  for (const [id, meta] of Object.entries(SERVICE_TABLE) as [ComputeService, (typeof SERVICE_TABLE)[ComputeService]][]) {
+  const entries = Object.entries(SERVICE_TABLE) as [ComputeService, (typeof SERVICE_TABLE)[ComputeService]][];
+  // Read in parallel: each live price asks 0G (or the Router) for its worst case now.
+  const rows = await Promise.all(entries.map(async ([id, meta]) => {
     const svc = await d.readService(id);
-    if (svc === 'error') return reply(503, { error: 'Could not read the service registry. Try again.' });
-    if (!svc || !svc.active) continue; // not sold: never registered, or suspended
-    const live = off ? null : await livePrice(d, id);
-    rows.push({
+    if (svc === 'error') return null;
+    const got = await backendOf(d, id);
+    const configured = !('error' in got);
+    const live = off || !svc || !svc.active ? null : await livePrice(d, id);
+    const reason = off
+      ? 'Compute is switched off on this server.'
+      : !svc
+        ? `${id} is not registered on chain yet.`
+        : !svc.active
+          ? `${id} is suspended in the registry.`
+          : !configured
+            ? 'error' in got && got.notConfigured && meta.route === 'router'
+              ? 'Needs a 0G Private Computer key on this server.'
+              : `Not configured: ${'error' in got ? got.error : ''}`
+            : live && !live.ok
+              ? live.error
+              : null;
+    return {
       id,
+      name: meta.name,
       label: meta.label,
       model: meta.model,
       summary: meta.summary,
+      kind: meta.kind,
+      input: meta.input,
+      output: meta.output,
+      trust: meta.trust,
+      trust_label: TRUST_LABEL[meta.trust],
+      route: meta.route,
+      configured,
+      registered: !!svc,
+      active: !!svc?.active,
       max_prompt_chars: meta.maxPromptChars,
       max_tokens: meta.maxOutputTokens,
-      available: !!live?.ok,
+      max_audio_bytes: meta.maxAudioBytes ?? null,
+      max_audio_seconds: meta.maxAudioSeconds ?? null,
+      audio_types: meta.input === 'audio' ? Object.values(AUDIO_MIME) : null,
+      available: configured && !!live?.ok,
       price: live?.ok ? live.amount.toString() : null,
       price_usdc: live?.ok ? fmt(live.amount) : null,
-      reason: off ? 'Compute is switched off on this server.' : live && !live.ok ? live.error : null,
-    });
-  }
-  return reply(200, { services: rows, fake_upstream: d.env.fake });
+      reason,
+    };
+  }));
+  if (rows.some((r) => r === null)) return reply(503, { error: 'Could not read the service registry. Try again.' });
+  const comingSoon = COMING_SOON.map((c) => ({ ...c, trust_label: TRUST_LABEL[c.trust] }));
+  return reply(200, { services: rows, coming_soon: comingSoon, fake_upstream: d.env.fake });
 }
 
 // -------------------------------------------------------------------------------- run ---
@@ -391,9 +560,27 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
 
   // Paid for exactly this quote. From here on, anything that stops the run refunds it.
   if (await halted(d)) return doRefund(d, q, 'compute was switched off before the run');
-  const backend = await backendOf(d);
-  if ('error' in backend) return doRefund(d, q, `compute is not configured: ${backend.error}`);
+  const backend = await backendOf(d, q.service);
+  if ('error' in backend) {
+    const r = await doRefund(d, q, `${q.service} is not configured on this server: ${backend.error}. Nothing ran and nothing was made up`);
+    // Said as 503 not configured, with the refund in the body.
+    return backend.notConfigured && r.body.status === 'refunded' ? { status: 503, body: { ...r.body, ok: false, code: 'not_configured' } } : r;
+  }
   if (backend.model(q.service) !== q.model) return doRefund(d, q, 'the model changed since the quote');
+
+  // The input the quote bound: the prompt as sent, or the stored audio whose sha256 must match.
+  let input: BackendInput;
+  if (q.input === 'audio') {
+    let blob: { mime: string; bytes: Uint8Array } | null;
+    try {
+      blob = d.blobs ? await d.blobs.get(intent, 'input') : null;
+    } catch {
+      return reply(503, { status: 'unknown', error: 'Could not read the stored audio. Try again.' });
+    }
+    if (!blob || !q.audio) return doRefund(d, q, 'the audio for this quote is no longer stored');
+    if (sha256Bytes(blob.bytes) !== q.promptSha) return doRefund(d, q, 'the stored audio does not match the quote');
+    input = { audio: { bytes: blob.bytes, mime: q.audio.mime, seconds: q.audio.seconds } };
+  } else input = { prompt: q.prompt };
 
   if (!(await d.store.setNX(`run:${intent}`, '1', RUN_LOCK_SEC))) return reply(409, { status: 'running', error: 'This run is already in progress. Ask for the result in a moment.' });
   const teamLock = `teamrun:${q.team}`;
@@ -424,7 +611,7 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
     const timer = setTimeout(() => ac.abort(), UPSTREAM_TIMEOUT_MS);
     let out: BackendRun;
     try {
-      out = await backend.run(q.service, q.prompt, { purchaseId: intent, signal: ac.signal });
+      out = await backend.run(q.service, input, { purchaseId: intent, signal: ac.signal });
     } catch (e) {
       out = { ok: false, code: 'threw', message: String((e as Error)?.message ?? e).slice(0, 120) };
     } finally {
@@ -432,19 +619,36 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
     }
     // A failed run keeps its spend counted: 0G may have billed part of it.
     if (!out.ok) return await doRefund(d, q, ac.signal.aborted ? 'the model did not answer in time' : `the run failed: ${out.message}`);
-    if (!out.text.trim()) return await doRefund(d, q, 'the model returned no text');
+    const meta = SERVICE_TABLE[q.service];
+    const o = out.output;
+    if (o.kind !== meta.output) return await doRefund(d, q, `the model answered with ${o.kind}, not ${meta.output}`);
+    let delivered: Pick<ComputeResult, 'output' | 'text' | 'mime' | 'bytes' | 'url' | 'resultHash'>;
+    if (o.kind === 'text') {
+      if (!o.text.trim()) return await doRefund(d, q, 'the model returned no text');
+      delivered = { output: 'text', text: o.text, resultHash: sha256Hex(o.text) };
+    } else {
+      // Only bytes that are an image by their own header, and not too large, are kept and served.
+      const mime = sniffImage(o.bytes);
+      if (!mime || o.bytes.length > IMAGE_MAX_BYTES) return await doRefund(d, q, 'the provider did not return a usable image');
+      try {
+        await d.blobs!.put(intent, 'output', mime, o.bytes);
+      } catch {
+        return await doRefund(d, q, 'the image was made but could not be stored, so it could not be delivered');
+      }
+      delivered = { output: 'image', text: '', mime, bytes: o.bytes.length, url: blobUrl(intent), resultHash: sha256Bytes(o.bytes) };
+    }
 
     const result: ComputeResult = {
       intent,
       service: q.service,
       model: q.model,
-      text: out.text,
+      ...delivered,
+      trust: meta.trust,
       fake: out.fake,
       verified: out.verified,
       covers: out.covers,
       provider: out.provider,
       costNeuron: out.costNeuron === null ? null : out.costNeuron.toString(),
-      resultHash: sha256Hex(out.text),
       createdAt: d.now(),
     };
     await d.store.set(`result:${intent}`, JSON.stringify(result), RESULT_TTL_SEC);
@@ -457,6 +661,25 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
 }
 
 // ----------------------------------------------------------------------------- result ---
+
+/** Where an image result is served. The intent is the capability (an unguessable HMAC). */
+export const blobUrl = (intent: string) => `/api/compute/result/${intent}/blob`;
+
+/** The bytes of an image result, or why not. Served only as an image type told by the bytes themselves. */
+export async function resultBlob(d: Deps, intent: string): Promise<{ ok: true; mime: string; bytes: Uint8Array } | Reply> {
+  if (!INTENT_RE.test(intent)) return reply(400, { error: 'not a compute intent' });
+  if (!d.blobs) return reply(503, { error: 'Results are not stored on this server (no DATABASE_URL).' });
+  let blob: { mime: string; bytes: Uint8Array } | null;
+  try {
+    blob = await d.blobs.get(intent, 'output');
+  } catch {
+    return reply(503, { error: 'The result could not be read. Try again.' });
+  }
+  if (!blob) return reply(404, { error: 'No image for that intent.' });
+  const mime = sniffImage(blob.bytes);
+  if (!mime || mime !== blob.mime) return reply(404, { error: 'No image for that intent.' });
+  return { ok: true, mime, bytes: blob.bytes };
+}
 
 export async function result(d: Deps, intent: string): Promise<Reply> {
   if (!INTENT_RE.test(intent)) return reply(400, { error: 'not a compute intent' });
