@@ -3,7 +3,32 @@
 Every claim below can be checked in an explorer. Signatures are on Solana devnet unless noted; the
 0G runs were paid on 0G mainnet (chain 16661) by the gateway's wallet or its 0G Private Computer key.
 
-## Paid 0G runs, 2026-11-09
+## Paid 0G runs on the live site, 2026-11-09
+
+One paid run of each of the six services on the deployed app, https://rein-navy.vercel.app, after
+the `compute/more-services` deploy. Same buyer as below: the demo team (Acme Research,
+`EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5`) and its research agent (spender
+`GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d`), through `POST /api/compute/buy`, then
+`POST /api/compute/run`, then `GET /api/compute/result/<intent>` until done. Pending payments were
+approved with `POST /api/demo` (`approve`). The image and the clip were downloaded from the live blob
+route and hashed; each hash matches the `resultHash` the gateway recorded for the run.
+
+| Service | Input | Intent | Price (test USDC) | Payment | Devnet signatures | Payment account | `verified` | 0G provider | Output |
+|---|---|---|---|---|---|---|---|---|---|
+| `ai-chat` | In one sentence, what does an on-chain spending policy do for an AI agent? | `cScDvC4PwQI0WqAI9P0jdkIzhBd4Wxfj` | 0.01 | paid inside the policy | [`5Eduxo2sZD…`](https://explorer.solana.com/tx/5Eduxo2sZDzmKWGpZxqzPHTmMcgerMUw6MKpnFdPRKjBKFzs1NJecFDJ4sc3hrEWppAbThicu53dUbAvzgGasHnW?cluster=devnet) | [`Ez2atuHH…`](https://explorer.solana.com/address/Ez2atuHH1WUH6pPWj2Sb1vxNuBnuLsqd8Myn3kwnesAX?cluster=devnet) | **true**, covers `output` | `0xf4FB8d2bD856e672b5f9848b0eD235A20079B250` (wallet route, TeeML) | "An on-chain spending policy allows an AI agent to autonomously and securely manage its funds by executing financial transactions only when predefined, programmable conditions are met." from `0GM-1.0-35B-A3B`. Cost 0.000138993 0G |
+| `ai-image` | A purple shield over a small robot holding a coin, flat vector | `cisOxv9yV0zCBrOxRFHqj7tcwhSwOt-g` | 0.02 | paid inside the policy | [`f5cLyTSny8…`](https://explorer.solana.com/tx/f5cLyTSny8cDDgAjSB9op764CqGHQ4wDwZj5qKx7XTEntVsrxxtZMHTe3gbHB85rdf2ifGxty6WCMWnbsgfQgy5?cluster=devnet) | [`BPcVza1x…`](https://explorer.solana.com/address/BPcVza1x5Bac5L5BwRVLBrwojpUdgaq7sHoiSx3TaRm6?cluster=devnet) | **true**, covers `output` | `0x59E598DB6E8c63D7fEeB64a69De36510a221C762` (wallet route, TeeML) | One 1024 x 1024 JPEG, 38,287 bytes, sha256 `ff2340c1…607050`, the same as the recorded result hash. A purple shield character holding a coin. Cost 0.06326247 0G |
+| `ai-voice` | a 2.9 s WAV made with macOS `say` ("Rein keeps every agent payment inside its policy.") | `cm4HNnS2uZZdZ3rsAfxoiA_fg6wUkC8g` | 0.02 | paid inside the policy | [`4QbeTNMvhR…`](https://explorer.solana.com/tx/4QbeTNMvhRj9BEUt7RRUhrNUravowBRkEAGtvQkmFs9V9ykVVGdVgQQCN61RmyEJrxk1FzS9WRBNqQdpgwGbVnyd?cluster=devnet) | [`HUpeRcqN…`](https://explorer.solana.com/address/HUpeRcqNVh8xST7hSLvm7Cq479rPgcVMgiSUs7YxxmME?cluster=devnet) | **true**, covers `output` | `0xE63C4F83abFbDFCaB884247EaC21f59e2e8d502e` (wallet route, TeeML) | "Rain keeps every agent payment inside its policy." from `openai/whisper-large-v3`. Cost 0.00281442 0G |
+| `ai-claude` | Reply in under 12 words: what is Rein? | `cSHSzee4cEleuDko8Vp9Tncd3se_crV0` | 0.01 | Pending (`service_not_allowed`), approved on /api/demo | [`2i8Fdqrc3v…`](https://explorer.solana.com/tx/2i8Fdqrc3vWKUdNoYMPMLNwrnekNaznP9LapW5fk2ghw9GdQHKAGiQa8ocgzGgMXHfkVLFBC9fy2dTcLNysb4Hwm?cluster=devnet) then approve [`3Z9xwCLnzK…`](https://explorer.solana.com/tx/3Z9xwCLnzKAxxPHGTko8scRYCVto438NcRmkw3bFJsVW9hPCnb31VrQwH81LeiTrhTL7wvPKu3q9Y5ogFXk6RvAK?cluster=devnet) | [`EXMoLRWK…`](https://explorer.solana.com/address/EXMoLRWKAujeYmhU2nrywxzc7UukcuwRNzsUkH8HTWMc?cluster=devnet) | false, covers `none` (relayed, no TEE) | `0x000000003f486c7198d6203568a98d02b91f8044` (0G Router, standard) | "Rein is a leather strap used to guide and control a horse." from `claude-haiku-5.5`: the model read "Rein" as the horse strap, since it does not know this project. Cost 0.000112283409082686 0G |
+| `ai-gpt` | Reply in under 12 words: why do AI agents need spending limits? | `cwHrQU4ZMv3PZv0mBbiGfLSOTVgHBgak` | 0.01 | Pending (`service_not_allowed`), approved on /api/demo | [`5mb9pUu5fJ…`](https://explorer.solana.com/tx/5mb9pUu5fJvgYdGbjdtEjpjxR98SGuJF9MpsUsxZYNhx4Eo9HaBjJFT31fq4yf5AUgXh5HUzAT3m61ARcTKbQmJB?cluster=devnet) then approve [`Nz49q9wQkL…`](https://explorer.solana.com/tx/Nz49q9wQkLjo7TmngAH9TWXko5ALDZ5kSdv5erMknFmSoT5vPezxp6BLjgBvhhb5H58V3AR5yd3NKnXs1wZ4Qxc?cluster=devnet) | [`7ek6e6QH…`](https://explorer.solana.com/address/7ek6e6QHvLaB36mnq46sKrkoAyWrpZNFKmBhKGcxSXmM?cluster=devnet) | false, covers `none` (relayed, no TEE) | `0x000000003f486c7198d6203568a98d02b91f8044` (0G Router, standard) | "To prevent costly mistakes, unauthorized purchases, and uncontrolled resource consumption." from `gpt-5.6-luna`. Cost 0.000208731978422875 0G |
+| `ai-video` | A small purple robot drops a coin into a glowing vault, 4 seconds | `cR6-fFit_mHTcncXLIsXLQ33_0JDLVB5` | 0.43 | Pending (`service_not_allowed`, `over_cap`), approved on /api/demo | [`4wFDE77WXW…`](https://explorer.solana.com/tx/4wFDE77WXWnkS5pZtFQML3ZgzZd6oA3Dy4uaRwCmgGSn4hHHgseApMJgQ4ANEKcxxwGGUtcNpEthCa8jxYZkLTBn?cluster=devnet) then approve [`3D6GMCrfF4…`](https://explorer.solana.com/tx/3D6GMCrfF46GawSktnmwHm2jJPWpYqUybiUymc7kgBs1vXBaByiBstYsSUVH8WdiYbAfgpVY53kSafJnWi4Meo9H?cluster=devnet) | [`Gg9wegsr…`](https://explorer.solana.com/address/Gg9wegsrBTv95N82uNueWU6roTKKcJinYkwNPxtVDm2F?cluster=devnet) | false, covers `none` (relayed, no TEE) | `0x000000003f486c7198d6203568a98d02b91f8044` (0G Router, standard) | A job: `run` answered 202 and the result was done 108 s later. One MP4 from `bytedance/seedance-2.0-fast`, 1,251,361 bytes, 864 x 496, h264, 4.04 s (ffprobe), sha256 `fa15d2bc…ce4c21f`, the same as the recorded result hash. A purple robot flicks a coin toward a carved vault door. Cost 1.636213990584748243 0G |
+
+The first attempt at the three relayed runs filed three Pending payments that a script bug never
+approved. The Claude and GPT ones were declined on /api/demo
+([`3YoVnpYF…`](https://explorer.solana.com/address/3YoVnpYFapdKifHbWwQXcAEFiPoRVw4XmJQiaKfhDYPy?cluster=devnet),
+[`HGLG3Cxa…`](https://explorer.solana.com/address/HGLG3CxaENPJHXYMBwpdfiNGa83aqx6NmTnV2JD3tS41?cluster=devnet)),
+so no money moved for them. The clip one is the `ai-video` row above.
+
+## Paid 0G runs on a local production build, 2026-11-09
 
 One real paid run of each of `ai-image`, `ai-voice`, `ai-claude`, `ai-gpt` and `ai-video` (`ai-chat`
 was not re-run that day), bought for the demo team (Acme Research,
@@ -60,6 +85,7 @@ topped up from the wallet.
 | Suspend `premium-dataset` | [`5ooh15GmE1…`](https://explorer.solana.com/tx/5ooh15GmE1eENzAE6kTAvxNgSqpffTLk8asMKrTLEm8efC3zbbGnJpgUYs1LirLbQBH7yrHd6EmXgjTejqdCSVzF?cluster=devnet) | same |
 | Demo agent `set_services` [ai-chat, ai-image, ai-voice] | [`2yKL9mtqt2…`](https://explorer.solana.com/tx/2yKL9mtqt2db2ktP7qh3kzqyrVWFAFfNmYcqn3wfroSn5emrXrsSFHQzatquVuaVC7iipSuQ6B6xu1L5N1zUainT?cluster=devnet) | `scripts/demo-agent.ts` fetched the Spender afterwards |
 | Demo agent `set_policy` (cap 0.05, 0.50 per hour, 20 payments) | [`59ZBuLTyK7…`](https://explorer.solana.com/tx/59ZBuLTyK79fQdjsNxb7C14RKvxEMc4dzzQ2A3pQKCnDFXxosg7cT9GaJeeisPsK5LkKTUxphuCCYYtNDnvS3ueM?cluster=devnet) | same |
+| Ada (person spender `4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK`) `set_services`: her five suspended placeholders replaced by the six real services | [`1GypsmwGts…`](https://explorer.solana.com/tx/1GypsmwGtsnVvEVYNzdsoTy45JuMjmcwrznRuByHUd1RQaQeaNXxLwQrDLuhbLgRnXmJWMhsJeFeEhd99wj79xh?cluster=devnet) | Signed by the demo owner. Before sending, each address was derived as the PDA of its id and fetched on chain (`active = true`); afterwards the Spender read back with exactly those six |
 
 Every signature in this file was read back with `getSignatureStatuses` on 2026-11-09: finalized,
 no error.
