@@ -62,6 +62,13 @@ claude-code, coding:anthropic/claude-opus-5.5
 
 ## 60-second demo script
 
+This is the script of the video recorded for the submission on 2026-11-08 (https://youtu.be/ut9FW1qgL8A).
+The demo used placeholder registry services then (a search API, inference credits and a 12 dollar
+dataset); they were never real offerings and are suspended on devnet since 2026-11-09. The live
+demo now buys only real 0G runs: Research brief buys ai-chat, Over the limit asks for ai-claude
+(not on the agent's list, so it waits for Approve), Prompt injection is unchanged. See "Try it in
+60 seconds" in the README.
+
 | Time | On screen | Voice |
 |---|---|---|
 | 0 to 6 s | Landing hero, the gate drawing | AI agents can pay now. Giving one a wallet means trusting a prompt with your money. |
@@ -74,9 +81,9 @@ claude-code, coding:anthropic/claude-opus-5.5
 
 ## Checklist
 
-- [x] Devnet deploy, seed, `pnpm evidence` written to docs/EVIDENCE.md
+- [x] Devnet deploy, seed, `pnpm evidence` written to docs/EVIDENCE.md (placeholder-era evidence, kept as history)
 - [x] Web app on Vercel with env vars, demo team loads cold
-- [x] Agent runs from the live site (overspend filed 12 USDC, approve settled it, vault 500 to 488)
+- [x] Agent runs from the live site (overspend filed 12 USDC, approve settled it, vault 500 to 488; placeholder-era run, services since suspended)
 - [x] README links filled
 - [ ] Demo video recorded and uploaded
 - [x] Repo visibility: stays private (user decision)

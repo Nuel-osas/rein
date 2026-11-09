@@ -24,6 +24,21 @@ Every address below is on **Solana devnet**. Nothing here holds real money. The 
 
 ## Services
 
+Every service pays the compute gateway's test-USDC account [`EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5`](https://explorer.solana.com/address/EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5?cluster=devnet). Prices are quoted live per run; the list price is a label.
+
+| Id | Account | State |
+|---|---|---|
+| `ai-chat` | [`ANBMUJg453YEQM6dGWuZtkvFHRa9ina2dDT5wegBw9s8`](https://explorer.solana.com/address/ANBMUJg453YEQM6dGWuZtkvFHRa9ina2dDT5wegBw9s8?cluster=devnet) | Active |
+| `ai-image` | [`ACm5z2ZHktQpZufDQC1BgtCFRc1yTPpMWZ9qDvGvSacX`](https://explorer.solana.com/address/ACm5z2ZHktQpZufDQC1BgtCFRc1yTPpMWZ9qDvGvSacX?cluster=devnet) | Active |
+| `ai-voice` | [`6iopRv9bPU5svbKcEw1N8ojdiLrBCb85CrK9geEokkTt`](https://explorer.solana.com/address/6iopRv9bPU5svbKcEw1N8ojdiLrBCb85CrK9geEokkTt?cluster=devnet) | Active |
+| `ai-claude` | [`2iL1EsbsqRKD29F2wNubMjAtcSwZWsPcCKqmiy4WRzau`](https://explorer.solana.com/address/2iL1EsbsqRKD29F2wNubMjAtcSwZWsPcCKqmiy4WRzau?cluster=devnet) | Active |
+| `ai-gpt` | [`G3C5WfPLqpkq6HKGpP5o5ujKJe2ub5LqtMowpYkCT3gD`](https://explorer.solana.com/address/G3C5WfPLqpkq6HKGpP5o5ujKJe2ub5LqtMowpYkCT3gD?cluster=devnet) | Active |
+| `ai-video` | [`H5WPnSovaM6TyrAaDMQTe1f22jSyjBUpUiGMRm269Ky3`](https://explorer.solana.com/address/H5WPnSovaM6TyrAaDMQTe1f22jSyjBUpUiGMRm269Ky3?cluster=devnet) | Active |
+
+Their registration transactions are in `docs/CONSTANTS.md` in the repository.
+
+Suspended on 2026-11-09 (the first demo's placeholder services; history only, `pay` refuses them):
+
 | Id | Account | List price |
 |---|---|---|
 | web-search | [`8uLAhqCCWRF4JqT9GgnUQvLozRCp3JKcQo5gJfwPsj1Z`](https://explorer.solana.com/address/8uLAhqCCWRF4JqT9GgnUQvLozRCp3JKcQo5gJfwPsj1Z?cluster=devnet) | 0.40 |
@@ -39,8 +54,8 @@ Every address below is on **Solana devnet**. Nothing here holds real money. The 
 | Team "Acme Research" | [`EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5`](https://explorer.solana.com/address/EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5?cluster=devnet) | Derived from `["team", owner]` |
 | Vault | [`FdPTBxs2FcN4L5bHHUuXpDi2x6aYcnn5q7bpDisnaJkK`](https://explorer.solana.com/address/FdPTBxs2FcN4L5bHHUuXpDi2x6aYcnn5q7bpDisnaJkK?cluster=devnet) | Token account of (mint, team). Funded with 500 test USDC by the seed script |
 | Owner | [`FHMcsEbJ53Npt4VfXLBFq33wUmQZR8vFFXvFDzTqa875`](https://explorer.solana.com/address/FHMcsEbJ53Npt4VfXLBFq33wUmQZR8vFFXvFDzTqa875?cluster=devnet) | Signs the public demo's approvals |
-| Research agent | authority [`EYCrH75r2ELjg8LR2S3v4DLErGa5d3y7Lr7x5jhHEdhT`](https://explorer.solana.com/address/EYCrH75r2ELjg8LR2S3v4DLErGa5d3y7Lr7x5jhHEdhT?cluster=devnet), spender [`GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d`](https://explorer.solana.com/address/GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d?cluster=devnet) | Cap 5, 20 per hour, 10 payments per hour, 30 days; web-search, llm-inference, market-data, gpu-hour |
-| Ada, operations | authority [`EoGi1axnbXHvVYEX68cLHZPxxxY8W8zogywC2RtCjVhd`](https://explorer.solana.com/address/EoGi1axnbXHvVYEX68cLHZPxxxY8W8zogywC2RtCjVhd?cluster=devnet), spender [`4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK`](https://explorer.solana.com/address/4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK?cluster=devnet) | Cap 25, 100 per week, all services |
+| Research agent | authority [`EYCrH75r2ELjg8LR2S3v4DLErGa5d3y7Lr7x5jhHEdhT`](https://explorer.solana.com/address/EYCrH75r2ELjg8LR2S3v4DLErGa5d3y7Lr7x5jhHEdhT?cluster=devnet), spender [`GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d`](https://explorer.solana.com/address/GbLisCamsrbfRC7NH85NGev2gcdARjPr7ZAVvwtp2J1d?cluster=devnet) | Cap 0.05, 0.50 per hour, 20 payments per hour, 30 days; `ai-chat`, `ai-image`, `ai-voice` (the change is recorded in `docs/CONSTANTS.md`) |
+| Ada, operations | authority [`EoGi1axnbXHvVYEX68cLHZPxxxY8W8zogywC2RtCjVhd`](https://explorer.solana.com/address/EoGi1axnbXHvVYEX68cLHZPxxxY8W8zogywC2RtCjVhd?cluster=devnet), spender [`4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK`](https://explorer.solana.com/address/4odraK5F5vqPwFJy19uHr2Z2YSSfCXETPs2L8H5r9UxK?cluster=devnet) | Cap 25, 100 per week; her list still names the suspended placeholder services |
 | Sponsor (fee payer) | [`hEczh4E1DGuGPTikSLGZKZUAxSAF7Cw1vaSNrxatfjF`](https://explorer.solana.com/address/hEczh4E1DGuGPTikSLGZKZUAxSAF7Cw1vaSNrxatfjF?cluster=devnet) | Pays every fee and payment-record rent, about 0.003 SOL per record |
 
 ## Model

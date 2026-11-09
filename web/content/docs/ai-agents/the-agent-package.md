@@ -8,8 +8,8 @@ The agent lives in the repository's `agent/` folder, a workspace package named `
 
 ## How it works
 
-1. It sends the task to a model on Groq, `openai/gpt-oss-120b` by default, with a system prompt that explains the policy and the three tools.
-2. The model calls `list_services`, `check_budget` and `pay`. Each call is carried out against the chain, and the result goes back to the model.
+1. It sends the task to a model on Groq, `openai/gpt-oss-120b` by default, with a system prompt that explains the policy and the tools.
+2. The model calls `list_services`, `check_budget` and `pay`, and, when a compute gateway is configured, `quote_compute`, `buy_compute` and `compute_result` to buy AI runs on 0G. Each call is carried out against the chain or the gateway, and the result goes back to the model.
 3. Each `pay` builds the program's `pay` instruction with a fresh intent, has the agent's key sign it, and has the sponsor's key sign as fee payer.
 4. It stops when the model gives a final answer, or after 12 model turns.
 
@@ -27,7 +27,7 @@ export REIN_SPONSOR_SECRET='[...]' # a key with devnet SOL, to pay fees
 pnpm --filter @rein/agent agent research
 ```
 
-Instead of a scenario name you can pass a task in plain words: `pnpm --filter @rein/agent agent "find three sources on validator client diversity"`.
+Instead of a scenario name you can pass a task in plain words: `pnpm --filter @rein/agent agent "ask ai-chat for a short note on validator client diversity"`. The compute tools need `REIN_GATEWAY_URL`.
 
 | Variable | Required | What it is |
 |---|---|---|
@@ -38,14 +38,15 @@ Instead of a scenario name you can pass a task in plain words: `pnpm --filter @r
 | `REIN_SPONSOR_SECRET` | No | The fee payer's key. Without it, `~/.config/rein/sponsor.json` |
 | `REIN_AGENT_MODEL` | No | Another Groq model id |
 | `REIN_PROGRAM_ID` | No | Another deployment of the program |
+| `REIN_GATEWAY_URL` | No | A compute gateway base URL (for example the live app's), which turns on the compute tools |
 
 ## Scenarios
 
 | Name | What it should show |
 |---|---|
-| `research` | Buys two or three cheap services, each inside the policy, and they settle at once |
-| `overspend` | Tries a service priced above its cap. The payment is filed as Pending and the owner must approve it |
-| `injection` | Does the real task and refuses the injected transfer, because it cannot name an address. An unregistered service id is refused on chain with a failed transaction |
+| `research` | Buys `ai-chat` (and sometimes `ai-image`) inside the policy; the payment settles at once and the agent returns the real answer from 0G |
+| `overspend` | Buys `ai-claude`, which is not on the demo agent's list. The payment is filed as Pending (`service_not_allowed`) and the owner must approve it; then the gateway runs it on the 0G Router and returns Claude's answer, relayed and marked not verified (a server with no 0G Private Computer key refunds it in full instead) |
+| `injection` | Does the real task (a short note from `ai-chat`) and refuses the injected transfer, because it cannot name an address. An unregistered service id is refused on chain with a failed transaction |
 
 ## Tests
 
