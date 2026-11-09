@@ -24,6 +24,7 @@ const COMPUTE = [
   { id: 'ai-voice', label: '0G Voice, Whisper v3 (TEE)', model: 'openai/whisper-large-v3 (wallet route, TEE)', price: '0.02' },
   { id: 'ai-claude', label: 'Claude via 0G (relayed, no TEE)', model: 'claude-haiku-5.5 by default (0G Router only, relayed, no TEE)', price: '0.01' },
   { id: 'ai-gpt', label: 'GPT via 0G (relayed, no TEE)', model: 'gpt-5.6-luna by default (0G Router only, relayed, no TEE)', price: '0.01' },
+  { id: 'ai-video', label: 'Video via 0G (relayed, no TEE)', model: 'bytedance/seedance-2.0-fast by default, one 4 s 480p clip (0G Router only, relayed, no TEE)', price: '0.45' },
 ];
 
 // The first demo's stand-in services: registered with throwaway payees and never delivered by anyone.

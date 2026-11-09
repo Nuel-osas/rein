@@ -107,9 +107,17 @@
         "model": "gpt-5.6-luna by default (0G Router only, relayed, no TEE)",
         "price": "0.01",
         "registerTx": "2DRuJBxhmVMoazhpVtivjSWoSWRvrm8LPprQR3wUfgWjbhkK5uv9J74H6uQ27yEVgoMdoYKA6rwtn8tYQWmVSWv5"
+      },
+      "ai-video": {
+        "address": "H5WPnSovaM6TyrAaDMQTe1f22jSyjBUpUiGMRm269Ky3",
+        "payeeToken": "EY2bqDLkJdWx71ywHBfMAGzAf1a6PefFYUmfpCmz5AX5",
+        "label": "Video via 0G (relayed, no TEE)",
+        "model": "bytedance/seedance-2.0-fast by default, one 4 s 480p clip (0G Router only, relayed, no TEE)",
+        "price": "0.45",
+        "registerTx": "3JFMSoAfcHZgkmPxmGXmYxoWhazSmoC3ThkZjcHvLpq6kXQpARYMEWnbNFhvzrSocAwSJCY9iRh9tscWpZ4cTUtB"
       }
     },
-    "setupAt": "2026-11-09T07:16:59.268Z",
+    "setupAt": "2026-11-09T07:30:38.213Z",
     "suspended": {
       "web-search": {
         "address": "8uLAhqCCWRF4JqT9GgnUQvLozRCp3JKcQo5gJfwPsj1Z",
