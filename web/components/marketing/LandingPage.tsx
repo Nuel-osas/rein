@@ -80,7 +80,7 @@ const WALK_FLOWS: ReadonlyArray<{
     title: "Inside the policy",
     meta: "One transaction",
     steps: [
-      {title: "The agent signs pay", body: "pay(\u201cweb-search\u201d, $0.40, intent). Its key signs; the sponsor pays the fee.", drawing: "exchange"},
+      {title: "The agent signs pay", body: "pay(\u201cai-chat\u201d, $0.01, intent) for one 0G answer. Its key signs; the sponsor pays the fee.", drawing: "exchange"},
       {title: "The program checks", body: "Allowance, cap, count, expiry, services, pause, and the payee against the registry.", drawing: "shield"},
       {title: "USDC moves", body: "The vault pays the service in the same transaction and the Payment account reads Paid.", drawing: "vault"},
     ],
@@ -90,7 +90,7 @@ const WALK_FLOWS: ReadonlyArray<{
     title: "Over a limit",
     meta: "Held until you decide",
     steps: [
-      {title: "The agent overspends", body: "It asks for $9 against a $5 cap. pay files a Pending payment and moves nothing.", drawing: "exchange"},
+      {title: "The agent overspends", body: "It buys ai-claude, which is not on its list. pay files a Pending payment and moves nothing.", drawing: "exchange"},
       {title: "You see it at once", body: "The reasons are decoded on the payment: over the cap, over the allowance, not on its list.", drawing: "receipt"},
       {title: "Approve, and it lands", body: "approve re-checks the hard stops and settles in one transaction, in under a second.", drawing: "vault"},
     ],

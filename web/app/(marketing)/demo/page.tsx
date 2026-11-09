@@ -25,7 +25,7 @@ export default function DemoPage() {
             <span>The money waits for you.</span>
           </>
         }
-        lede="This is a real team on chain: Acme Research, with an AI agent, a person and five registered services. When the agent asks for more than its policy allows, the program files the payment and holds the USDC. Press Approve and it settles in one transaction."
+        lede="This is a real team on chain: Acme Research, with an AI agent and a person. Its agent buys real AI runs on 0G: chat, image and voice inside its policy. When it asks for something its policy does not allow, such as Claude, which is not on its list, the program files the payment and holds the USDC. Press Approve and it settles in one transaction."
       >
         {DEMO_TEAM ? (
           <ActionLink href={`/app/${DEMO_TEAM}`}>

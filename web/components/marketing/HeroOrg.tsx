@@ -11,11 +11,10 @@ import styles from "./HeroOrg.module.css";
    with small squares at their junctions.
 
    The loop (HeroOrg.module.css holds the timeline):
-   a. an agent pays within its policy: a pulse runs from the research agent down to the
-      model provider (`ILLUSTRATED_SERVICES` in `lib/catalogue.ts`: Acme
-      Inference API on testnet; on mainnet, which has no merchant to pay yet,
-      a plain "AI model provider" with no brand), the service flashes, "Paid
-      $5.00" ticks up under it and the team balance drops by five dollars;
+   a. an agent pays within its policy: a pulse runs from the research agent down to
+      ai-chat (one of the 0G services Rein sells), the service flashes, "Paid
+      $5.00" ticks up under it and the team balance drops by five dollars (the
+      amounts are illustrative, not 0G prices);
    b. a person's payment is over his cap: Ada's pulse stops at the gate on
       his trace, the trace turns a muted amber, the request runs up to the
       owner ("Approve?", then "Approved"), comes back down, and goes on to the
@@ -43,9 +42,9 @@ const NODES: Record<NodeId, {kind: string; title: string; meta?: string}> = {
   marcus: {kind: "Person", title: "Ada", meta: "$100 / week"},
   ronnie: {kind: "Agent", title: "Research agent", meta: "$20 / day · $5 cap"},
   scout: {kind: "Agent", title: "Scout", meta: "$30 / week"},
-  northwind: {kind: "Service", title: "market-data"},
-  acme: {kind: "Service", title: "gpu-hour"},
-  relay: {kind: "Service", title: "web-search"},
+  northwind: {kind: "Service", title: "ai-image"},
+  acme: {kind: "Service", title: "ai-chat"},
+  relay: {kind: "Service", title: "ai-voice"},
 };
 
 type Layout = {

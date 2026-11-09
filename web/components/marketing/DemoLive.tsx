@@ -91,7 +91,7 @@ function Live({team}: {team: string}) {
           now={now}
           onChange={refresh}
           base={`/app/${team}`}
-          empty="Nothing is waiting right now. Ask the agent below for something over its $5 cap, and the payment stops here."
+          empty="Nothing is waiting right now. Run Over the limit below: the agent buys ai-claude, which is not on its list, and the payment stops here."
         />
       </section>
 

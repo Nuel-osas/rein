@@ -11,13 +11,13 @@ import styles from "./OnboardingStory.module.css";
    The sign-in story panel: what Rein does, shown rather than drawn.
 
    Three example payments play over the moving glass, each checked against the
-   spender's own rules: one inside its limits and paid, one over its limit and
-   sent to the owner, who approves it, and one small payment that simply goes.
-   That is the whole product in about ten seconds.
+   spender's own rules: one inside its limits and paid, one for a service not
+   on its list and sent to the owner, who approves it, and one small payment
+   that simply goes. That is the whole product in about ten seconds.
 
    ILLUSTRATIVE, and it says so to assistive technology: the moving cards are
-   one labelled image, not live data. The services are the demo registry's;
-   the $5 limit is the research agent's per-payment cap on the demo team.
+   one labelled image, not live data. The services are Rein's real 0G services
+   (ai-claude is not on the demo agent's list); the amounts are typical quotes.
 
    Motion: the story steps through React state (each change is a CSS transition,
    interruptible), only while on screen and in a visible tab. A pause button
@@ -50,20 +50,20 @@ const PAYMENTS: Payment[] = [
   {
     who: "Research agent",
     role: "AI agent",
-    to: "llm-inference",
-    amount: "$2.00",
+    to: "ai-chat",
+    amount: "$0.01",
     from: 0,
     statuses: [CHECKING, {tone: "ok", label: "Within limits"}, {tone: "paid", label: "Paid"}],
   },
   {
     who: "Research agent",
     role: "AI agent",
-    to: "premium-dataset",
-    amount: "$12.00",
+    to: "ai-claude",
+    amount: "$0.01",
     from: 2,
     statuses: [
       CHECKING,
-      {tone: "over", label: "Over the $5 cap"},
+      {tone: "over", label: "Not on its list"},
       {tone: "owner", label: "Held for the owner"},
       {tone: "paid", label: "Approved and settled"},
     ],
@@ -71,8 +71,8 @@ const PAYMENTS: Payment[] = [
   {
     who: "Ada",
     role: "Operations",
-    to: "web-search",
-    amount: "$0.40",
+    to: "ai-image",
+    amount: "$0.02",
     from: 6,
     statuses: [CHECKING, {tone: "paid", label: "Paid"}],
   },
@@ -148,7 +148,7 @@ export function OnboardingStory() {
         <div
           className={styles.feed}
           role="img"
-          aria-label="An example: three payments checked against each spender's rules. Two are paid within their limits; one is over its limit, goes to the owner and is approved. Illustrative, not live data."
+          aria-label="An example: three payments checked against each spender's rules. Two are paid within their limits; one is for a service not on the agent's list, goes to the owner and is approved. Illustrative, not live data."
           data-leaving={leaving}
         >
           {PAYMENTS.map((payment, i) => {
