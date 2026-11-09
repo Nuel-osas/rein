@@ -125,8 +125,18 @@ async function main() {
   ].join('\n');
   for (const l of lines) console.log(`${l.result.padEnd(32)} ${l.claim}\n${' '.repeat(33)}${explorer('tx', l.signature)}`);
   if (cluster() === 'devnet') {
+    // Only the earlier-evidence section is this script's; the rest of the file is kept.
     mkdirSync(join(__dirname, '..', 'docs'), { recursive: true });
-    writeFileSync(join(__dirname, '..', 'docs', 'EVIDENCE.md'), md);
+    const file = join(__dirname, '..', 'docs', 'EVIDENCE.md');
+    const section = `<!-- evidence:start -->\n${md.replace(/^# /, '## ')}<!-- evidence:end -->`;
+    const re = /<!-- evidence:start -->[\s\S]*?<!-- evidence:end -->/;
+    let text = '';
+    try {
+      text = readFileSync(file, 'utf8');
+    } catch {
+      text = '# Evidence\n';
+    }
+    writeFileSync(file, re.test(text) ? text.replace(re, section) : `${text.trimEnd()}\n\n${section}\n`);
     console.log('\nwrote docs/EVIDENCE.md');
   }
 }
