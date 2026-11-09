@@ -387,7 +387,7 @@ const PICKER: {kind: ServiceKind; title: string; id: string; placeholder: string
   {kind: "voice", title: "Voice", id: "ai-voice", placeholder: ""},
   {kind: "claude", title: "Claude", id: "ai-claude", placeholder: "Review this policy in three sentences: 0.05 a run, 0.50 an hour, 20 runs."},
   {kind: "gpt", title: "GPT", id: "ai-gpt", placeholder: "Explain a per-payment cap to a new finance hire, in two sentences."},
-  {kind: "video", title: "Video", id: "ai-video", placeholder: ""},
+  {kind: "video", title: "Video", id: "ai-video", placeholder: "A purple padlock slowly closing on a black background, simple clean animation."},
 ];
 
 type Choice = (typeof PICKER)[number] & {
@@ -502,9 +502,11 @@ export function ComputeRunPanel({teamAddress}: {teamAddress: string}) {
 
   const follow = useCallback(
     async (found: string) => {
-      // Ask the gateway to run it (idempotent), then read the result until it settles.
+      // Ask the gateway to run it (idempotent), then read the result until it settles. A clip is a
+      // job that takes a minute or two, so it is followed for longer (every read checks it once).
       let o = await startRun(found, await authHeaders());
-      for (let i = 0; i < 30 && (o.kind === "running" || o.kind === "unpaid" || o.kind === "not_run"); i++) {
+      const tries = svc?.output === "video" ? 90 : 30;
+      for (let i = 0; i < tries && (o.kind === "running" || o.kind === "unpaid" || o.kind === "not_run"); i++) {
         setOutcome(o);
         await new Promise((r) => setTimeout(r, 2000));
         o = o.kind === "unpaid" ? await startRun(found, await authHeaders()) : await readResult(found);
@@ -515,7 +517,7 @@ export function ComputeRunPanel({teamAddress}: {teamAddress: string}) {
       else if (o.kind === "unpaid" || o.kind === "running" || o.kind === "not_run") setStatus({tone: "wait", text: "Not finished yet. The run page keeps checking."});
       else setStatus(null);
     },
-    [authHeaders],
+    [authHeaders, svc?.output],
   );
 
   function pick(k: ServiceKind) {
