@@ -11,7 +11,8 @@
 //   Router route (0G Private Computer, https://router-api.0g.ai/v1, one `sk-` key): Claude and GPT
 //     models and Seedance video, all "standard" trust: relayed to the vendor, no TEE, nothing signed.
 // So chat, voice and image run on the wallet route and are labelled TEE verified; Claude and GPT
-// run on the Router only and are labelled relayed, no TEE. Video is listed as coming soon and is
+// run on the Router only and are labelled relayed, no TEE. Chat stays on the wallet even with a
+// Router key: the Router's private mode returned no `tee_verified` when tried on 2026-11-09. Video is listed as coming soon and is
 // not registered (COMING_SOON says why). Add a row here, register it with scripts/compute-setup.ts,
 // and it sells.
 
@@ -50,7 +51,7 @@ export type ServiceMeta = {
   maxAudioSeconds?: number;
   /** List price shown in the registry, base units. Not a limit and not the quote. */
   listPrice: bigint;
-  /** The Router model id chat may also use (wallet services only; private TEE mode, never relayed). */
+  /** The Router's id for the same model (ai-chat). Not used to route: chat runs on the wallet only. */
   routerModel?: string;
   /** Router trust mode: private = TeeML providers only (never falls back); standard = relayed. */
   routerTrust?: 'private' | 'standard';
@@ -85,11 +86,22 @@ const DISPLAY: Record<string, string> = {
 };
 const display = (model: string) => DISPLAY[model] ?? model;
 
+/** Tokens a relayed answer may write (COMPUTE_RELAYED_MAX_TOKENS, 64 to 1,024, default 1,024). */
+export function relayedMaxTokens(raw: string | undefined): number {
+  const v = raw?.trim();
+  if (!v) return 1_024;
+  const n = /^\d{1,5}$/.test(v) ? Number(v) : NaN;
+  // Fail closed to the smallest cap: a malformed value never raises what a run may cost.
+  return n >= 64 && n <= 1_024 ? n : 64;
+}
+
 export function buildServiceTable(env: Record<string, string | undefined> = process.env): Record<ComputeService, ServiceMeta> {
   // A malformed model id keeps the service in the table under an id the Router never lists, so it
   // quotes nothing ("not listed") instead of running a model nobody chose.
   const claude = modelFromEnv(env.COMPUTE_CLAUDE_MODEL, DEFAULT_CLAUDE_MODEL) ?? 'invalid-COMPUTE_CLAUDE_MODEL';
   const gpt = modelFromEnv(env.COMPUTE_GPT_MODEL, DEFAULT_GPT_MODEL) ?? 'invalid-COMPUTE_GPT_MODEL';
+  const relayedTokens = relayedMaxTokens(env.COMPUTE_RELAYED_MAX_TOKENS);
+  const tok = relayedTokens.toLocaleString('en-US');
   return {
     'ai-chat': {
       kind: 'chat',
@@ -147,12 +159,12 @@ export function buildServiceTable(env: Record<string, string | undefined> = proc
       model: claude,
       name: `${display(claude)}, run by Rein on 0G`,
       label: 'Claude via 0G (relayed, no TEE)',
-      summary: `One answer of up to 1,024 tokens from ${display(claude)}, relayed to Anthropic through the 0G Router. No TEE: the answer is not checked`,
+      summary: `One answer of up to ${tok} tokens from ${display(claude)}, relayed to Anthropic through the 0G Router. No TEE: the answer is not checked`,
       input: 'prompt',
       output: 'text',
       trust: 'relayed',
       maxPromptChars: 4_000,
-      maxOutputTokens: 1_024,
+      maxOutputTokens: relayedTokens,
       listPrice: 10_000n,
       routerTrust: 'standard',
       lowReasoning: 'effort',
@@ -163,12 +175,12 @@ export function buildServiceTable(env: Record<string, string | undefined> = proc
       model: gpt,
       name: `${display(gpt)}, run by Rein on 0G`,
       label: 'GPT via 0G (relayed, no TEE)',
-      summary: `One answer of up to 1,024 tokens from ${display(gpt)}, relayed to OpenAI through the 0G Router. No TEE: the answer is not checked`,
+      summary: `One answer of up to ${tok} tokens from ${display(gpt)}, relayed to OpenAI through the 0G Router. No TEE: the answer is not checked`,
       input: 'prompt',
       output: 'text',
       trust: 'relayed',
       maxPromptChars: 4_000,
-      maxOutputTokens: 1_024,
+      maxOutputTokens: relayedTokens,
       listPrice: 10_000n,
       routerTrust: 'standard',
       lowReasoning: 'effort',
@@ -180,12 +192,12 @@ export const SERVICE_TABLE: Record<ComputeService, ServiceMeta> = buildServiceTa
 
 /**
  * Offerings shown in the catalog as coming soon: not registered, never quoted.
- * Video: the Router prices Seedance 2.0 Fast per vendor-reported video token (480p, no reference
- * video: $0.0000056 a token, read from /v1/models on 2026-11-09; a 4 s 480p clip is about 40,600
- * tokens, so about $0.23 before the markup). Its job flow is asynchronous and can only be exercised
- * with a 0G Private Computer key, which this server does not have yet, and the wallet route has no
- * verified video provider. Selling it before that flow has been run once end to end would be a
- * guess, so it is not sold.
+ * Video: the 0G Router serves Seedance 2.0 Fast as an asynchronous job (POST /v1/videos, then poll
+ * and fetch the clip), billed per video token the vendor reports (480p, no reference video:
+ * $0.0000056 a token, read from /v1/models on 2026-11-09; a 4 s 480p clip is about 40,600 tokens,
+ * so about $0.23 before the markup). That job flow (start, poll past one function's time limit,
+ * fetch and store the MP4, bound the reported tokens) has not been run end to end here yet, and the
+ * wallet route has no verified video provider. Selling it before then would be a guess.
  */
 export const COMING_SOON = [
   {
@@ -196,6 +208,6 @@ export const COMING_SOON = [
     model: 'bytedance/seedance-2.0-fast',
     name: '0G Video (Seedance 2.0 Fast), run by Rein on 0G',
     reason:
-      "Coming soon. The 0G Router prices Seedance per video token the vendor reports (about $0.23 for a 4 s 480p clip before the markup), but its asynchronous job flow can't be run or checked without a 0G Private Computer key, and no verified 0G provider serves video on the wallet route. It is not registered and cannot be bought.",
+      "Coming soon. The 0G Router makes Seedance clips as asynchronous jobs billed per video token the vendor reports (about $0.23 for a 4 s 480p clip before the markup). Rein has not yet run that job flow end to end (start, poll, fetch and store the clip), and no verified 0G provider serves video on the wallet route, so it is not registered and cannot be bought.",
   },
 ];

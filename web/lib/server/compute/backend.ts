@@ -2,8 +2,11 @@
 //   - the wallet route: the real adapter (`@rein/zg-compute`, the 0G Compute SDK with the gateway's
 //     funded wallet, loaded lazily so tests and fake runs never load the SDK). Chat, voice and image,
 //     each from a TEE provider whose signature the adapter checks.
-//   - the Router route (./router.ts): 0G Private Computer with one `sk-` key. Claude and GPT only
-//     go there (relayed, no TEE); chat may too when the key is set, in private (TEE-only) mode.
+//   - the Router route (./router.ts): 0G Private Computer with one `sk-` key. Only Claude and GPT
+//     go there (relayed, no TEE). Chat stays on the wallet even when the key is set: on 2026-11-09
+//     the Router's private mode answered from a TEE provider but returned no `tee_verified`, so a
+//     Router chat could not be called verified, and the wallet route's checked signature is what
+//     "TEE verified" means here.
 //   - a labelled fake for dev and tests. The fake never runs in production (readComputeEnv forces it
 //     off there), and everything it returns says it is fake.
 
@@ -127,9 +130,8 @@ const REAL: BackendMakers = { router: (k) => routerBackend(k), wallet: zgBackend
 /**
  * The backend for one service. A Router service (Claude, GPT) runs only on the Router: without its
  * key it is not configured, and only its public price can be read (the pricer runs nothing). A
- * wallet service runs on the 0G Compute SDK; chat may use the Router instead when its key is set,
- * always in private (TEE-only) mode. Voice and image stay on the wallet, where their TEE
- * signatures are checked. Never a fallback that changes what is sold.
+ * wallet service (chat, voice, image) runs only on the 0G Compute SDK, where its TEE signature is
+ * checked, whether or not the Router key is set. Never a fallback that changes what is sold.
  */
 export function chooseBackend(service: ComputeService, be: BackendEnv, make: BackendMakers = REAL): ComputeBackendLike | BackendMissing {
   const meta = SERVICE_TABLE[service];
@@ -137,7 +139,6 @@ export function chooseBackend(service: ComputeService, be: BackendEnv, make: Bac
     if (be.routerKey) return make.router(be.routerKey);
     return { error: ROUTER_KEY_MISSING, notConfigured: true, pricer: make.router(null) };
   }
-  if (meta.routerModel && meta.routerTrust === 'private' && be.routerKey) return make.router(be.routerKey);
   if (be.zgKey) return make.wallet(be.zgKey, be.maxLedgerZg);
   return { error: WALLET_KEY_MISSING, notConfigured: true };
 }

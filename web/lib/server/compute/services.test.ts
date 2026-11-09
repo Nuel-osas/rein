@@ -22,7 +22,7 @@ import {
   type Quote,
   type RefundOutcome,
 } from './core';
-import { buildServiceTable, COMING_SOON, modelFromEnv, SERVICE_TABLE } from './catalog';
+import { buildServiceTable, COMING_SOON, modelFromEnv, relayedMaxTokens, SERVICE_TABLE } from './catalog';
 import { chooseBackend, FAKE_PNG, fakeBackend, ROUTER_KEY_MISSING, type BackendMakers } from './backend';
 import { kvBlobs, KV_MAX_BYTES } from './blobs';
 import { routerBackend } from './router';
@@ -132,17 +132,21 @@ describe('catalog', () => {
     assert.equal(t['ai-claude'].name, 'Claude Sonnet 5.5, run by Rein on 0G');
     assert.equal(t['ai-gpt'].model, 'gpt-5.6-sol');
     assert.equal(modelFromEnv('bad model; drop', 'x'), null);
+    assert.equal(buildServiceTable({ COMPUTE_RELAYED_MAX_TOKENS: '200' })['ai-gpt'].maxOutputTokens, 200);
+    assert.equal(relayedMaxTokens(undefined), 1_024);
+    assert.equal(relayedMaxTokens('99999'), 64);
+    assert.equal(relayedMaxTokens('abc'), 64);
     assert.notEqual(buildServiceTable({ COMPUTE_CLAUDE_MODEL: 'a b' })['ai-claude'].model, 'claude-haiku-5.5');
   });
 });
 
 describe('backend per service', () => {
-  it('runs chat, voice and image on the wallet, and Claude and GPT only on the Router', () => {
+  it('runs chat, voice and image on the wallet even with a Router key, and Claude and GPT only on the Router', () => {
     const { m, made } = makers();
     const both = { routerKey: 'sk-x', zgKey: '0xkey', maxLedgerZg: 10 };
     for (const s of ['ai-voice', 'ai-image', 'ai-claude', 'ai-gpt', 'ai-chat'] as ComputeService[]) chooseBackend(s, both, m);
-    // chat goes to the Router (private mode) when its key is set; voice and image never do.
-    assert.deepEqual(made, ['wallet', 'wallet', 'router', 'router', 'router']);
+    // The Router's private mode returned no tee_verified (2026-11-09), so TEE services never go there.
+    assert.deepEqual(made, ['wallet', 'wallet', 'router', 'router', 'wallet']);
   });
   it('without a Router key: chat stays on the wallet, Claude and GPT are not configured but can be priced', () => {
     const { m, made } = makers();
@@ -153,10 +157,10 @@ describe('backend per service', () => {
     assert.equal((c as BackendMissing).error, ROUTER_KEY_MISSING);
     assert.deepEqual(made, ['wallet', 'router-pricer']);
   });
-  it('without a wallet key: voice and image are not configured and have no pricer (never sent to the Router)', () => {
+  it('without a wallet key: chat, voice and image are not configured and have no pricer (never sent to the Router)', () => {
     const { m, made } = makers();
     const routerOnly = { routerKey: 'sk-x', zgKey: null, maxLedgerZg: 10 };
-    for (const s of ['ai-voice', 'ai-image'] as ComputeService[]) {
+    for (const s of ['ai-chat', 'ai-voice', 'ai-image'] as ComputeService[]) {
       const b = chooseBackend(s, routerOnly, m);
       assert.ok('error' in b && b.notConfigured && !b.pricer);
     }
