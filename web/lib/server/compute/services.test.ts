@@ -23,9 +23,10 @@ import {
   type RefundOutcome,
 } from './core';
 import { buildServiceTable, COMING_SOON, modelFromEnv, relayedMaxTokens, SERVICE_TABLE } from './catalog';
-import { chooseBackend, FAKE_PNG, fakeBackend, ROUTER_KEY_MISSING, type BackendMakers } from './backend';
+import { chooseBackend, FAKE_MP4, FAKE_PNG, fakeBackend, ROUTER_KEY_MISSING, type BackendMakers } from './backend';
 import { kvBlobs, KV_MAX_BYTES } from './blobs';
-import { routerBackend } from './router';
+import { ROUTER_BASE, routerBackend, routerVideoWorstCase, videoTokens } from './router';
+import { JOB_DEADLINE_MS, result, type JobPoll } from './core';
 
 const PROGRAM = 'F8hK6X1HjNsroUDio4QujwReNpaEFuabyPhMDEXBnjVe';
 const TEAM = 'EWuQEKAj3hmQJxBvPJ7PWYM38xcCqhivYao9afEy6Bg5';
@@ -118,10 +119,11 @@ describe('catalog', () => {
     }
     assert.deepEqual(
       Object.fromEntries(Object.entries(SERVICE_TABLE).map(([id, m]) => [id, [m.route, m.trust]])),
-      { 'ai-chat': ['wallet', 'tee'], 'ai-image': ['wallet', 'tee'], 'ai-voice': ['wallet', 'tee'], 'ai-claude': ['router', 'relayed'], 'ai-gpt': ['router', 'relayed'] },
+      { 'ai-chat': ['wallet', 'tee'], 'ai-image': ['wallet', 'tee'], 'ai-voice': ['wallet', 'tee'], 'ai-claude': ['router', 'relayed'], 'ai-gpt': ['router', 'relayed'], 'ai-video': ['router', 'relayed'] },
     );
-    assert.equal(COMING_SOON[0].id, 'ai-video');
-    assert.equal(Object.hasOwn(SERVICE_TABLE, 'ai-video'), false);
+    assert.equal(COMING_SOON.length, 0);
+    assert.equal(SERVICE_TABLE['ai-video'].async, true);
+    assert.equal(SERVICE_TABLE['ai-video'].model, 'bytedance/seedance-2.0-fast');
   });
   it('takes the Claude and GPT models from env, with defaults, and refuses a malformed id', () => {
     const d = buildServiceTable({});
@@ -144,9 +146,9 @@ describe('backend per service', () => {
   it('runs chat, voice and image on the wallet even with a Router key, and Claude and GPT only on the Router', () => {
     const { m, made } = makers();
     const both = { routerKey: 'sk-x', zgKey: '0xkey', maxLedgerZg: 10 };
-    for (const s of ['ai-voice', 'ai-image', 'ai-claude', 'ai-gpt', 'ai-chat'] as ComputeService[]) chooseBackend(s, both, m);
+    for (const s of ['ai-voice', 'ai-image', 'ai-claude', 'ai-gpt', 'ai-video', 'ai-chat'] as ComputeService[]) chooseBackend(s, both, m);
     // The Router's private mode returned no tee_verified (2026-11-09), so TEE services never go there.
-    assert.deepEqual(made, ['wallet', 'wallet', 'router', 'router', 'wallet']);
+    assert.deepEqual(made, ['wallet', 'wallet', 'router', 'router', 'router', 'wallet']);
   });
   it('without a Router key: chat stays on the wallet, Claude and GPT are not configured but can be priced', () => {
     const { m, made } = makers();
@@ -321,5 +323,113 @@ describe('pricing of the new services', () => {
     assert.equal(at(0.0015), 10_000n); // chat: $0.00225 -> the $0.01 floor
     assert.equal(at(0.008), 20_000n); // voice: $0.012 -> $0.02
     assert.equal(at(0.009), 20_000n); // image: $0.0135 -> $0.02
+  });
+});
+
+// bytedance/seedance-2.0-fast's 480p prices as /v1/models listed them on 2026-11-09.
+const SEEDANCE = {
+  id: 'bytedance/seedance-2.0-fast',
+  pricing: { prompt: '0', completion: '39993815242143', variants: [{ dimensions: { has_video_input: 'false', resolution: '480p' }, unit: 'video_token', unit_price: '39993815242143' }, { dimensions: { has_video_input: 'true', resolution: '480p' }, unit: 'video_token', unit_price: '23567783981978' }] },
+  pricing_usd: { variants: [{ dimensions: { has_video_input: 'false', resolution: '480p' }, unit: 'video_token', unit_price: '0.0000056' }, { dimensions: { has_video_input: 'true', resolution: '480p' }, unit: 'video_token', unit_price: '0.0000033' }] },
+};
+
+describe('video', () => {
+  it('prices one 4 s 480p clip from the per-token price, 25% over the probed token count, then x1.5', () => {
+    assert.equal(videoTokens(), 40_595n); // 864 x 496 x 97 / 1024 rounded up; the adapter's paid probe was billed 40,594
+    const p = routerVideoWorstCase(SEEDANCE);
+    assert.ok(p.ok);
+    if (!p.ok) return;
+    // 40,594 x 1.25 x $0.0000056 = $0.2842; x 1.5 = $0.4263 -> $0.43
+    assert.equal(priceOf(p.maxCostNeuron, p.usdPerZg).amount, 430_000n);
+    assert.equal(routerVideoWorstCase({ id: 'x', pricing: { variants: [] } }).ok, false);
+  });
+
+  it('starts a job on run, finishes it on result, stores the clip and serves it', async () => {
+    const h = harness();
+    const q = await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-video', prompt: 'A purple padlock turning slowly' });
+    assert.equal(q.status, 200, JSON.stringify(q.body));
+    assert.equal(q.body.output, 'video');
+    h.pay(q.body as { amount: string });
+    const intent = q.body.intent as string;
+    const started = await run(h.d, intent);
+    assert.equal(started.status, 202);
+    assert.equal(started.body.status, 'running');
+    assert.ok(await h.store.get(`job:${intent}`));
+    const r = await result(h.d, intent);
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    const res = r.body.result as { output: string; mime: string; url: string; verified: boolean; trust: string };
+    assert.equal(res.output, 'video');
+    assert.equal(res.mime, 'video/mp4');
+    assert.equal(res.url, `/api/compute/result/${intent}/blob`);
+    assert.equal(res.verified, false);
+    assert.equal(res.trust, 'relayed');
+    const blob = await resultBlob(h.d, intent);
+    assert.ok('ok' in blob);
+    if ('ok' in blob) assert.deepEqual(blob.bytes, FAKE_MP4);
+    // Asking run again returns the stored result and never starts a second job.
+    assert.equal((await run(h.d, intent)).body.status, 'done');
+  });
+
+  it('keeps an unreadable job running, refunds a failed one, and refunds one past the deadline', async () => {
+    let poll: JobPoll = { state: 'unknown', message: 'status read 502' };
+    let starts = 0;
+    let now = Date.UTC(2026, 10, 9, 9, 0, 0);
+    const h = harness({ backend: () => ({ ...fakeBackend(), startJob: async () => (starts++, { ok: true, jobId: 'job-1' }), pollJob: async () => poll }) });
+    h.d.now = () => now;
+    const quoteOne = async () => {
+      const q = await quote(h.d, { team: TEAM, authority: AUTH, service: 'ai-video', prompt: `clip ${Math.random()}` });
+      h.pay(q.body as { amount: string });
+      await run(h.d, q.body.intent as string);
+      return q.body.intent as string;
+    };
+    const a = await quoteOne();
+    assert.equal((await result(h.d, a)).status, 202); // unknown: still running, nothing refunded
+    assert.equal(h.calls.refunds.length, 0);
+    poll = { state: 'failed', code: 'job_failed', message: 'content policy' };
+    assert.equal((await result(h.d, a)).body.status, 'refunded');
+    poll = { state: 'running' };
+    const b = await quoteOne();
+    now += JOB_DEADLINE_MS + 1;
+    assert.equal((await result(h.d, b)).body.status, 'refunded');
+    assert.match(h.calls.refunds[1], /30 minutes/);
+    assert.equal(starts, 2);
+  });
+
+  it('asks the Router for a fixed 4 s 480p 16:9 clip without audio, and reads its job states', async () => {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    let status = 'queued';
+    const f = (async (url: string | URL, init?: RequestInit) => {
+      calls.push({ url: String(url), init });
+      const u = String(url);
+      if (u.endsWith('/models')) return new Response(JSON.stringify({ data: [SEEDANCE] }), { status: 200 });
+      if (u === `${ROUTER_BASE}/videos` && init?.method === 'POST') return new Response(JSON.stringify({ id: 'video_abc123', status: 'queued' }), { status: 200 });
+      if (u.endsWith('/content')) return new Response(FAKE_MP4, { status: 200, headers: { 'content-type': 'video/mp4' } });
+      if (u === `${ROUTER_BASE}/videos/video_abc123`) return status === 'busy' ? new Response('{}', { status: 503 }) : new Response(JSON.stringify({ id: 'video_abc123', status, usage: { completion_tokens: 40594 } }), { status: 200 });
+      return new Response('{}', { status: 404 });
+    }) as unknown as typeof fetch;
+    delete (globalThis as { __reinRouterModels?: unknown }).__reinRouterModels;
+    const b = routerBackend('sk-test', f);
+    assert.equal(b.model('ai-video'), 'bytedance/seedance-2.0-fast');
+    assert.equal((await b.priceOf('ai-video')).ok, true);
+    const sig = new AbortController().signal;
+    const st = await b.startJob!('ai-video', { prompt: 'a padlock' }, { purchaseId: 'p', signal: sig });
+    assert.deepEqual(st, { ok: true, jobId: 'video_abc123' });
+    const body = JSON.parse(String(calls.find((c) => c.init?.method === 'POST')!.init!.body));
+    assert.deepEqual(body, { model: 'bytedance/seedance-2.0-fast', prompt: 'a padlock', seconds: 4, metadata: { resolution: '480p', ratio: '16:9', generate_audio: false, return_last_frame: false, watermark: false } });
+    assert.deepEqual(await b.pollJob!('ai-video', 'video_abc123', { signal: sig }), { state: 'running' });
+    status = 'busy';
+    assert.equal((await b.pollJob!('ai-video', 'video_abc123', { signal: sig })).state, 'unknown');
+    status = 'completed';
+    const done = await b.pollJob!('ai-video', 'video_abc123', { signal: sig });
+    assert.equal(done.state, 'done');
+    if (done.state !== 'done') return;
+    assert.deepEqual(done.output, { kind: 'video', mime: 'video/mp4', bytes: FAKE_MP4 });
+    assert.equal(done.verified, false);
+    assert.equal(done.covers, 'none');
+    assert.equal(done.costNeuron, 40_594n * 39_993_815_242_143n);
+    status = 'failed';
+    assert.equal((await b.pollJob!('ai-video', 'video_abc123', { signal: sig })).state, 'failed');
+    // Without a key: no job is started and nothing is faked.
+    assert.equal((await routerBackend(null, f).startJob!('ai-video', { prompt: 'x' }, { purchaseId: 'p', signal: sig })).ok, false);
   });
 });

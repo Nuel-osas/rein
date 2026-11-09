@@ -122,6 +122,20 @@ export function sniffImage(b: Uint8Array): 'image/png' | 'image/jpeg' | 'image/w
 }
 export const IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 
+/** An MP4 told by its `ftyp` box. Under 4 MB so a function can serve it (Vercel's response cap is 4.5 MB). */
+export function sniffVideo(b: Uint8Array): 'video/mp4' | null {
+  return b.length >= 12 && Buffer.from(b.subarray(4, 8)).toString('latin1') === 'ftyp' ? 'video/mp4' : null;
+}
+export const VIDEO_MAX_BYTES = 4 * 1024 * 1024;
+/** A video job not finished after this long is refunded (the Router's own clips took about a minute). */
+export const JOB_DEADLINE_MS = 30 * 60_000;
+export const JOB_POLL_LOCK_SEC = 50;
+
+/** The stored media of a result, by its own bytes: an image, an MP4, or null (never served). */
+export function sniffMedia(b: Uint8Array): string | null {
+  return sniffImage(b) ?? sniffVideo(b);
+}
+
 /** "c" + base64url(HMAC(secret, team|spender|service|amount|sha256(prompt)|maxTokens|nonce)), 32 chars. */
 export function intentFor(secret: string, f: { team: string; spender: string; service: string; amount: bigint; promptSha: string; maxTokens: number; nonce: string }): string {
   const msg = [f.team, f.spender, f.service, f.amount.toString(), f.promptSha, String(f.maxTokens), f.nonce].join('|');
@@ -198,11 +212,11 @@ export type ComputeResult = {
   intent: string;
   service: ComputeService;
   model: string;
-  /** What was delivered: text (chat, Claude, GPT, a voice transcript) or an image. */
-  output?: 'text' | 'image';
+  /** What was delivered: text (chat, Claude, GPT, a voice transcript), an image or a clip. */
+  output?: 'text' | 'image' | 'video';
   /** The answer or transcript; '' for an image. */
   text: string;
-  /** Image results: the type, size and where to fetch the bytes (the intent is the capability). */
+  /** Image and video results: the type, size and where to fetch the bytes (the intent is the capability). */
   mime?: string;
   bytes?: number;
   url?: string;
@@ -239,7 +253,13 @@ export type RefundOutcome =
 
 export type BackendPrice = { ok: true; maxCostNeuron: bigint; usdPerZg: number; revision: string } | { ok: false; reason: string };
 export type BackendInput = { prompt: string } | { audio: { bytes: Uint8Array; mime: string; seconds: number } };
-export type BackendOutput = { kind: 'text'; text: string } | { kind: 'image'; mime: string; bytes: Uint8Array };
+export type BackendOutput = { kind: 'text'; text: string } | { kind: 'image'; mime: string; bytes: Uint8Array } | { kind: 'video'; mime: string; bytes: Uint8Array };
+/** A job's state when asked: still working, unreadable right now (asked again later), finished, or failed. */
+export type JobPoll =
+  | { state: 'running' }
+  | { state: 'unknown'; message: string }
+  | { state: 'failed'; code: string; message: string }
+  | { state: 'done'; output: BackendOutput; fake: boolean; verified: boolean; covers: string | null; provider: string | null; costNeuron: bigint | null };
 export type BackendRun =
   | { ok: true; output: BackendOutput; fake: boolean; verified: boolean; covers: string | null; provider: string | null; costNeuron: bigint | null }
   | { ok: false; code: string; message: string };
@@ -256,6 +276,10 @@ export interface ComputeBackendLike {
    *  the floor check is skipped, an empty balance fails the run, and the run is refunded. */
   ledgerOptional?: boolean;
   run(service: ComputeService, input: BackendInput, o: { purchaseId: string; signal: AbortSignal }): Promise<BackendRun>;
+  /** Async services (video): start the job and return its id, without waiting for the output. */
+  startJob?(service: ComputeService, input: BackendInput, o: { purchaseId: string; signal: AbortSignal }): Promise<{ ok: true; jobId: string } | { ok: false; code: string; message: string }>;
+  /** Async services: the job's state now. Never throws for a busy or unreadable status: that is 'unknown'. */
+  pollJob?(service: ComputeService, jobId: string, o: { signal: AbortSignal }): Promise<JobPoll>;
 }
 
 /**
@@ -354,7 +378,7 @@ export async function quote(d: Deps, input: QuoteRequest): Promise<Reply> {
   if (await halted(d)) return reply(503, { error: 'Compute is switched off on this server.' });
   if (!d.env.gatewaySecret) return reply(503, { error: 'Compute is not configured on this server (no gateway secret).' });
   const meta = SERVICE_TABLE[input.service];
-  if ((checked.kind === 'audio' || meta.output === 'image') && !d.blobs) return reply(503, { error: `${input.service} needs a result store (DATABASE_URL) on this server.` });
+  if ((checked.kind === 'audio' || meta.output !== 'text') && !d.blobs) return reply(503, { error: `${input.service} needs a result store (DATABASE_URL) on this server.` });
   const maxTokens = meta.maxOutputTokens ?? 0;
 
   const live = await livePrice(d, input.service);
@@ -538,6 +562,9 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
   }
   const due = await d.store.get(`due:${intent}`);
   if (due) return doRefund(d, q, due);
+  // A job already started for this paid intent (video): only finish it, never start another.
+  const job = await loadJson<Job>(d, `job:${intent}`);
+  if (job) return finishJob(d, q, job);
 
   // The payment record, derived here from the quoted spender and the intent. Never from the client.
   const address = d.paymentPda(q.spender, intent);
@@ -607,6 +634,7 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
     }
 
     await d.record?.({ intent, team: q.team, spender: q.spender, service: q.service, amount: BigInt(q.amount), status: 'running' }).catch(() => {});
+    if (SERVICE_TABLE[q.service].async) return await startJob(d, q, backend, input);
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), UPSTREAM_TIMEOUT_MS);
     let out: BackendRun;
@@ -626,6 +654,8 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
     if (o.kind === 'text') {
       if (!o.text.trim()) return await doRefund(d, q, 'the model returned no text');
       delivered = { output: 'text', text: o.text, resultHash: sha256Hex(o.text) };
+    } else if (o.kind === 'video') {
+      return await doRefund(d, q, 'a clip came back from a run that is not a job');
     } else {
       // Only bytes that are an image by their own header, and not too large, are kept and served.
       const mime = sniffImage(o.bytes);
@@ -660,6 +690,96 @@ export async function run(d: Deps, intent: string): Promise<Reply> {
   }
 }
 
+// -------------------------------------------------------------------------------- jobs ---
+
+type Job = { jobId: string; startedAt: number };
+
+/** Starts the job of a paid async run (video) and returns at once; the result endpoint finishes it. */
+async function startJob(d: Deps, q: Quote, backend: ComputeBackendLike, input: BackendInput): Promise<Reply> {
+  if (!backend.startJob || !backend.pollJob) return doRefund(d, q, `${q.service} has no job runner on this server`);
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), UPSTREAM_TIMEOUT_MS);
+  let started: Awaited<ReturnType<NonNullable<ComputeBackendLike['startJob']>>>;
+  try {
+    started = await backend.startJob(q.service, input, { purchaseId: q.intent, signal: ac.signal });
+  } catch (e) {
+    started = { ok: false, code: 'threw', message: String((e as Error)?.message ?? e).slice(0, 120) };
+  } finally {
+    clearTimeout(timer);
+  }
+  // Refused before a job existed: nothing was made, so the full price goes back.
+  if (!started.ok) return doRefund(d, q, ac.signal.aborted ? 'the video job did not start in time' : `the video job did not start: ${started.message}`);
+  const job: Job = { jobId: started.jobId, startedAt: d.now() };
+  await d.store.set(`job:${q.intent}`, JSON.stringify(job), RESULT_TTL_SEC);
+  await d.record?.({ intent: q.intent, team: q.team, spender: q.spender, service: q.service, amount: BigInt(q.amount), status: 'job_started' }).catch(() => {});
+  return reply(202, { status: 'running', intent: q.intent, note: 'The clip is being made. Ask for the result until it is done; it usually takes a minute or two.' });
+}
+
+/**
+ * One look at a started job: still running (202), finished (the clip is stored and the result kept),
+ * or failed (refunded). An unreadable status is never a failure: the job may still finish and be
+ * billed, so it stays running until JOB_DEADLINE_MS, and only then is the price refunded.
+ */
+async function finishJob(d: Deps, q: Quote, job: Job): Promise<Reply> {
+  const running = (note?: string) => reply(202, { status: 'running', intent: q.intent, ...(note ? { note } : {}) });
+  if (!(await d.store.setNX(`jobpoll:${q.intent}`, '1', JOB_POLL_LOCK_SEC))) return running();
+  try {
+    const done = await loadJson<ComputeResult>(d, `result:${q.intent}`);
+    if (done) return reply(200, { status: 'done', result: done });
+    if (await d.store.get(`refund:${q.intent}`)) return result(d, q.intent);
+    const late = d.now() - job.startedAt > JOB_DEADLINE_MS;
+    const backend = await backendOf(d, q.service);
+    if ('error' in backend || !backend.pollJob) {
+      return late ? doRefund(d, q, 'the clip could not be collected in time') : running(`The job cannot be checked right now: ${'error' in backend ? backend.error : 'no job runner'}.`);
+    }
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), UPSTREAM_TIMEOUT_MS);
+    let p: JobPoll;
+    try {
+      p = await backend.pollJob(q.service, job.jobId, { signal: ac.signal });
+    } catch (e) {
+      p = { state: 'unknown', message: String((e as Error)?.message ?? e).slice(0, 120) };
+    } finally {
+      clearTimeout(timer);
+    }
+    if (p.state === 'running' || p.state === 'unknown') return late ? doRefund(d, q, 'the clip did not arrive within 30 minutes') : running();
+    if (p.state === 'failed') return doRefund(d, q, `the video job failed: ${p.message}`);
+    const o = p.output;
+    if (o.kind !== 'video') return doRefund(d, q, `the job answered with ${o.kind}, not a clip`);
+    const mime = sniffVideo(o.bytes);
+    if (!mime || o.bytes.length > VIDEO_MAX_BYTES) return doRefund(d, q, mime ? 'the clip is too large to deliver' : 'the job did not return a usable clip');
+    try {
+      await d.blobs!.put(q.intent, 'output', mime, o.bytes);
+    } catch {
+      return running('The clip is ready but could not be stored yet.');
+    }
+    const meta = SERVICE_TABLE[q.service];
+    const res: ComputeResult = {
+      intent: q.intent,
+      service: q.service,
+      model: q.model,
+      output: 'video',
+      text: '',
+      mime,
+      bytes: o.bytes.length,
+      url: blobUrl(q.intent),
+      trust: meta.trust,
+      fake: p.fake,
+      verified: p.verified,
+      covers: p.covers,
+      provider: p.provider,
+      costNeuron: p.costNeuron === null ? null : p.costNeuron.toString(),
+      resultHash: sha256Bytes(o.bytes),
+      createdAt: d.now(),
+    };
+    await d.store.set(`result:${q.intent}`, JSON.stringify(res), RESULT_TTL_SEC);
+    await d.record?.({ intent: q.intent, team: q.team, spender: q.spender, service: q.service, amount: BigInt(q.amount), status: 'done', resultHash: res.resultHash }).catch(() => {});
+    return reply(200, { status: 'done', result: res });
+  } finally {
+    await d.store.del(`jobpoll:${q.intent}`).catch(() => {});
+  }
+}
+
 // ----------------------------------------------------------------------------- result ---
 
 /** Where an image result is served. The intent is the capability (an unguessable HMAC). */
@@ -675,9 +795,9 @@ export async function resultBlob(d: Deps, intent: string): Promise<{ ok: true; m
   } catch {
     return reply(503, { error: 'The result could not be read. Try again.' });
   }
-  if (!blob) return reply(404, { error: 'No image for that intent.' });
-  const mime = sniffImage(blob.bytes);
-  if (!mime || mime !== blob.mime) return reply(404, { error: 'No image for that intent.' });
+  if (!blob) return reply(404, { error: 'No image or clip for that intent.' });
+  const mime = sniffMedia(blob.bytes);
+  if (!mime || mime !== blob.mime) return reply(404, { error: 'No image or clip for that intent.' });
   return { ok: true, mime, bytes: blob.bytes };
 }
 
@@ -687,6 +807,12 @@ export async function result(d: Deps, intent: string): Promise<Reply> {
   if (done) return reply(200, { status: 'done', result: done });
   const refunded = await loadJson<{ signature: string; state: string; reason: string }>(d, `refund:${intent}`);
   if (refunded) return reply(200, { status: 'refunded', intent, refund: { state: refunded.state, signature: refunded.signature }, reason: refunded.reason });
+  // A started job (video) is finished by whoever asks for its result: one status read per call.
+  const job = await loadJson<Job>(d, `job:${intent}`);
+  if (job) {
+    const q = await loadQuote(d, intent);
+    if (q) return finishJob(d, q, job);
+  }
   if (await d.store.get(`run:${intent}`)) return reply(202, { status: 'running' });
   if (await d.store.get(`quote:${intent}`)) return reply(404, { status: 'not_run', error: 'Quoted but not run yet. Pay it, then call run.' });
   return reply(404, { status: 'unknown', error: 'No result for that intent.' });

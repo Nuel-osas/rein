@@ -164,12 +164,12 @@ describe('quote', () => {
     const h = harness();
     const c = await catalog(h.d);
     const rows = c.body.services as { id: string; price: string; available: boolean; model: string }[];
-    assert.deepEqual(rows.map((x) => x.id), ['ai-chat', 'ai-image', 'ai-voice', 'ai-claude', 'ai-gpt']);
+    assert.deepEqual(rows.map((x) => x.id), ['ai-chat', 'ai-image', 'ai-voice', 'ai-claude', 'ai-gpt', 'ai-video']);
     const chat = rows.find((x) => x.id === 'ai-chat')!;
     assert.equal(chat.model, '0GM-1.0-35B-A3B');
     assert.equal(chat.price, '10000');
     assert.equal(chat.available, true);
-    assert.deepEqual((c.body.coming_soon as { id: string }[]).map((x) => x.id), ['ai-video']);
+    assert.deepEqual(c.body.coming_soon, []);
     const low = harness({ ledgerNeuron: 0n });
     const r = (await catalog(low.d)).body.services as { id: string; available: boolean; price: string | null; reason: string }[];
     const lowChat = r.find((x) => x.id === 'ai-chat')!;

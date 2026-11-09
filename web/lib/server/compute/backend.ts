@@ -2,8 +2,8 @@
 //   - the wallet route: the real adapter (`@rein/zg-compute`, the 0G Compute SDK with the gateway's
 //     funded wallet, loaded lazily so tests and fake runs never load the SDK). Chat, voice and image,
 //     each from a TEE provider whose signature the adapter checks.
-//   - the Router route (./router.ts): 0G Private Computer with one `sk-` key. Only Claude and GPT
-//     go there (relayed, no TEE). Chat stays on the wallet even when the key is set: on 2026-11-09
+//   - the Router route (./router.ts): 0G Private Computer with one `sk-` key. Only Claude, GPT and
+//     video go there (relayed, no TEE). Chat stays on the wallet even when the key is set: on 2026-11-09
 //     the Router's private mode answered from a TEE provider but returned no `tee_verified`, so a
 //     Router chat could not be called verified, and the wallet route's checked signature is what
 //     "TEE verified" means here.
@@ -24,6 +24,9 @@ export const FAKE_USD_PER_ZG = 0.2536;
 export const FAKE_PNG = Uint8Array.from(
   Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'),
 );
+
+/** The smallest MP4 header (an `ftyp` box): what the fake returns for a clip. Not playable, and labelled fake. */
+export const FAKE_MP4 = Uint8Array.from(Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom', 'latin1'), Buffer.alloc(12)]));
 
 const describeInput = (input: BackendInput) =>
   'prompt' in input
@@ -49,6 +52,8 @@ export function fakeBackend(opts: { ledgerNeuron?: bigint | null; fail?: boolean
           : { kind: 'text' as const, text: `${FAKE_PREFIX} ${s} would have asked ${meta.model} about ${describeInput(input)}.` };
       return { ok: true, output, fake: true, verified: false, covers: 'none', provider: null, costNeuron: null };
     },
+    startJob: async (_s, _input, o) => (opts.fail ? { ok: false, code: 'fake_failure', message: 'the fake upstream was told to fail' } : { ok: true, jobId: `fake-${o.purchaseId}` }),
+    pollJob: async () => ({ state: 'done', output: { kind: 'video', mime: 'video/mp4', bytes: FAKE_MP4 }, fake: true, verified: false, covers: 'none', provider: null, costNeuron: null }),
   };
 }
 

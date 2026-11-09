@@ -1,6 +1,7 @@
-// The image an ai-image run delivered, as stored by the gateway (Postgres compute_results). The
-// intent is the capability: an unguessable HMAC, so only whoever holds the quote can fetch it. Served
-// only as an image type told by the bytes themselves, never as anything a browser would run.
+// The image an ai-image run or the clip an ai-video run delivered, as stored by the gateway
+// (Postgres compute_results). The intent is the capability: an unguessable HMAC, so only whoever
+// holds the quote can fetch it. Served only as an image or MP4 type told by the bytes themselves,
+// never as anything a browser would run.
 
 import { resultBlob } from '@/lib/server/compute/core';
 import { computeDeps } from '@/lib/server/compute/wire';
@@ -29,6 +30,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ intent: string 
       },
     });
   } catch {
-    return Response.json({ ok: false, error: 'The image could not be read. Try again.' }, { status: 503 });
+    return Response.json({ ok: false, error: 'The result could not be read. Try again.' }, { status: 503 });
   }
 }
