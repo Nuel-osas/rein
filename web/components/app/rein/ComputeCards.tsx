@@ -1,15 +1,17 @@
 "use client";
 
 // The compute page's working cards: the Rein agent's budget (its on-chain policy, edited with the
-// existing set_policy flow), the run panel (the agent buys a 0G compute run through the gateway),
-// and four steps: Price → Paid or Waiting → Ran → Delivered or Refunded. Every figure is
-// read from chain or from the gateway; a missing gateway is said, and no result is ever made up.
+// existing set_policy flow), the run panel (pick a service, give it a prompt or audio, and the
+// team's Rein agent buys one run from the gateway under its policy), and four steps:
+// Price → Paid or Waiting → Ran → Delivered or Refunded. Every figure is read from chain or from
+// the gateway; a missing gateway is said, a service that cannot run says why, and no result is
+// ever made up.
 
 import Link from "next/link";
 import {useCallback, useEffect, useRef, useState} from "react";
-import {AGENT_LABEL, fetchAgentKey, fetchCatalog, findReinAgent, starterPolicy, type AgentKey, type Catalog} from "@/lib/agent-setup";
-import {period, usdc} from "@/lib/chain";
-import {findAmount, findIntent, readResult, startRun, type Outcome} from "@/lib/compute-client";
+import {AGENT_LABEL, fetchAgentKey, fetchCatalog, findReinAgent, grantable, starterPolicy, type AgentKey, type Catalog, type CatalogService, type ComingSoon, type ServiceKind} from "@/lib/agent-setup";
+import {DEMO_TEAM, period, short, usdc} from "@/lib/chain";
+import {audioMime, buyCompute, bytesToBase64, readResult, resultBlobUrl, startRun, type BuyPayment, type Outcome, type RunResult} from "@/lib/compute-client";
 import {ixs, pda, rolled, type Payment} from "@/lib/rein";
 import {errorText, useWallet} from "@/lib/wallet";
 import {Button, ButtonLink} from "../Button";
@@ -95,6 +97,9 @@ export function AgentBudgetCard({teamAddress}: {teamAddress: string}) {
   const agent = findReinAgent(t.spenders, key);
   const services = t.services;
 
+  // Only services registered and active in the registry are granted; the catalog also lists ones it cannot sell yet.
+  const grant = grantable(catalog);
+
   async function addAgent() {
     if (!publicKey || !payer || !agentKey?.ok || !catalog?.ok) return;
     setBusy(true);
@@ -108,7 +113,7 @@ export function AgentBudgetCard({teamAddress}: {teamAddress: string}) {
           kind: "agent",
           label: AGENT_LABEL,
           policy: starterPolicy(Math.floor(Date.now() / 1000)),
-          services: catalog.services.map((s) => pda.service(s.id).toBase58()),
+          services: grant.map((s) => pda.service(s.id).toBase58()),
         }),
       ]);
       setStatus(sentStatus(sent, "The Rein agent is on this team with a $0.30-a-month compute budget."));
@@ -274,9 +279,10 @@ export function stepsFor(payment: Payment | null | undefined, outcome: Outcome |
   if (outcome?.kind === "waiting") s.pay = ["wait", "Waiting for your approval"];
   if (outcome?.kind === "running") s.ran = ["active", "Running now…"];
   if (outcome?.kind === "done") {
+    const r = outcome.result;
     s.pay = s.pay[0] === "todo" ? ["done", "Paid"] : s.pay;
-    s.ran = ["done", outcome.result.model];
-    s.end = ["done", outcome.result.fake ? "Delivered (test upstream, no model called)" : "Delivered"];
+    s.ran = ["done", r.model];
+    s.end = ["done", r.fake ? "Delivered (test upstream, no model called)" : r.verified === true ? "Delivered, TEE verified" : isRelayed(r) ? "Delivered, relayed (not checked)" : "Delivered"];
   }
   if (outcome?.kind === "refunded") {
     s.ran = ["bad", "Did not run"];
@@ -286,25 +292,84 @@ export function stepsFor(payment: Payment | null | undefined, outcome: Outcome |
   return s;
 }
 
+/** Fills the steps chain and the gateway have not spoken to yet from what this panel already knows. */
+function mergeSteps(known: Steps, local: Steps): Steps {
+  const out = {...known};
+  for (const k of Object.keys(out) as (keyof Steps)[]) if (out[k][0] === "todo" && local[k][0] !== "todo") out[k] = local[k];
+  return out;
+}
+
+const isRelayed = (r: RunResult) => r.covers === "none" || r.trust === "relayed";
+
+/** What can be said about a delivered result: TEE verified only when its signature checked out. */
+function ResultTrust({r}: {r: RunResult}) {
+  if (r.fake) return <span className={card.badge} data-tone="fake">Test upstream, no model called</span>;
+  if (r.verified === true) return <span className={card.badge} data-tone="tee">TEE verified</span>;
+  if (isRelayed(r)) return <span className={card.badge} data-tone="relayed">Relayed, no TEE (not checked)</span>;
+  return <span className={card.badge}>Signature not checked</span>;
+}
+
+function sizeText(n: number | null | undefined): string | null {
+  if (typeof n !== "number" || !Number.isFinite(n) || n < 0) return null;
+  return n >= 1_048_576 ? `${(n / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
+}
+
+function ResultBody({r}: {r: RunResult}) {
+  const output = r.output ?? "text";
+  if (output === "image" || output === "video") {
+    // Only the gateway's own blob route for this intent is ever shown; anything else is not an output.
+    const url = resultBlobUrl(r);
+    if (!url) return <p className={card.resultText}>The gateway returned no link to this {output}, so nothing is shown.</p>;
+    const meta = [r.mime, sizeText(r.bytes)].filter(Boolean).join(" · ");
+    return (
+      <figure className={card.media}>
+        {output === "image" ? (
+          <img className={card.mediaItem} src={url} alt={`The image ${r.model} made for this run`} loading="lazy" />
+        ) : (
+          <video className={card.mediaItem} src={url} controls preload="metadata" aria-label={`The clip ${r.model} made for this run`} />
+        )}
+        <figcaption className={card.mediaCaption}>
+          <a className={styles.sectionLink} href={url} target="_blank" rel="noreferrer">
+            Open the {output} <span aria-hidden="true">↗</span>
+          </a>
+          {meta ? <span>{meta}</span> : null}
+        </figcaption>
+      </figure>
+    );
+  }
+  return (
+    <>
+      {r.service === "ai-voice" ? <span className={card.label}>Transcript</span> : null}
+      <p className={card.resultText}>{r.text}</p>
+    </>
+  );
+}
+
 export function OutcomeView({outcome}: {outcome: Outcome | null}) {
   if (!outcome) return null;
-  if (outcome.kind === "done")
+  if (outcome.kind === "done") {
+    const r = outcome.result;
     return (
       <div className={card.result}>
         <div className={card.resultHead}>
           <span>
-            {outcome.result.service} · {outcome.result.model}
+            {r.service} · {r.model}
           </span>
-          <span className={styles.mono}>sha256 {outcome.result.resultHash.slice(0, 12)}…</span>
+          <ResultTrust r={r} />
         </div>
-        <p className={card.resultText}>{outcome.result.text}</p>
+        <ResultBody r={r} />
+        <div className={card.resultHead}>
+          {typeof r.resultHash === "string" ? <span className={styles.mono}>sha256 {r.resultHash.slice(0, 12)}…</span> : <span />}
+          {r.provider ? <span className={styles.mono}>0G provider {short(r.provider, 4)}</span> : null}
+        </div>
       </div>
     );
+  }
   if (outcome.kind === "refunded")
     return (
       <div className={card.result} data-refunded="">
         <div className={card.resultHead}>
-          <span>Refunded{outcome.amount ? ` ${usdc(BigInt(outcome.amount))}` : ""} to the vault</span>
+          <span>Refunded{outcome.amount && /^\d+$/.test(outcome.amount) ? ` ${usdc(BigInt(outcome.amount))}` : ""} to the vault</span>
           {outcome.signature ? <Explorer kind="tx" id={outcome.signature}>Refund transaction</Explorer> : null}
         </div>
         <p className={card.resultText}>{outcome.reason ?? "The run did not happen."}</p>
@@ -315,45 +380,125 @@ export function OutcomeView({outcome}: {outcome: Outcome | null}) {
 
 // ------------------------------------------------------------------------------ the run ---
 
-type Wire = {type: string; text?: string; name?: string; args?: unknown; result?: unknown; status?: string; service?: string; amount?: string | null; signature?: string; error?: string; unconfirmed?: boolean};
+/** The six cards, in this order, whatever order the catalog lists services in. */
+const PICKER: {kind: ServiceKind; title: string; id: string; placeholder: string}[] = [
+  {kind: "chat", title: "Chat", id: "ai-chat", placeholder: "Summarise why spending limits matter for AI agents, in three bullet points."},
+  {kind: "image", title: "Image", id: "ai-image", placeholder: "A purple lighthouse on a black sea at night, flat illustration."},
+  {kind: "voice", title: "Voice", id: "ai-voice", placeholder: ""},
+  {kind: "claude", title: "Claude", id: "ai-claude", placeholder: "Review this policy in three sentences: 0.05 a run, 0.50 an hour, 20 runs."},
+  {kind: "gpt", title: "GPT", id: "ai-gpt", placeholder: "Explain a per-payment cap to a new finance hire, in two sentences."},
+  {kind: "video", title: "Video", id: "ai-video", placeholder: ""},
+];
 
-function describe(e: Wire): [string, string] {
-  if (e.type === "thinking") return ["thinking", e.text ?? ""];
-  if (e.type === "tool_call") return ["calls", `${e.name ?? "tool"} ${JSON.stringify(e.args ?? {}).slice(0, 160)}`];
-  if (e.type === "tool_result") return ["result", `${e.name ?? "tool"}: ${JSON.stringify(e.result ?? null).slice(0, 200)}`];
-  if (e.type === "payment") return ["payment", `${e.status ?? "?"} · ${e.service ?? "?"} · ${e.amount && /^\d+$/.test(e.amount) ? usdc(BigInt(e.amount)) : "—"}${e.error ? ` · ${e.error}` : ""}`];
-  if (e.type === "final") return ["final", `${e.text ?? ""}${e.error ? ` (${e.error})` : ""}`];
-  return [e.type, JSON.stringify(e).slice(0, 200)];
+type Choice = (typeof PICKER)[number] & {
+  svc: CatalogService | null;
+  soon: ComingSoon | null;
+  /** A short state for the card; null when it can be bought now. */
+  state: string | null;
+  /** Why it cannot be bought now, in full; null when it can. */
+  why: string | null;
+};
+
+function choicesFrom(catalog: Catalog): Choice[] {
+  const services = catalog.ok ? catalog.services : [];
+  const soon = catalog.ok ? catalog.comingSoon : [];
+  return PICKER.map((p): Choice => {
+    const svc = services.find((s) => s.kind === p.kind) ?? services.find((s) => s.id === p.id) ?? null;
+    const later = svc ? null : (soon.find((s) => s.kind === p.kind) ?? soon.find((s) => s.id === p.id) ?? null);
+    const base = {...p, svc, soon: later};
+    if (later) return {...base, state: "Coming soon", why: later.reason};
+    if (!svc) return {...base, state: "Not offered here", why: `This deployment's compute catalog does not list ${p.title}.`};
+    if (!svc.registered) return {...base, state: "Not registered", why: svc.reason ?? `${svc.id} is not in the Rein registry, so no agent can pay for it.`};
+    if (!svc.active) return {...base, state: "Suspended", why: svc.reason ?? `${svc.id} is suspended in the Rein registry.`};
+    if (!svc.configured) return {...base, state: "Needs 0G Private Computer key", why: svc.reason ?? `${svc.name} runs through 0G Private Computer, and this server has no key for it yet. It is not sold until it has one.`};
+    if (!svc.available) return {...base, state: "Unavailable now", why: svc.reason ?? "The gateway cannot quote it right now."};
+    return {...base, state: null, why: null};
+  });
 }
 
-const PROMPT_MAX = 400;
+function trustText(c: Choice): {tone: "tee" | "relayed"; label: string} | null {
+  const trust = c.svc?.trust ?? c.soon?.trust ?? null;
+  const label = c.svc?.trustLabel ?? c.soon?.trustLabel ?? (trust === "tee" ? "TEE verified" : trust === "relayed" ? "Relayed, no TEE" : null);
+  return label ? {tone: trust === "tee" ? "tee" : "relayed", label} : null;
+}
+
+type Clip = {bytes: Uint8Array; mime: string; name: string; size: number; seconds: number | null; url: string};
+
+/** How long an audio file plays, from the browser's own decoder; null when it will not say. */
+function durationOf(url: string): Promise<number | null> {
+  return new Promise((resolve) => {
+    const a = new Audio();
+    const done = (v: number | null) => {
+      clearTimeout(timer);
+      a.removeAttribute("src");
+      resolve(v);
+    };
+    const timer = setTimeout(() => done(null), 4000);
+    a.preload = "metadata";
+    a.onloadedmetadata = () => done(Number.isFinite(a.duration) && a.duration > 0 ? a.duration : null);
+    a.onerror = () => done(null);
+    a.src = url;
+  });
+}
+
+function payStep(p: BuyPayment): [StepState, string] {
+  if (p.status === "paid") return ["done", "Inside its policy"];
+  if (p.status === "pending") return p.unconfirmed ? ["active", "Sent, not confirmed yet"] : ["wait", "Waiting for your approval"];
+  return ["bad", p.error ?? (p.status === "refused" ? "Refused on chain" : "Payment failed")];
+}
+
+const REASON_TEXT: Record<string, string> = {
+  service_not_allowed: "the service is not on the agent's list",
+  over_cap: "over the agent's cap per run",
+  over_allowance: "over its allowance",
+  over_payment_count: "over its runs this period",
+};
 
 export function ComputeRunPanel({teamAddress}: {teamAddress: string}) {
   const t = useTeamView(teamAddress);
   const {agentKey, catalog} = useComputeSetup(teamAddress);
   const {authHeaders, authenticated} = useWallet();
+  const [kind, setKind] = useState<ServiceKind | null>(null);
   const [prompt, setPrompt] = useState("");
-  const [service, setService] = useState<string>("");
-  const [events, setEvents] = useState<Wire[]>([]);
-  const [steps, setSteps] = useState<Steps>(idleSteps);
+  const [clip, setClip] = useState<Clip | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [local, setLocal] = useState<Steps>(idleSteps);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [intent, setIntent] = useState<string | null>(null);
+  const [paid, setPaid] = useState<BuyPayment | null>(null);
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const abort = useRef<AbortController | null>(null);
+  const rec = useRef<{r: MediaRecorder; stream: MediaStream; timer: ReturnType<typeof setTimeout>} | null>(null);
+  const isDemo = DEMO_TEAM !== null && teamAddress === DEMO_TEAM;
 
+  const choices = catalog?.ok ? choicesFrom(catalog) : [];
+  // The first card that can be bought now, else Chat.
   useEffect(() => {
-    if (catalog?.ok && !service) setService(catalog.services[0].id);
-  }, [catalog, service]);
+    if (catalog?.ok && !kind) setKind(choicesFrom(catalog).find((c) => !c.why)?.kind ?? "chat");
+  }, [catalog, kind]);
+  // A clip's object URL is freed when it is replaced and when the panel goes.
+  useEffect(() => () => (clip ? URL.revokeObjectURL(clip.url) : undefined), [clip]);
+  useEffect(
+    () => () => {
+      if (rec.current) {
+        clearTimeout(rec.current.timer);
+        rec.current.stream.getTracks().forEach((x) => x.stop());
+      }
+    },
+    [],
+  );
 
+  const choice = choices.find((c) => c.kind === kind) ?? null;
+  const svc = choice?.svc ?? null;
   const key = agentKey?.ok ? agentKey.key.toBase58() : null;
   const agent = findReinAgent(t.spenders, key);
-  const payment = intent && agent ? t.payments?.find((p) => p.spender === agent.address && p.intent === intent) ?? null : null;
-
-  // The payment from chain drives "Paid / Waiting"; the gateway drives "Ran / Delivered / Refunded".
-  useEffect(() => {
-    if (intent) setSteps(stepsFor(payment, outcome, t.now));
-  }, [intent, payment, outcome, t.now]);
+  const payment = intent ? (t.payments?.find((p) => p.intent === intent && (!agent || p.spender === agent.address)) ?? null) : null;
+  const steps = intent ? mergeSteps(stepsFor(payment, outcome, t.now), local) : local;
+  const maxChars = svc?.maxPromptChars ?? 1000;
+  const maxBytes = svc?.maxAudioBytes ?? 3 * 1024 * 1024;
+  const maxSeconds = svc?.maxAudioSeconds ?? 60;
+  const offList = !!(agent && svc && svc.registered && !agent.services.includes(pda.service(svc.id).toBase58()));
 
   const follow = useCallback(
     async (found: string) => {
@@ -365,168 +510,256 @@ export function ComputeRunPanel({teamAddress}: {teamAddress: string}) {
         o = o.kind === "unpaid" ? await startRun(found, await authHeaders()) : await readResult(found);
       }
       setOutcome(o);
-      if (o.kind === "waiting") setStatus({tone: "wait", text: "Waiting for your approval: the run is over the agent's budget. Approve it under Approvals and it starts."});
+      if (o.kind === "waiting") setStatus({tone: "wait", text: "Waiting for your approval: the run is over the agent's policy. Approve it under Approvals, then open the run to start it."});
       else if (o.kind === "unavailable" || o.kind === "error" || o.kind === "refused") setStatus({tone: o.kind === "refused" ? "bad" : "wait", text: o.error});
-      else if (o.kind === "unpaid" || o.kind === "running" || o.kind === "not_run") setStatus({tone: "wait", text: "Not finished yet. The result page keeps checking."});
+      else if (o.kind === "unpaid" || o.kind === "running" || o.kind === "not_run") setStatus({tone: "wait", text: "Not finished yet. The run page keeps checking."});
       else setStatus(null);
     },
     [authHeaders],
   );
 
+  function pick(k: ServiceKind) {
+    if (running || recording) return;
+    setKind(k);
+    setStatus(null);
+  }
+
+  async function takeClip(file: Blob, name: string, knownSeconds: number | null) {
+    if (file.size === 0) return setStatus({tone: "bad", text: "That audio is empty."});
+    if (file.size > maxBytes) return setStatus({tone: "bad", text: `That audio is ${sizeText(file.size)}. Keep it under ${sizeText(maxBytes)}.`});
+    const url = URL.createObjectURL(file);
+    const seconds = knownSeconds ?? (await durationOf(url));
+    if (seconds !== null && seconds > maxSeconds + 0.5) {
+      URL.revokeObjectURL(url);
+      return setStatus({tone: "bad", text: `That audio plays about ${Math.ceil(seconds)} seconds. Keep it under ${maxSeconds}.`});
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    setClip({bytes, mime: audioMime(file.type, name), name, size: file.size, seconds, url});
+    setStatus(null);
+  }
+
+  async function startRecording() {
+    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) return setStatus({tone: "bad", text: "This browser cannot record audio here. Upload a file instead."});
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    } catch {
+      return setStatus({tone: "bad", text: "Microphone access was refused. Upload a file instead."});
+    }
+    const type = ["audio/webm", "audio/ogg", "audio/mp4"].find((m) => MediaRecorder.isTypeSupported?.(m));
+    const r = type ? new MediaRecorder(stream, {mimeType: type}) : new MediaRecorder(stream);
+    const chunks: Blob[] = [];
+    const started = Date.now();
+    r.ondataavailable = (e) => {
+      if (e.data.size) chunks.push(e.data);
+    };
+    r.onstop = () => {
+      stream.getTracks().forEach((x) => x.stop());
+      if (rec.current) clearTimeout(rec.current.timer);
+      rec.current = null;
+      setRecording(false);
+      const mime = audioMime(r.mimeType || type || "audio/webm");
+      const ext = mime === "audio/ogg" ? "ogg" : mime === "audio/mp4" ? "m4a" : "webm";
+      void takeClip(new Blob(chunks, {type: mime}), `recording.${ext}`, (Date.now() - started) / 1000);
+    };
+    // Stops itself just under the limit, so a recording is never refused for length.
+    const timer = setTimeout(() => r.state !== "inactive" && r.stop(), Math.max(1, maxSeconds - 1) * 1000);
+    rec.current = {r, stream, timer};
+    r.start();
+    setClip(null);
+    setRecording(true);
+    setStatus({tone: "quiet", text: `Recording… it stops by itself at ${maxSeconds - 1} seconds.`});
+  }
+
   async function go() {
-    if (running || !catalog?.ok || !agentKey?.ok) return;
-    const p = prompt.trim();
-    if (!p) return setStatus({tone: "bad", text: "Write a prompt first."});
+    if (running || !svc || choice?.why || !agentKey?.ok) return;
+    let input: {prompt: string} | {audio: {base64: string; mime: string}};
+    if (svc.input === "audio") {
+      if (!clip) return setStatus({tone: "bad", text: "Add or record an audio clip first."});
+      input = {audio: {base64: bytesToBase64(clip.bytes), mime: clip.mime}};
+    } else {
+      if (!prompt.trim()) return setStatus({tone: "bad", text: "Write a prompt first."});
+      if (prompt.length > maxChars) return setStatus({tone: "bad", text: `Keep the prompt to ${maxChars.toLocaleString("en-US")} characters for ${svc.name}.`});
+      input = {prompt};
+    }
     setRunning(true);
-    setEvents([]);
     setOutcome(null);
     setIntent(null);
-    setSteps({...idleSteps, price: ["active", "Asking for a quote…"]});
+    setPaid(null);
+    setLocal({...idleSteps, price: ["active", "Asking for a quote…"]});
     setStatus(null);
     const ctrl = new AbortController();
     abort.current = ctrl;
-    let found: string | null = null;
-    let paid = false;
     try {
-      // The agent route keeps 500 characters of a task: a short instruction, and the prompt capped at 400.
-      const task = `Use buy_compute with service "${service}" and exactly this prompt, then return the answer: ${p}`;
-      const res = await fetch("/api/agent", {
-        method: "POST",
-        headers: {"Content-Type": "application/json", ...(await authHeaders())},
-        body: JSON.stringify({team: t.address, task}),
-        signal: ctrl.signal,
-      });
-      if (!res.ok || !res.body) {
-        const j = (await res.json().catch(() => null)) as {error?: string} | null;
-        setSteps({...idleSteps, price: ["bad", "Not started"]});
-        setStatus({tone: "bad", text: j?.error ?? (res.status === 404 ? "The agent route is not available on this deployment." : `The agent did not start (${res.status}).`)});
+      const r = await buyCompute({team: t.address, service: svc.id, ...input}, await authHeaders(), ctrl.signal);
+      if (!r.ok) {
+        setLocal({...idleSteps, price: r.unknown ? ["wait", "Unknown: check Activity"] : ["bad", "Not bought"]});
+        setStatus({tone: r.unknown ? "wait" : "bad", text: r.unknown ? r.error : `${r.error} Nothing was charged.`});
+        if (r.unknown) void t.refresh();
         return;
       }
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      for (;;) {
-        const {value, done} = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, {stream: true});
-        let nl: number;
-        while ((nl = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, nl).trim();
-          buf = buf.slice(nl + 1);
-          if (!line) continue;
-          let e: Wire;
-          try {
-            e = JSON.parse(line) as Wire;
-          } catch {
-            continue;
-          }
-          setEvents((xs) => [...xs, e]);
-          const i = findIntent(e);
-          if (i && !found) {
-            found = i;
-            setIntent(i);
-            const amount = findAmount(e.result ?? e);
-            setSteps((s) => ({...s, price: ["done", amount ? usdc(BigInt(amount)) : "Quoted"], pay: ["active", "Paying…"]}));
-          }
-          if (e.type === "payment") {
-            if (e.status === "paid") paid = true;
-            setSteps((s) => ({
-              ...s,
-              pay: e.status === "paid" ? ["done", "Inside its policy"] : e.status === "pending" ? (e.unconfirmed ? ["active", "Sent, not confirmed yet"] : ["wait", "Waiting for your approval"]) : ["bad", e.error ?? `Payment ${e.status}`],
-            }));
-          }
-        }
-      }
+      setIntent(r.intent);
+      setPaid(r.payment);
+      setLocal({...idleSteps, price: ["done", r.amount !== null ? usdc(r.amount) : "Quoted"], pay: payStep(r.payment)});
       void t.refresh();
-      if (found) await follow(found);
-      else setStatus({tone: "quiet", text: "The agent finished without buying a compute run. Nothing was charged for compute."});
-      if (found && !paid) void t.refresh();
+      const p = r.payment;
+      if (p.status === "paid" || (p.status === "pending" && p.unconfirmed)) await follow(r.intent);
+      else if (p.status === "pending") {
+        const why = p.reasons.map((x) => REASON_TEXT[x] ?? x).join(", ");
+        setStatus({tone: "wait", text: `Waiting for your approval${why ? `: ${why}` : ""}. Approve it under Approvals, then open the run to start it. Nothing has moved yet.`});
+      } else setStatus({tone: "bad", text: `${p.status === "refused" ? "Refused on chain" : "The payment failed"}: ${p.error ?? "the program said no"}. Nothing moved and nothing ran.`});
     } catch (e) {
-      if ((e as Error)?.name !== "AbortError") setStatus({tone: "wait", text: `The stream stopped: ${errorText(e)}. Any payment already made is on chain; check Activity.`});
+      setStatus({tone: "wait", text: `The request stopped: ${errorText(e)}. A payment may already be on chain; check Activity before trying again.`});
     } finally {
       setRunning(false);
       abort.current = null;
     }
   }
 
-  const blocked = !authenticated
-    ? null
-    : catalog && !catalog.ok
+  const blocked =
+    catalog && !catalog.ok
       ? `Compute is not configured on this deployment yet: ${catalog.error}`
       : agentKey && !agentKey.ok
         ? `The gateway is not available: ${agentKey.error}`
-        : !t.isOwner
+        : !isDemo && !t.isOwner
           ? "Only the team owner can ask the agent to buy compute."
           : !agent && t.spenders
             ? "Add the Rein agent first (Your agent's budget)."
-            : undefined;
+            : recording
+              ? "Stop the recording first."
+              : (choice?.why ?? undefined);
 
   return (
     <section className={styles.panel} aria-labelledby="run-title">
       <div className={styles.panelHead}>
         <h2 className={styles.panelTitle} id="run-title">
-          Run a prompt on 0G compute
+          Buy a run on 0G
         </h2>
-        <span className={styles.panelNote}>Your Rein agent buys the run from its own budget</span>
+        <span className={styles.panelNote}>Your Rein agent pays from its own budget; the gateway runs it on 0G or refunds it</span>
       </div>
-      <div className={card.runForm}>
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>Prompt</span>
-          <textarea className={card.textarea} value={prompt} maxLength={PROMPT_MAX} onChange={(e) => setPrompt(e.target.value)} placeholder="Summarise why spending limits matter for AI agents, in three bullet points." />
-        </label>
-        <div className={card.row}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Service</span>
-            {catalog?.ok ? (
-              <select className={card.select} value={service} onChange={(e) => setService(e.target.value)}>
-                {catalog.services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                    {s.model ? ` · ${s.model}` : ""}
-                    {s.price ? ` · ${s.price} a run` : ""}
-                    {s.unavailable ? " · unavailable" : ""}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className={styles.panelNote}>{catalog === undefined ? "Reading the compute catalog…" : "Compute not configured"}</span>
-            )}
-          </label>
-          <span className={card.count}>
-            {prompt.length} / {PROMPT_MAX}
-          </span>
-        </div>
-        {catalog?.ok && catalog.services.find((s) => s.id === service)?.unavailable ? (
-          <p className={styles.panelNote}>The gateway cannot sell {service} right now: {catalog.services.find((s) => s.id === service)?.unavailable}.</p>
-        ) : null}
-        {!authenticated ? (
-          <SignInPrompt action="run a prompt" />
-        ) : (
-          <div className={styles.actions}>
-            <Button variant="primary" busy={running} onClick={() => void go()} disabledReason={blocked ?? (catalog === undefined || agentKey === undefined ? "Checking the gateway…" : undefined)}>
-              Ask the agent to run it
-            </Button>
-            {running ? (
-              <Button variant="ghost" onClick={() => abort.current?.abort()}>
-                Stop watching
-              </Button>
-            ) : null}
-          </div>
-        )}
-      </div>
-      <ComputeSteps steps={steps} />
-      {events.length ? (
-        <ol className={card.log} aria-label="What the agent did">
-          {events.map((e, i) => {
-            const [k, v] = describe(e);
+
+      {catalog === undefined ? (
+        <p className={styles.panelNote} role="status">
+          Reading the compute catalog…
+        </p>
+      ) : !catalog.ok ? (
+        <p className={styles.panelNote}>Compute is not configured on this deployment yet: {catalog.error}</p>
+      ) : (
+        <div className={card.picker} role="group" aria-label="Service">
+          {choices.map((c) => {
+            const trust = trustText(c);
             return (
-              <li key={i}>
-                <span>{k}</span>
-                <span>{v}</span>
-              </li>
+              <button key={c.kind} type="button" className={card.option} aria-pressed={c.kind === kind} data-off={c.why ? "" : undefined} onClick={() => pick(c.kind)}>
+                <span className={card.optionTop}>
+                  <span className={card.optionKind}>{c.title}</span>
+                  {trust ? (
+                    <span className={card.badge} data-tone={trust.tone}>
+                      {trust.label}
+                    </span>
+                  ) : null}
+                </span>
+                <span className={card.optionName}>{c.svc?.name ?? c.soon?.name ?? c.title}</span>
+                <span className={card.optionMeta}>{c.svc?.model ?? c.soon?.model ?? "—"}</span>
+                <span className={card.optionFoot}>
+                  <span className={card.optionPrice}>
+                    {c.svc?.price ?? "—"}
+                    <small> a run</small>
+                  </span>
+                  <span className={card.optionState} data-ready={c.state ? undefined : ""}>
+                    {c.state ?? "Ready"}
+                  </span>
+                </span>
+              </button>
             );
           })}
-        </ol>
+        </div>
+      )}
+
+      {choice ? (
+        <div className={card.runForm}>
+          {svc?.summary ? <p className={styles.panelNote}>{svc.summary}</p> : null}
+          {choice.why ? <p className={card.why}>{choice.why}</p> : null}
+          {!choice.why && offList ? <p className={card.why}>{svc?.id} is not on your agent&apos;s list of services, so the payment will wait for your approval before it runs.</p> : null}
+
+          {svc && !choice.why && svc.input === "prompt" ? (
+            <>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>{svc.output === "image" ? "Describe the image" : "Prompt"}</span>
+                <textarea className={card.textarea} value={prompt} maxLength={maxChars} onChange={(e) => setPrompt(e.target.value)} placeholder={choice.placeholder} />
+              </label>
+              <span className={card.count} data-over={prompt.length > maxChars ? "" : undefined}>
+                {prompt.length.toLocaleString("en-US")} / {maxChars.toLocaleString("en-US")}
+              </span>
+            </>
+          ) : null}
+
+          {svc && !choice.why && svc.input === "audio" ? (
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Audio to transcribe</span>
+              <div className={card.row}>
+                <label className={card.fileLabel}>
+                  <span>Upload a file</span>
+                  <input
+                    className={card.fileInput}
+                    type="file"
+                    accept={[...(svc.audioTypes ?? ["audio/*"]), ".mp3", ".wav", ".m4a", ".webm", ".ogg"].join(",")}
+                    disabled={recording || running}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (f) void takeClip(f, f.name, null);
+                    }}
+                  />
+                </label>
+                {recording ? (
+                  <Button small variant="primary" onClick={() => rec.current?.r.stop()}>
+                    Stop recording
+                  </Button>
+                ) : (
+                  <Button small onClick={() => void startRecording()} disabledReason={running ? "A run is in progress." : undefined}>
+                    Record
+                  </Button>
+                )}
+                <span className={card.count}>
+                  Up to {maxSeconds} seconds, {sizeText(maxBytes)}
+                </span>
+              </div>
+              {clip ? (
+                <div className={card.clip}>
+                  <audio controls src={clip.url} aria-label="Your audio clip" />
+                  <span className={card.count}>
+                    {clip.name} · {sizeText(clip.size)} · {clip.seconds !== null ? `${clip.seconds.toFixed(1)} s` : "length —"}
+                  </span>
+                  <Button small variant="ghost" onClick={() => setClip(null)} disabledReason={running ? "A run is in progress." : undefined}>
+                    Remove
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {!authenticated && !isDemo ? (
+            <SignInPrompt action="buy a run" />
+          ) : (
+            <div className={styles.actions}>
+              <Button variant="primary" busy={running} onClick={() => void go()} disabledReason={blocked ?? (agentKey === undefined ? "Checking the gateway…" : undefined)}>
+                {svc ? `Buy one run${svc.price ? ` for ${svc.price}` : ""}` : "Buy one run"}
+              </Button>
+              {running ? (
+                <Button variant="ghost" onClick={() => abort.current?.abort()}>
+                  Stop watching
+                </Button>
+              ) : null}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      <ComputeSteps steps={steps} />
+      {paid ? (
+        <p className={styles.panelNote}>
+          {paid.signature ? <Explorer kind="tx" id={paid.signature}>Payment transaction</Explorer> : null} {paid.payment ? <Explorer id={paid.payment}>Payment account</Explorer> : null}
+        </p>
       ) : null}
       <OutcomeView outcome={outcome} />
       {intent ? (
