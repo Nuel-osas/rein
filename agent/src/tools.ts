@@ -61,7 +61,7 @@ export const COMPUTE_TOOL_SPECS: ToolSpec[] = [
       parameters: {
         type: 'object',
         properties: {
-          service: { type: 'string', description: 'A compute service id from list_services: "ai-chat", "ai-claude" or "ai-gpt" (text), or "ai-image" (one image). ai-voice needs an audio upload and is bought from the Compute page.' },
+          service: { type: 'string', description: 'A compute service id from list_services: "ai-chat", "ai-claude" or "ai-gpt" (text), "ai-image" (one image) or "ai-video" (one short clip, made in a minute or two). ai-voice needs an audio upload and is bought from the Compute page.' },
           prompt: { type: 'string', description: 'The prompt to send to the model, at most 4,000 characters.' },
         },
         required: ['service', 'prompt'],
@@ -74,11 +74,11 @@ export const COMPUTE_TOOL_SPECS: ToolSpec[] = [
     function: {
       name: 'buy_compute',
       description:
-        "Buy one AI model run: quotes it, pays the quoted price from the team vault under this agent's policy, and if the payment settles, runs it and returns the model's answer (or, for ai-image, a link to the image). If the payment needs the owner's approval, returns the intent and the approval deadline instead.",
+        "Buy one AI model run: quotes it, pays the quoted price from the team vault under this agent's policy, and if the payment settles, runs it and returns the model's answer (or, for ai-image, a link to the image; for ai-video, status running, then a link to the clip from compute_result). If the payment needs the owner's approval, returns the intent and the approval deadline instead.",
       parameters: {
         type: 'object',
         properties: {
-          service: { type: 'string', description: 'A compute service id from list_services: "ai-chat", "ai-claude" or "ai-gpt" (text), or "ai-image" (one image). ai-voice needs an audio upload and is bought from the Compute page.' },
+          service: { type: 'string', description: 'A compute service id from list_services: "ai-chat", "ai-claude" or "ai-gpt" (text), "ai-image" (one image) or "ai-video" (one short clip, made in a minute or two). ai-voice needs an audio upload and is bought from the Compute page.' },
           prompt: { type: 'string', description: 'The prompt to send to the model, at most 4,000 characters.' },
           max_price_usdc: { type: 'string', description: 'Optional. Do not pay if the quote is above this decimal USDC amount.' },
         },
@@ -91,7 +91,7 @@ export const COMPUTE_TOOL_SPECS: ToolSpec[] = [
     type: 'function',
     function: {
       name: 'compute_result',
-      description: 'Get the answer of a compute run bought earlier, by its intent (for example after the owner approved it).',
+      description: 'Get the answer of a compute run bought earlier, by its intent (for example after the owner approved it, or to see whether an ai-video clip is ready).',
       parameters: {
         type: 'object',
         properties: { intent: { type: 'string', description: 'The intent buy_compute or quote_compute returned.' } },
@@ -264,10 +264,17 @@ function runResult(r: GatewayReply, intent: string): Record<string, unknown> {
       ...(res.trust === 'relayed' || res.covers === 'none' ? { trust: 'relayed, no TEE: the answer was not checked' } : {}),
       ...(res.fake === true ? { fake: true, fake_note: 'no model was called; this is the gateway test stand-in' } : {}),
     };
-    if (res.output === 'image') {
+    if (res.output === 'image' || res.output === 'video') {
       // Only the gateway's own blob path for this intent is passed on: never a link the result names freely.
       const url = typeof res.url === 'string' && res.url === `/api/compute/result/${intent}/blob` ? res.url : null;
-      return { ...common, output: 'image', image_url: url, mime: typeof res.mime === 'string' ? res.mime : null, note: url ? 'one image was made; give the owner image_url (a path on this Rein server)' : 'the image link was missing; call compute_result later' };
+      const what = res.output === 'image' ? 'image' : 'clip';
+      return {
+        ...common,
+        output: res.output,
+        [`${res.output}_url`]: url,
+        mime: typeof res.mime === 'string' ? res.mime : null,
+        note: url ? `one ${what} was made; the owner sees it under your reply, and ${res.output}_url is its path on this Rein server` : `the ${what} link was missing; call compute_result later`,
+      };
     }
     return { ...common, output_untrusted: trimOutput(typeof res.text === 'string' ? res.text : ''), note: UNTRUSTED_NOTE };
   }
@@ -280,6 +287,7 @@ function runResult(r: GatewayReply, intent: string): Record<string, unknown> {
       ...(r.body.code === 'not_configured' ? { not_configured: true } : {}),
       note: 'the run did not happen and the full price went back to the team vault',
     };
+  if (status === 'running') return { status: 'running', intent, note: 'paid and being made (a clip takes a minute or two); the owner sees it under your reply when it is ready. Do not pay again; call compute_result later if you need it.' };
   if (status === 'pending_approval') return { status: 'pending', intent, approve_by: r.body.approve_by ?? null, note: 'waiting for the team owner to approve the payment; call compute_result after that' };
   return { status: status ?? 'unknown', intent, error: gatewayError(r), note: 'do not pay for this intent again; call compute_result later' };
 }
