@@ -9,7 +9,7 @@
 
 import Link from "next/link";
 import {useCallback, useEffect, useRef, useState} from "react";
-import {AGENT_LABEL, fetchAgentKey, fetchCatalog, findReinAgent, grantable, starterPolicy, type AgentKey, type Catalog, type CatalogService, type ComingSoon, type ServiceKind} from "@/lib/agent-setup";
+import {AGENT_LABEL, fetchAgentKey, fetchCatalog, findReinAgent, grantable, starterPolicy, vaultShortfall, type AgentKey, type Catalog, type CatalogService, type ComingSoon, type ServiceKind} from "@/lib/agent-setup";
 import {DEMO_TEAM, period, short, usdc} from "@/lib/chain";
 import {audioMime, buyCompute, bytesToBase64, readResult, resultBlobUrl, startRun, type BuyPayment, type Outcome, type RunResult} from "@/lib/compute-client";
 import {ixs, pda, rolled, type Payment} from "@/lib/rein";
@@ -618,6 +618,8 @@ export function ComputeRunPanel({teamAddress}: {teamAddress: string}) {
     }
   }
 
+  // A run the vault cannot cover is stopped here with the reason (lib/agent-setup.ts).
+  const overVault = vaultShortfall(svc?.priceUnits ?? null, t.balance, kind, usdc) ?? undefined;
   const blocked =
     catalog && !catalog.ok
       ? `Compute is not configured on this deployment yet: ${catalog.error}`
@@ -629,7 +631,7 @@ export function ComputeRunPanel({teamAddress}: {teamAddress: string}) {
             ? "Add the Rein agent first (Your agent's budget)."
             : recording
               ? "Stop the recording first."
-              : (choice?.why ?? undefined);
+              : (choice?.why ?? overVault ?? undefined);
 
   return (
     <section className={styles.panel} aria-labelledby="run-title">

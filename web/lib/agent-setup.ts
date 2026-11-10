@@ -212,3 +212,15 @@ export function findReinAgent(spenders: Spender[] | null, agentKey: string | nul
   const live = spenders.filter((s) => s.status !== 'revoked');
   return (agentKey && live.find((s) => s.authority === agentKey)) || live.find((s) => s.kind === 'agent' && s.label === AGENT_LABEL) || null;
 }
+
+/**
+ * Why a run cannot be bought from this vault, or null when it can (or when either amount is unknown:
+ * the program still refuses a payment the vault cannot cover, so an unknown read blocks nothing).
+ * Stops a quote and a payment that could only fail, or wait for an approval that cannot settle.
+ */
+export function vaultShortfall(price: bigint | null, balance: bigint | null, kind: ServiceKind | null, fmt: (units: bigint) => string): string | null {
+  if (price === null || balance === null || price <= balance) return null;
+  if (balance === 0n) return 'The team vault is empty. Claim your test USDC first.';
+  const why = `This run costs ${fmt(price)} and the team vault holds ${fmt(balance)}, so it cannot be paid.`;
+  return kind === 'video' ? `${why} A clip costs more than one claim of test USDC; watch one being made on the live demo.` : why;
+}
