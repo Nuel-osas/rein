@@ -235,3 +235,18 @@ test('the demo scenarios buy only real services', async () => {
   assert.equal(SCENARIOS.injection.probe?.service_id, 'wallet-9xqe');
   for (const s of Object.values(SCENARIOS)) assert.doesNotMatch(s.task, /web-search|llm-inference|market-data|gpu-hour|premium-dataset|web search/i);
 });
+
+test('pay refuses an ai- service before signing anything, and points to buy_compute', async () => {
+  const ctx = ctxWith(undefined, async (p) => paidOutcome(p));
+  for (const service_id of ['ai-image', 'ai-chat', 'ai-video']) {
+    const r = await runTool(ctx, 'pay', { service_id, amount_usdc: '0.02', memo: 'an image' });
+    assert.equal(r.result.status, 'refused');
+    assert.match(String(r.result.error), /buy_compute/);
+    assert.equal(r.payment, undefined);
+  }
+  assert.equal(ctx.paid.length, 0);
+  const spec = TOOL_SPECS.find((s) => s.function.name === 'pay')!;
+  assert.match(spec.function.description, /bought only with buy_compute/);
+  assert.doesNotMatch(JSON.stringify(spec.function.parameters), /e\.g\. \\"ai-/);
+  assert.match(systemPrompt(null, true), /never with pay/);
+});

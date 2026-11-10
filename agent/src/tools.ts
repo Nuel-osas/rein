@@ -36,11 +36,11 @@ export const TOOL_SPECS: ToolSpec[] = [
     function: {
       name: 'pay',
       description:
-        'Pay a registered service from the team vault. Inside the policy it settles at once; over a limit it is filed as Pending for the team owner to approve. You can only name a service id, never an address.',
+        'Pay a registered service that is not an AI model run, from the team vault. Inside the policy it settles at once; over a limit it is filed as Pending for the team owner to approve. You can only name a service id, never an address. AI model runs (service ids starting with "ai-") are bought only with buy_compute, which pays and runs them; pay refuses them.',
       parameters: {
         type: 'object',
         properties: {
-          service_id: { type: 'string', description: 'A registered service id from list_services, e.g. "ai-chat".' },
+          service_id: { type: 'string', description: 'A registered service id from list_services that does not start with "ai-".' },
           amount_usdc: { type: 'string', description: 'Decimal USDC string with at most 6 decimals, e.g. "0.40".' },
           memo: { type: 'string', description: 'What the payment is for, at most 64 bytes.' },
         },
@@ -175,6 +175,9 @@ export async function checkBudget(ctx: ToolContext): Promise<ToolRun> {
 
 const PAY_KEYS = new Set(['service_id', 'amount_usdc', 'memo']);
 
+/** Every service the compute gateway sells is registered as ai-<kind> (web/lib/server/compute/catalog.ts). */
+const COMPUTE_SERVICE_RE = /^ai-/;
+
 export async function pay(ctx: ToolContext, args: Record<string, unknown>, probe = false): Promise<ToolRun> {
   const serviceId = typeof args.service_id === 'string' ? args.service_id.trim() : '';
   const ignored = Object.keys(args).filter((k) => !PAY_KEYS.has(k));
@@ -189,6 +192,18 @@ export async function pay(ctx: ToolContext, args: Record<string, unknown>, probe
   if (!serviceId) {
     const error = 'service_id is required';
     return { result: { status: 'failed', error, ...extra }, payment: event({ status: 'failed', amount: null, error }) };
+  }
+  // An AI model run paid with pay would move money and run nothing: the gateway runs only what
+  // buy_compute paid under its quote's intent. Refused before anything is signed, so no payment event.
+  if (COMPUTE_SERVICE_RE.test(serviceId)) {
+    return {
+      result: {
+        status: 'refused',
+        error: `${serviceId} is an AI model run: buy it with buy_compute, which pays and runs it`,
+        note: 'nothing moved; pay never pays an ai- service, because nothing would run',
+        ...extra,
+      },
+    };
   }
   let amount: bigint;
   try {
