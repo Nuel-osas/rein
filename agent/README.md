@@ -18,7 +18,7 @@ The model's only tools ([src/tools.ts#L13](src/tools.ts#L13)). None takes an add
 |---|---|---|---|
 | `list_services` | none | Lists registry services: id, label, list price, active | [src/tools.ts#L20](src/tools.ts#L20) |
 | `check_budget` | none | Reads the agent's `Spender`: allowance, cap, spent and count this period, reset, expiry, allowed ids, `remaining` | [src/tools.ts#L28](src/tools.ts#L28) |
-| `pay` | `service_id`, `amount_usdc`, `memo` | Pays a registered service. Settles inside the policy; files Pending over a limit | [src/tools.ts#L37](src/tools.ts#L37) |
+| `pay` | `service_id`, `amount_usdc`, `memo` | Pays a registered service. Settles inside the policy; files Pending over a limit. Refuses `ai-` services before signing: a payment alone would run nothing, so those are bought with `buy_compute` | [src/tools.ts#L37](src/tools.ts#L37) |
 | `quote_compute` | `service`, `prompt` | Prices one 0G run through the gateway; pays nothing | [src/tools.ts#L59](src/tools.ts#L59) |
 | `buy_compute` | `service`, `prompt`, optional `max_price_usdc` | Quotes, pays the quote with the quote's intent, and if paid runs it: text services return the answer, `ai-image` returns a link to the image, `ai-video` returns `running` (the clip takes a minute or two). If Pending, returns the intent and the approval deadline. `ai-voice` takes audio, so it is bought from the Compute page, not by the model | [src/tools.ts#L75](src/tools.ts#L75) |
 | `compute_result` | `intent` | Reads (or, after an approval, runs) a bought run by intent; a finished `ai-video` returns a link to the clip | [src/tools.ts#L93](src/tools.ts#L93) |
