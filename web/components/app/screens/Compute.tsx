@@ -1,8 +1,8 @@
 "use client";
 
 // AI compute. The team's Rein agent buys runs from Rein's compute gateway, which runs them on 0G:
-// chat, images and transcripts in a TEE through the 0G Compute SDK, and Claude or GPT relayed through
-// 0G Private Computer with no TEE (each card says which, and whether this server can sell it yet).
+// chat, images and transcripts in a TEE through the 0G Compute SDK, and Claude, GPT or a short video
+// clip relayed through 0G Private Computer with no TEE (each card says which, and whether this server can sell it yet).
 // Every run is a payment under the agent's on-chain policy; the gateway checks it, runs it once, and
 // delivers the result or refunds it. The purchases below are this team's Payment accounts for the
 // catalog's services. The assistant (the agent that pays for services in plain words) lives here
@@ -40,7 +40,7 @@ export function Compute() {
         <PageHeader
           kind="compute"
           title="AI compute"
-          description="Claim your $0.30 of test USDC, set your Rein agent's budget, and let it buy model runs on 0G: chat, images and transcripts in a TEE, or Claude and GPT relayed with no TEE. Every run is a payment in test USDC under the agent's own policy, and a run that cannot happen is refunded."
+          description="Claim your $0.30 of test USDC, set your Rein agent's budget, and let it buy model runs on 0G: chat, images and transcripts in a TEE, or Claude, GPT and short video clips relayed with no TEE. Every run is a payment in test USDC under the agent's own policy, and a run that cannot happen is refunded."
         />
         <ul className={styles.facts} aria-label="About these purchases">
           {FACTS.map((f) => (
