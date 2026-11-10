@@ -4,12 +4,17 @@
 // pays through /api/agent, and each payment shows what the Rein program decided: settled at once,
 // waiting for the owner, or refused on chain. Red-team calls made by the harness, not the model, are
 // labelled as such. Only the demo team can run the agent; other teams see how to add their own.
+// A compute run the agent paid for shows its result under the payment, as the run page does: the
+// answer, the image, or the clip once it is made (a clip takes a minute or two, so it is polled).
 
-import {useRef, useState} from "react";
+import Link from "next/link";
+import {useEffect, useRef, useState} from "react";
 import {DEMO_TEAM} from "@/lib/chain";
+import {readResult, type Outcome} from "@/lib/compute-client";
 import {Button} from "./Button";
 import {StatusPill} from "./ui";
 import {Explorer} from "./rein/bits";
+import {OutcomeView} from "./rein/ComputeCards";
 import styles from "./rein/rein.module.css";
 
 export type AgentPanelProps = {teamAddress: string; onActivity?: () => void};
@@ -29,9 +34,58 @@ type Wire =
       error?: string;
       errorName?: string;
       unconfirmed?: boolean;
+      intent?: string;
       probe?: boolean;
     }
   | {type: "final"; text: string; error?: string};
+
+/** Compute intents are "c" + 31 URL-safe characters (COMPUTE_INTENT_RE in agent/src/compute.ts); nothing else is fetched. */
+const COMPUTE_INTENT = /^c[A-Za-z0-9_-]{31}$/;
+const POLL_MS = 3_000;
+const POLL_FOR_MS = 5 * 60_000;
+
+/** The result of one compute run the agent paid for, read from the gateway like the run page does. */
+function AgentRunResult({teamAddress, intent}: {teamAddress: string; intent: string}) {
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [gaveUp, setGaveUp] = useState(false);
+
+  useEffect(() => {
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const until = Date.now() + POLL_FOR_MS;
+    const tick = async () => {
+      const o = await readResult(intent);
+      if (stop) return;
+      setOutcome(o);
+      // Only a run still being made is asked again, and only for a while; the run page keeps going.
+      if (o.kind === "running" || o.kind === "not_run") {
+        if (Date.now() < until) timer = setTimeout(tick, POLL_MS);
+        else setGaveUp(true);
+      }
+    };
+    void tick();
+    return () => {
+      stop = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [intent]);
+
+  const runPage = `/app/${teamAddress}/compute/${intent}`;
+  return (
+    <div style={{display: "grid", gap: ".5rem", marginTop: ".5rem"}}>
+      <OutcomeView outcome={outcome} />
+      {outcome?.kind === "running" || outcome?.kind === "not_run" ? (
+        <small role="status">{gaveUp ? "Still being made. The run page shows it when it is ready." : "Being made on 0G. A clip takes a minute or two; it appears here when it is ready."}</small>
+      ) : null}
+      {outcome && (outcome.kind === "error" || outcome.kind === "unavailable" || outcome.kind === "refused") ? <small>{outcome.error}</small> : null}
+      <small>
+        <Link className={styles.sectionLink} href={runPage}>
+          Open the run →
+        </Link>
+      </small>
+    </div>
+  );
+}
 
 const SCENARIOS = [
   {id: "research", label: "Research brief", hint: "Buys an ai-chat answer (and maybe an ai-image) inside its policy."},
@@ -191,6 +245,14 @@ export function AgentPanel({teamAddress, onActivity}: AgentPanelProps) {
                 <small>
                   {p.signature && <Explorer kind="tx" id={p.signature}>Transaction</Explorer>} {p.payment && <Explorer id={p.payment}>Payment record</Explorer>}
                 </small>
+                {!p.probe && p.status === "paid" && p.intent && COMPUTE_INTENT.test(p.intent) ? <AgentRunResult teamAddress={teamAddress} intent={p.intent} /> : null}
+                {!p.probe && p.status === "pending" && !p.unconfirmed && p.intent && COMPUTE_INTENT.test(p.intent) ? (
+                  <small>
+                    <Link className={styles.sectionLink} href={`/app/${teamAddress}/compute/${p.intent}`}>
+                      After you approve it, the result is on its run page →
+                    </Link>
+                  </small>
+                ) : null}
               </div>
             </li>
           ))}

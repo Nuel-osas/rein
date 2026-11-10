@@ -20,8 +20,8 @@ The model's only tools ([src/tools.ts#L13](src/tools.ts#L13)). None takes an add
 | `check_budget` | none | Reads the agent's `Spender`: allowance, cap, spent and count this period, reset, expiry, allowed ids, `remaining` | [src/tools.ts#L28](src/tools.ts#L28) |
 | `pay` | `service_id`, `amount_usdc`, `memo` | Pays a registered service. Settles inside the policy; files Pending over a limit | [src/tools.ts#L37](src/tools.ts#L37) |
 | `quote_compute` | `service`, `prompt` | Prices one 0G run through the gateway; pays nothing | [src/tools.ts#L59](src/tools.ts#L59) |
-| `buy_compute` | `service`, `prompt`, optional `max_price_usdc` | Quotes, pays the quote with the quote's intent, and if paid runs it: text services return the answer, `ai-image` returns a link to the image. If Pending, returns the intent and the approval deadline. `ai-voice` takes audio, so it is bought from the Compute page, not by the model | [src/tools.ts#L75](src/tools.ts#L75) |
-| `compute_result` | `intent` | Reads (or, after an approval, runs) a bought run by intent | [src/tools.ts#L93](src/tools.ts#L93) |
+| `buy_compute` | `service`, `prompt`, optional `max_price_usdc` | Quotes, pays the quote with the quote's intent, and if paid runs it: text services return the answer, `ai-image` returns a link to the image, `ai-video` returns `running` (the clip takes a minute or two). If Pending, returns the intent and the approval deadline. `ai-voice` takes audio, so it is bought from the Compute page, not by the model | [src/tools.ts#L75](src/tools.ts#L75) |
+| `compute_result` | `intent` | Reads (or, after an approval, runs) a bought run by intent; a finished `ai-video` returns a link to the clip | [src/tools.ts#L93](src/tools.ts#L93) |
 
 The three compute tools are offered only when a gateway is configured
 ([src/agent.ts#L101](src/agent.ts#L101)); without one they answer that compute is unavailable.

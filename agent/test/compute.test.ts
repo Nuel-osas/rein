@@ -190,6 +190,31 @@ test('buy_compute returns an ai-image result as a link to this intent, never a l
   assert.equal(r2.result.image_url, null);
 });
 
+test('an ai-video buy reports running without re-paying, and compute_result returns the clip as a link to this intent', async () => {
+  const url = `/api/compute/result/${INTENT}/blob`;
+  const running = { status: 202, body: { ok: true, status: 'running', intent: INTENT } };
+  const clip = { status: 200, body: { ok: true, status: 'done', result: { output: 'video', text: '', url, mime: 'video/mp4', model: 'bytedance/seedance-2.0-fast', verified: false, covers: 'none', trust: 'relayed' } } };
+  const { gw, calls } = gateway({ quote: { status: 200, body: { intent: INTENT, service: 'ai-video', amount: '430000' } }, run: [running, clip] });
+  const ctx = ctxWith(gw, async (p) => paidOutcome(p));
+  const r = await buyCompute(ctx, { service: 'ai-video', prompt: 'A purple robot' });
+  assert.equal(r.result.status, 'running');
+  assert.equal(r.result.intent, INTENT);
+  assert.equal('error' in r.result, false);
+  assert.equal(ctx.paid.length, 1);
+  const done = await computeResult(ctx, { intent: INTENT });
+  assert.equal(done.result.status, 'done');
+  assert.equal(done.result.output, 'video');
+  assert.equal(done.result.video_url, url);
+  assert.equal(done.result.verified, false);
+  assert.match(String(done.result.trust), /relayed/);
+  assert.equal('output_untrusted' in done.result, false);
+  assert.equal(ctx.paid.length, 1);
+  assert.deepEqual(calls.run, [INTENT, INTENT]);
+  const evil = { status: 200, body: { ok: true, status: 'done', result: { output: 'video', url: 'https://evil.example/x.mp4', model: 'm' } } };
+  const { gw: gw2 } = gateway({ run: [evil] });
+  assert.equal((await computeResult(ctxWith(gw2, async (p) => paidOutcome(p)), { intent: INTENT })).result.video_url, null);
+});
+
 test('a relayed answer is labelled unchecked, and a refund for a missing key says not configured', async () => {
   const relayed = { status: 200, body: { ok: true, status: 'done', result: { output: 'text', text: 'From Claude.', model: 'claude-haiku-5.5', verified: false, covers: 'none', trust: 'relayed' } } };
   const { gw } = gateway({ quote: { status: 200, body: { intent: INTENT, service: 'ai-claude', amount: '10000' } }, run: [relayed] });
